@@ -1,5 +1,5 @@
 /*
- * File: AudioDxe.h
+ * File: HdaControllerDxe.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,27 +22,21 @@
  * SOFTWARE.
  */
 
-#ifndef __EFI_AUDIODXE_H__
-#define __EFI_AUDIODXE_H__
+#include "AudioDxe.h"
 
 //
-// Common UEFI includes and library classes.
+// Consumed protocols.
 //
-#include <Uefi.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/MemoryAllocationLib.h>
-#include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiRuntimeServicesTableLib.h>
-#include <Library/UefiLib.h>
+#include <Protocol/PciIo.h>
+#include <IndustryStandard/Pci.h>
 
-//
-// Proctols that are consumed.
-//
-#include <Protocol/DriverBinding.h>
+#define PCI_REG_CLASSCODE_OFFSET (PCI_CLASSCODE_OFFSET + 1)
+#define PCI_SUBCLASS_HDA 0x3
 
-// Driver version
-#define AUDIODXE_VERSION    0xA
 
-#endif
+extern
+EFI_STATUS
+EFIAPI
+HdaControllerDxeRegisterDriver(
+    IN EFI_HANDLE ImageHandle,
+    IN EFI_SYSTEM_TABLE *SystemTable);

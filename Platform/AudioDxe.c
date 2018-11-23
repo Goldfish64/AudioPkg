@@ -23,6 +23,7 @@
  */
 
 #include "AudioDxe.h"
+#include "HdaControllerDxe.h"
 
 EFI_STATUS
 EFIAPI
@@ -30,8 +31,10 @@ AudioDxeInit(
     IN EFI_HANDLE ImageHandle,
     IN EFI_SYSTEM_TABLE *SystemTable) {
 
+    EFI_STATUS Status;
     DEBUG((DEBUG_INFO, "Starting AudioDxe...\n"));
 
-
-    return EFI_SUCCESS;
+    // Register HdaControllerDxe driver.
+    Status = HdaControllerDxeRegisterDriver(ImageHandle, SystemTable);
+    return Status;
 }
