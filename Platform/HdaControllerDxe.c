@@ -28,46 +28,54 @@
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *pciIo) {
+HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *PciIo) {
     DEBUG((DEBUG_INFO, "HdaControllerDxeReset()\n"));
-    EFI_STATUS status;
+    EFI_STATUS Status;
 
     UINT32 hdaGCtl;
     UINT64 hdaGCtlPoll;
     UINT16 hdaStatests;
 
     // Get value of CRST bit.
-    status = pciIo->Mem.Read(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
-    if (EFI_ERROR(status))
-        return status;
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Check if the controller is already in reset. If not, set bit to zero.
     if (!(hdaGCtl & HDA_REG_GCTL_CRST)) {
         hdaGCtl &= ~HDA_REG_GCTL_CRST;
-        status = pciIo->Mem.Write(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
-        if (EFI_ERROR(status))
-            return status;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+        if (EFI_ERROR(Status))
+            return Status;
     }
 
     // Write a one to the CRST bit to begin the process of coming out of reset.
     hdaGCtl |= HDA_REG_GCTL_CRST;
-    status = pciIo->Mem.Write(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
-    if (EFI_ERROR(status))
-        return status;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Wait for bit to be set. Once bit is set, the controller is ready.
-    status = pciIo->PollMem(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, 5, &hdaGCtlPoll);
-    if (EFI_ERROR(status))
-        return status;
+    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, 5, &hdaGCtlPoll);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Wait 10ms to ensure all codecs have also reset.
     gBS->Stall(10);
 
     // Get STATEST register.
-    status = pciIo->Mem.Read(pciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
-    if (EFI_ERROR(status))
-        return status;
-    DEBUG((DEBUG_INFO, "HDA STATEST: 0x%X\n", hdaStatests));
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "HDA STATESTS: 0x%X\n", hdaStatests));
+
+    // Identify codecs on controller.
+    DEBUG((DEBUG_INFO, "Codecs present at:"));
+    for (UINT8 i = 0; i < 15; i++) {
+        if (hdaStatests & (1 << i))
+            DEBUG((DEBUG_INFO, " 0x%X", i));
+    }
+    DEBUG((DEBUG_INFO, "\n"));
 
     // Controller is reset.
     DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
@@ -189,7 +197,8 @@ HdaControllerDxeDriverBindingStart(
     Status = HdaControllerDxeReset(PciIo);
     if (EFI_ERROR(Status))
         goto Done;
-    
+
+
 
     Status = EFI_SUCCESS;
 
@@ -238,8 +247,6 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDxeDriverBinding = {
     NULL,
     NULL
 };
-
-
 
 EFI_STATUS
 EFIAPI
