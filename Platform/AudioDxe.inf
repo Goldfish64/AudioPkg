@@ -47,6 +47,7 @@
   gEfiPciIoProtocolGuid # CONSUMES
 
 [Sources]
+  HdaRegisters.h
   HdaControllerDxe.h
   HdaControllerDxe.c
   AudioDxe.h

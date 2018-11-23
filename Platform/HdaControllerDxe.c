@@ -23,6 +23,55 @@
  */
 
 #include "HdaControllerDxe.h"
+#include "HdaRegisters.h"
+
+EFI_STATUS
+EFIAPI
+HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *pciIo) {
+    DEBUG((DEBUG_INFO, "HdaControllerDxeReset()\n"));
+    EFI_STATUS status;
+
+    UINT32 hdaGCtl;
+    UINT64 hdaGCtlPoll;
+    UINT16 hdaStatests;
+
+    // Get value of CRST bit.
+    status = pciIo->Mem.Read(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    if (EFI_ERROR(status))
+        return status;
+
+    // Check if the controller is already in reset. If not, set bit to zero.
+    if (!(hdaGCtl & HDA_REG_GCTL_CRST)) {
+        hdaGCtl &= ~HDA_REG_GCTL_CRST;
+        status = pciIo->Mem.Write(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+        if (EFI_ERROR(status))
+            return status;
+    }
+
+    // Write a one to the CRST bit to begin the process of coming out of reset.
+    hdaGCtl |= HDA_REG_GCTL_CRST;
+    status = pciIo->Mem.Write(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    if (EFI_ERROR(status))
+        return status;
+
+    // Wait for bit to be set. Once bit is set, the controller is ready.
+    status = pciIo->PollMem(pciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, 5, &hdaGCtlPoll);
+    if (EFI_ERROR(status))
+        return status;
+
+    // Wait 10ms to ensure all codecs have also reset.
+    gBS->Stall(10);
+
+    // Get STATEST register.
+    status = pciIo->Mem.Read(pciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
+    if (EFI_ERROR(status))
+        return status;
+    DEBUG((DEBUG_INFO, "HDA STATEST: 0x%X\n", hdaStatests));
+
+    // Controller is reset.
+    DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
+    return EFI_SUCCESS;
+}
 
 EFI_STATUS
 EFIAPI
@@ -86,9 +135,70 @@ HdaControllerDxeStart(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
-
     DEBUG((DEBUG_INFO, "HdaControllerDxeStart()\n"));
-    return EFI_SUCCESS;
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo;
+    UINT64 originalPciAttributes;
+    UINT64 pciSupports;
+
+    UINT8 hdaMajorVersion, hdaMinorVersion;
+    UINT16 hdaGCap;
+
+    // Open PCI I/O protocol.
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&PciIo,
+        This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+    if (EFI_ERROR (Status))
+        return Status;
+
+    // Get original PCI I/O attributes.
+    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationGet, 0, &originalPciAttributes);
+    if (EFI_ERROR(Status))
+        goto Done;
+
+    // Get currently supported PCI I/O attributes and enable MMIO.
+    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationSupported, 0, &pciSupports);
+    if (EFI_ERROR(Status))
+        goto Done;
+    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationEnable, (pciSupports & EFI_PCI_DEVICE_ENABLE) | EFI_PCI_IO_ATTRIBUTE_MEMORY, NULL);
+    if (EFI_ERROR(Status))
+        goto Done;
+
+    // Get major/minor version.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &hdaMajorVersion);
+    if (EFI_ERROR(Status))
+        goto Done;
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMIN, 1, &hdaMinorVersion);
+    if (EFI_ERROR(Status))
+        goto Done;
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &hdaGCap);
+    if (EFI_ERROR(Status))
+        goto Done;
+
+    // Validate version. If invalid abort.
+    DEBUG((DEBUG_INFO, "HDA controller version %u.%u. Max addressing mode supported: %u-bit.\n", hdaMajorVersion,
+        hdaMinorVersion, (hdaGCap & HDA_REG_GCAP_64BIT) ? 64 : 32));
+    if (hdaMajorVersion < HDA_VERSION_MIN_MAJOR) {
+        Status = EFI_UNSUPPORTED;
+        goto Done;
+    }
+
+    // Reset controller.
+    Status = HdaControllerDxeReset(PciIo);
+    if (EFI_ERROR(Status))
+        goto Done;
+    
+
+    Status = EFI_SUCCESS;
+
+Done:
+    // If error, close protocol.
+    if (EFI_ERROR(Status))
+        gBS->CloseProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
+
+    // Return status.
+    return Status;
 }
 
 EFI_STATUS
@@ -98,7 +208,18 @@ HdaControllerDxeStop(
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
     IN EFI_HANDLE *ChildHandleBuffer OPTIONAL) {
-    return EFI_UNSUPPORTED;
+    DEBUG((DEBUG_INFO, "BootChimeDriverBindingStop()\n"));
+    //EFI_STATUS status;
+
+    // Get private data.
+  //  BOOTCHIME_PRIVATE_DATA *private;
+   // private = BOOTCHIME_PRIVATE_DATA_FROM_THIS(This);
+
+    // Reset PCI I/O attributes and close protocol.
+  //  status = private->PciIo->Attributes(private->PciIo, EfiPciIoAttributeOperationSet, private->OriginalPciAttributes, NULL);
+    gBS->CloseProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
+    //FreePool(private);
+    return EFI_SUCCESS;
 }
 
 EFI_STATUS
