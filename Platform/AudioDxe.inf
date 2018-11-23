@@ -47,6 +47,8 @@
   gEfiPciIoProtocolGuid # CONSUMES
 
 [Sources]
+  EfiComponentName.h
+  EfiComponentName.c
   HdaRegisters.h
   HdaControllerDxe.h
   HdaControllerDxe.c

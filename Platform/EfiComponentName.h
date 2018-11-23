@@ -1,5 +1,5 @@
 /*
- * File: HdaControllerDxe.h
+ * File: EfiComponentName.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,21 +22,29 @@
  * SOFTWARE.
  */
 
-#include "AudioDxe.h"
+#ifndef EFI_COMPONENT_NAME_H_
+#define EFI_COMPONENT_NAME_H_
 
-//
-// Consumed protocols.
-//
-#include <Protocol/PciIo.h>
-#include <IndustryStandard/Pci.h>
-
-#define PCI_REG_CLASSCODE_OFFSET (PCI_CLASSCODE_OFFSET + 1)
-#define PCI_SUBCLASS_HDA 0x3
-
-
+#include <Library/UefiLib.h>
+#include <Protocol/ComponentName.h>
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeRegisterDriver(
-    IN EFI_HANDLE ImageHandle,
-    IN EFI_SYSTEM_TABLE *SystemTable);
+HdaControllerDxeComponentNameGetDriverName(
+    IN EFI_COMPONENT_NAME_PROTOCOL *This,
+    IN CHAR8 *Language,
+    OUT CHAR16 **DriverName);
+
+EFI_STATUS
+EFIAPI
+HdaControllerDxeComponentNameGetControllerName(
+    IN EFI_COMPONENT_NAME_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN EFI_HANDLE ChildHandle OPTIONAL,
+    IN CHAR8 *Language,
+    OUT CHAR16 **ControllerName);
+
+extern EFI_COMPONENT_NAME_PROTOCOL gHdaControllerDxeComponentName;
+extern EFI_COMPONENT_NAME2_PROTOCOL gHdaControllerDxeComponentName2;
+
+#endif

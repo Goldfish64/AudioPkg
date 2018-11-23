@@ -24,6 +24,7 @@
 
 #include "HdaControllerDxe.h"
 #include "HdaRegisters.h"
+#include "EfiComponentName.h"
 
 EFI_STATUS
 EFIAPI
@@ -75,7 +76,7 @@ HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *pciIo) {
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeSupported(
+HdaControllerDxeDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
@@ -131,7 +132,7 @@ Done:
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeStart(
+HdaControllerDxeDriverBindingStart(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
@@ -203,7 +204,7 @@ Done:
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeStop(
+HdaControllerDxeDriverBindingStop(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
@@ -222,51 +223,23 @@ HdaControllerDxeStop(
     return EFI_SUCCESS;
 }
 
-EFI_STATUS
-EFIAPI
-HdaControllerDxeGetDriverName(
-    IN EFI_COMPONENT_NAME_PROTOCOL *This,
-    IN CHAR8 *Language,
-    OUT CHAR16 **DriverName) {
-    return EFI_SUCCESS;
-}
 
-EFI_STATUS
-EFIAPI
-HdaControllerDxeGetControllerName(
-    IN EFI_COMPONENT_NAME_PROTOCOL *This,
-    IN EFI_HANDLE ControllerHandle,
-    IN EFI_HANDLE ChildHandle OPTIONAL,
-    IN CHAR8 *Language,
-    OUT CHAR16 **ControllerName) {
-    return EFI_SUCCESS;
-}
+
+
 
 //
 // Driver Binding Protocol
 //
 EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDxeDriverBinding = {
-    HdaControllerDxeSupported,
-    HdaControllerDxeStart,
-    HdaControllerDxeStop,
+    HdaControllerDxeDriverBindingSupported,
+    HdaControllerDxeDriverBindingStart,
+    HdaControllerDxeDriverBindingStop,
     AUDIODXE_VERSION,
     NULL,
     NULL
 };
 
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME_PROTOCOL gHdaControllerDxeComponentName = {
-    (EFI_COMPONENT_NAME_GET_DRIVER_NAME)HdaControllerDxeGetDriverName,
-    (EFI_COMPONENT_NAME_GET_CONTROLLER_NAME)HdaControllerDxeGetControllerName,
-    "eng"
-};
 
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME2_PROTOCOL gHdaControllerDxeComponentName2 = {
-    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaControllerDxeGetDriverName,
-    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaControllerDxeGetControllerName,
-    "en"
-};
 
 EFI_STATUS
 EFIAPI
@@ -277,7 +250,7 @@ HdaControllerDxeRegisterDriver(
 
     // Register HdaControllerDxe driver binding.
     Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDxeDriverBinding,
-        ImageHandle, &gHdaControllerDxeComponentName,&gHdaControllerDxeComponentName2);
+        ImageHandle, &gHdaControllerDxeComponentName, &gHdaControllerDxeComponentName2);
     ASSERT_EFI_ERROR(Status);
     return Status;
 }
