@@ -86,7 +86,7 @@ HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *PciIo) {
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeDriverBindingSupported(
+HdaControllerDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
@@ -94,47 +94,45 @@ HdaControllerDxeDriverBindingSupported(
     // Create variables.
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo;
-    UINTN segmentNo, busNo, deviceNo, functionNo;
-    UINT16 vendorId;
-    UINT16 deviceId;
-    UINT16 classCode;
+    UINTN HdaSegmentNo, HdaBusNo, HdaDeviceNo, HdaFunctionNo;
+    HDA_PCI_CLASSREG HdaClassReg;
+    UINT32 HdaVendorDeviceId;
 
-    // Open PCI I/O protocol.
+    // Open PCI I/O protocol. If this fails, its probably not a PCI device.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&PciIo,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
-        
-    // Read 16-bit class code from PCI.
-    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_REG_CLASSCODE_OFFSET, 1, &classCode);
+
+    // Read class code from PCI.
+    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, PCI_CLASSCODE_OFFSET,
+        sizeof(HDA_PCI_CLASSREG) / sizeof(UINT8), &HdaClassReg);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
 
     // Check class code. If not an HDA controller, we cannot support it.
-    if (classCode != ((PCI_CLASS_MEDIA << 8) | PCI_SUBCLASS_HDA)) {
+    if (HdaClassReg.Class != PCI_CLASS_MEDIA || HdaClassReg.SubClass != HDA_PCI_SUBCLASS) {
         Status = EFI_UNSUPPORTED;
-        goto Done;
+        goto CLOSE_PCIIO;
     }
 
     // If we get here, we found a controller.
     // Get location of PCI device.
-    Status = PciIo->GetLocation(PciIo, &segmentNo, &busNo, &deviceNo, &functionNo);
+    Status = PciIo->GetLocation(PciIo, &HdaSegmentNo, &HdaBusNo, &HdaDeviceNo, &HdaFunctionNo);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
 
     // Get vendor and device IDs of PCI device.
-    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_VENDOR_ID_OFFSET, 1, &vendorId);
+    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, PCI_VENDOR_ID_OFFSET, 1, &HdaVendorDeviceId);
     if (EFI_ERROR (Status))
-        goto Done;
-    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_DEVICE_ID_OFFSET, 1, &deviceId);
-    if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
 
     // Print HDA controller info.
-    DEBUG((DEBUG_INFO, "Found HDA controller (%4X:%4X) at %2X:%2X.%X!\n", vendorId, deviceId, busNo, deviceNo, functionNo));
+    DEBUG((DEBUG_INFO, "Found HDA controller (%4X:%4X) at %2X:%2X.%X!\n", HdaVendorDeviceId & 0xFFFF,
+        (HdaVendorDeviceId >> 16) & 0xFFFF, HdaBusNo, HdaDeviceNo, HdaFunctionNo));
     Status = EFI_SUCCESS;
 
-Done:
+CLOSE_PCIIO:
     // Close PCI I/O protocol and return status.
     gBS->CloseProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     return Status;
@@ -142,11 +140,11 @@ Done:
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeDriverBindingStart(
+HdaControllerDriverBindingStart(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
-    DEBUG((DEBUG_INFO, "HdaControllerDxeStart()\n"));
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart()\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -211,19 +209,11 @@ HdaControllerDxeDriverBindingStart(
     // Reset controller.
     Status = HdaControllerDxeReset(PciIo);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
 
 
 
-    Status = EFI_SUCCESS;
-
-Done:
-    // If error, close protocol.
-    if (EFI_ERROR(Status))
-        gBS->CloseProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
-
-    // Return status.
-    return Status;
+    return EFI_SUCCESS;
 
 CLOSE_PCIIO:
     // Restore PCI attributes if needed.
@@ -237,12 +227,12 @@ CLOSE_PCIIO:
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeDriverBindingStop(
+HdaControllerDriverBindingStop(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
     IN EFI_HANDLE *ChildHandleBuffer OPTIONAL) {
-    DEBUG((DEBUG_INFO, "BootChimeDriverBindingStop()\n"));
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStop()\n"));
     //EFI_STATUS status;
 
     // Get private data.
@@ -263,10 +253,10 @@ HdaControllerDxeDriverBindingStop(
 //
 // Driver Binding Protocol
 //
-EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDxeDriverBinding = {
-    HdaControllerDxeDriverBindingSupported,
-    HdaControllerDxeDriverBindingStart,
-    HdaControllerDxeDriverBindingStop,
+EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding = {
+    HdaControllerDriverBindingSupported,
+    HdaControllerDriverBindingStart,
+    HdaControllerDriverBindingStop,
     AUDIODXE_VERSION,
     NULL,
     NULL
@@ -274,14 +264,14 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDxeDriverBinding = {
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeRegisterDriver(
+HdaControllerRegisterDriver(
     IN EFI_HANDLE ImageHandle,
     IN EFI_SYSTEM_TABLE *SystemTable) {
     EFI_STATUS Status;
 
     // Register HdaControllerDxe driver binding.
-    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDxeDriverBinding,
-        ImageHandle, &gHdaControllerDxeComponentName, &gHdaControllerDxeComponentName2);
+    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDriverBinding,
+        ImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
     ASSERT_EFI_ERROR(Status);
     return Status;
 }

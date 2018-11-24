@@ -33,8 +33,16 @@
 #include <Protocol/PciIo.h>
 #include <IndustryStandard/Pci.h>
 
-#define PCI_REG_CLASSCODE_OFFSET (PCI_CLASSCODE_OFFSET + 1)
-#define PCI_SUBCLASS_HDA 0x3
+// Structure used for PCI class code parsing.
+#pragma pack(1)
+typedef struct {
+    UINT8 ProgInterface;
+    UINT8 SubClass;
+    UINT8 Class;
+} HDA_PCI_CLASSREG;
+#pragma pack()
+
+#define HDA_PCI_SUBCLASS 0x3
 
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('h','d','a','P')
 
@@ -51,7 +59,7 @@ typedef struct {
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeRegisterDriver(
+HdaControllerRegisterDriver(
     IN EFI_HANDLE ImageHandle,
     IN EFI_SYSTEM_TABLE *SystemTable);
 

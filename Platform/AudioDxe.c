@@ -34,7 +34,7 @@ AudioDxeInit(
     EFI_STATUS Status;
     DEBUG((DEBUG_INFO, "Starting AudioDxe...\n"));
 
-    // Register HdaControllerDxe driver.
-    Status = HdaControllerDxeRegisterDriver(ImageHandle, SystemTable);
+    // Register HdaController driver.
+    Status = HdaControllerRegisterDriver(ImageHandle, SystemTable);
     return Status;
 }

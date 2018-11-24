@@ -28,7 +28,7 @@
 // HdaControllerDxe.
 //
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_UNICODE_STRING_TABLE gHdaControllerDxeNameTable[] = {
+EFI_UNICODE_STRING_TABLE gHdaControllerNameTable[] = {
     {
         "eng;en",
         L"HDA Controller Driver"
@@ -40,32 +40,32 @@ EFI_UNICODE_STRING_TABLE gHdaControllerDxeNameTable[] = {
 };
 
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME_PROTOCOL gHdaControllerDxeComponentName = {
-    HdaControllerDxeComponentNameGetDriverName,
-    HdaControllerDxeComponentNameGetControllerName,
+EFI_COMPONENT_NAME_PROTOCOL gHdaControllerComponentName = {
+    HdaControllerComponentNameGetDriverName,
+    HdaControllerComponentNameGetControllerName,
     "eng"
 };
 
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME2_PROTOCOL gHdaControllerDxeComponentName2 = {
-    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaControllerDxeComponentNameGetDriverName,
-    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaControllerDxeComponentNameGetControllerName,
+EFI_COMPONENT_NAME2_PROTOCOL gHdaControllerComponentName2 = {
+    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaControllerComponentNameGetDriverName,
+    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaControllerComponentNameGetControllerName,
     "en"
 };
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeComponentNameGetDriverName(
+HdaControllerComponentNameGetDriverName(
     IN EFI_COMPONENT_NAME_PROTOCOL *This,
     IN CHAR8 *Language,
     OUT CHAR16 **DriverName) {
-    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaControllerDxeNameTable,
-        DriverName, (BOOLEAN)(This == &gHdaControllerDxeComponentName));
+    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaControllerNameTable,
+        DriverName, (BOOLEAN)(This == &gHdaControllerComponentName));
 }
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeComponentNameGetControllerName(
+HdaControllerComponentNameGetControllerName(
     IN EFI_COMPONENT_NAME_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_HANDLE ChildHandle OPTIONAL,
