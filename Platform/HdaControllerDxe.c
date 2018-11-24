@@ -36,6 +36,8 @@ HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *PciIo) {
     UINT64 hdaGCtlPoll;
     UINT16 hdaStatests;
 
+  //  gBS->InstallMultipleProtocolInterfaces
+
     // Get value of CRST bit.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
     if (EFI_ERROR(Status))
@@ -149,8 +151,11 @@ HdaControllerDxeDriverBindingStart(
     // Create variables.
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo;
-    UINT64 originalPciAttributes;
-    UINT64 pciSupports;
+    EFI_DEVICE_PATH_PROTOCOL *HdaDevicePath;
+
+    UINT64 OriginalPciAttributes;
+    UINT64 PciSupports;
+    BOOLEAN PciAttributesSaved = FALSE;
 
     UINT8 hdaMajorVersion, hdaMinorVersion;
     UINT16 hdaGCap;
@@ -161,36 +166,46 @@ HdaControllerDxeDriverBindingStart(
     if (EFI_ERROR (Status))
         return Status;
 
+    // Open Device Path protocol.
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaDevicePath,
+        This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+    if (EFI_ERROR (Status))
+        return Status;
+
     // Get original PCI I/O attributes.
-    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationGet, 0, &originalPciAttributes);
+    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationGet, 0, &OriginalPciAttributes);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
+    PciAttributesSaved = TRUE;
 
-    // Get currently supported PCI I/O attributes and enable MMIO.
-    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationSupported, 0, &pciSupports);
+    // Get currently supported PCI I/O attributes.
+    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationSupported, 0, &PciSupports);
     if (EFI_ERROR(Status))
-        goto Done;
-    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationEnable, (pciSupports & EFI_PCI_DEVICE_ENABLE) | EFI_PCI_IO_ATTRIBUTE_MEMORY, NULL);
-    if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
 
-    // Get major/minor version.
+    // Enable the PCI device.
+    PciSupports &= (UINT64)EFI_PCI_DEVICE_ENABLE;
+    Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationEnable, PciSupports, NULL);
+    if (EFI_ERROR(Status))
+        goto CLOSE_PCIIO;
+
+    // Get major/minor version and GCAP.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &hdaMajorVersion);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMIN, 1, &hdaMinorVersion);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &hdaGCap);
     if (EFI_ERROR(Status))
-        goto Done;
+        goto CLOSE_PCIIO;
 
     // Validate version. If invalid abort.
     DEBUG((DEBUG_INFO, "HDA controller version %u.%u. Max addressing mode supported: %u-bit.\n", hdaMajorVersion,
         hdaMinorVersion, (hdaGCap & HDA_REG_GCAP_64BIT) ? 64 : 32));
     if (hdaMajorVersion < HDA_VERSION_MIN_MAJOR) {
         Status = EFI_UNSUPPORTED;
-        goto Done;
+        goto CLOSE_PCIIO;
     }
 
     // Reset controller.
@@ -208,6 +223,15 @@ Done:
         gBS->CloseProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
 
     // Return status.
+    return Status;
+
+CLOSE_PCIIO:
+    // Restore PCI attributes if needed.
+    if (PciAttributesSaved)
+        PciIo->Attributes(PciIo, EfiPciIoAttributeOperationSet, OriginalPciAttributes, NULL);
+
+    // Close PCI I/O protocol.
+    gBS->CloseProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     return Status;
 }
 
