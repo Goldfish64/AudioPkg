@@ -23,7 +23,7 @@
  */
 
 #include "AudioDxe.h"
-#include "HdaControllerDxe.h"
+#include "HdaController/HdaController.h"
 
 EFI_STATUS
 EFIAPI

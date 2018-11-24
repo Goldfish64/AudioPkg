@@ -1,5 +1,5 @@
 /*
- * File: HdaRegisters.h
+ * File: HdaController.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,33 +22,37 @@
  * SOFTWARE.
  */
 
-#ifndef __EFI_BOOTCHIME_HDA_REGS_H__
-#define __EFI_BOOTCHIME_HDA_REGS_H__
+#ifndef EFI_HDA_CONTROLLER_H_
+#define EFI_HDA_CONTROLLER_H_
 
-// HDA controller is accessed via MMIO on BAR #0.
-#define PCI_HDA_BAR 0
-
-// Min supported version.
-#define HDA_VERSION_MIN_MAJOR   0x1
-#define HDA_VERSION_MIN_MINOR   0x0
+#include "AudioDxe.h"
 
 //
-// HDA registers.
+// Consumed protocols.
 //
-#define HDA_REG_GCAP    0x00
-#define HDA_REG_GCAP_64BIT 0x1
+#include <Protocol/PciIo.h>
+#include <IndustryStandard/Pci.h>
 
-#define HDA_REG_VMIN    0x02
-#define HDA_REG_VMAJ    0x03
-#define HDA_REG_OUTPAY  0x04
-#define HDA_REG_INPAY   0x06
+#define PCI_REG_CLASSCODE_OFFSET (PCI_CLASSCODE_OFFSET + 1)
+#define PCI_SUBCLASS_HDA 0x3
 
-#define HDA_REG_GCTL    0x08
-#define HDA_REG_GCTL_CRST   0x001
-#define HDA_REG_GCTL_FCNTRL 0x002
-#define HDA_REG_GCTL_UNSOL  0x100
+#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('h','d','a','P')
 
-#define HDA_REG_WAKEEN  0x0C
-#define HDA_REG_STATESTS 0x0E
+typedef struct {
+    UINTN Signature;
+
+    EFI_PCI_IO_PROTOCOL *PciIo;
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+    UINT64 OriginalPciAttributes;
+} HDA_CONTROLLER_PRIVATE_DATA;
+
+#define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(a) \
+    CR(a, HDA_CONTROLLER_PRIVATE_DATA, DiskIo, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
+
+EFI_STATUS
+EFIAPI
+HdaControllerDxeRegisterDriver(
+    IN EFI_HANDLE ImageHandle,
+    IN EFI_SYSTEM_TABLE *SystemTable);
 
 #endif

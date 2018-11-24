@@ -1,5 +1,5 @@
 /*
- * File: HdaControllerDxe.c
+ * File: HdaController.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,9 +22,9 @@
  * SOFTWARE.
  */
 
-#include "HdaControllerDxe.h"
+#include "HdaController.h"
 #include "HdaRegisters.h"
-#include "EfiComponentName.h"
+#include "ComponentName.h"
 
 EFI_STATUS
 EFIAPI

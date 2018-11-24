@@ -1,5 +1,5 @@
 /*
- * File: EfiComponentName.c
+ * File: ComponentName.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "EfiComponentName.h"
+#include "ComponentName.h"
 
 //
 // HdaControllerDxe.
