@@ -94,8 +94,9 @@ HdaControllerDriverBindingSupported(
     // Create variables.
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo;
-    UINTN HdaSegmentNo, HdaBusNo, HdaDeviceNo, HdaFunctionNo;
+    
     HDA_PCI_CLASSREG HdaClassReg;
+    UINTN HdaSegmentNo, HdaBusNo, HdaDeviceNo, HdaFunctionNo;
     UINT32 HdaVendorDeviceId;
 
     // Open PCI I/O protocol. If this fails, its probably not a PCI device.
@@ -111,7 +112,7 @@ HdaControllerDriverBindingSupported(
         goto CLOSE_PCIIO;
 
     // Check class code. If not an HDA controller, we cannot support it.
-    if (HdaClassReg.Class != PCI_CLASS_MEDIA || HdaClassReg.SubClass != HDA_PCI_SUBCLASS) {
+    if (HdaClassReg.Class != PCI_CLASS_MEDIA || HdaClassReg.SubClass != PCI_CLASS_MEDIA_HDA) {
         Status = EFI_UNSUPPORTED;
         goto CLOSE_PCIIO;
     }

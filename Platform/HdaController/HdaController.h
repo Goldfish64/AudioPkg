@@ -42,7 +42,7 @@ typedef struct {
 } HDA_PCI_CLASSREG;
 #pragma pack()
 
-#define HDA_PCI_SUBCLASS 0x3
+#define PCI_CLASS_MEDIA_HDA 0x3
 
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('h','d','a','P')
 
