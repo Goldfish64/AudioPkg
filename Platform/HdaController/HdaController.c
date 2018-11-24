@@ -156,8 +156,10 @@ HdaControllerDriverBindingStart(
     UINT64 PciSupports;
     BOOLEAN PciAttributesSaved = FALSE;
 
-    UINT8 hdaMajorVersion, hdaMinorVersion;
-    UINT16 hdaGCap;
+    // Version, GCAP, and whether or not 64-bit addressing is supported.
+    UINT8 HdaMajorVersion, HdaMinorVersion;
+    UINT16 HdaGCap;
+    BOOLEAN Hda64BitSupported;
 
     // Open PCI I/O protocol.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&PciIo,
@@ -189,20 +191,23 @@ HdaControllerDriverBindingStart(
         goto CLOSE_PCIIO;
 
     // Get major/minor version and GCAP.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &hdaMajorVersion);
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &HdaMajorVersion);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMIN, 1, &hdaMinorVersion);
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMIN, 1, &HdaMinorVersion);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &hdaGCap);
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &HdaGCap);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
+    
+    // Get value of 64BIT bit.
+    Hda64BitSupported = (BOOLEAN)(HdaGCap & HDA_REG_GCAP_64BIT);
 
     // Validate version. If invalid abort.
-    DEBUG((DEBUG_INFO, "HDA controller version %u.%u. Max addressing mode supported: %u-bit.\n", hdaMajorVersion,
-        hdaMinorVersion, (hdaGCap & HDA_REG_GCAP_64BIT) ? 64 : 32));
-    if (hdaMajorVersion < HDA_VERSION_MIN_MAJOR) {
+    DEBUG((DEBUG_INFO, "HDA controller version %u.%u. Max addressing mode supported: %u-bit.\n", HdaMajorVersion,
+        HdaMinorVersion, Hda64BitSupported ? 64 : 32));
+    if (HdaMajorVersion < HDA_VERSION_MIN_MAJOR) {
         Status = EFI_UNSUPPORTED;
         goto CLOSE_PCIIO;
     }
@@ -217,6 +222,8 @@ HdaControllerDriverBindingStart(
     return EFI_SUCCESS;
 
 CLOSE_PCIIO:
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): Abort via CLOSE_PCIIO.\n"));
+
     // Restore PCI attributes if needed.
     if (PciAttributesSaved)
         PciIo->Attributes(PciIo, EfiPciIoAttributeOperationSet, OriginalPciAttributes, NULL);
