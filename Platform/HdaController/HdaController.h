@@ -44,7 +44,7 @@ typedef struct {
 
 #define PCI_CLASS_MEDIA_HDA 0x3
 
-#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('h','d','a','P')
+#define HDA_CONTROLLER_DEV_SIGNATURE SIGNATURE_32('h','d','a','P')
 
 typedef struct {
     UINTN Signature;
@@ -52,10 +52,21 @@ typedef struct {
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
     UINT64 OriginalPciAttributes;
-} HDA_CONTROLLER_PRIVATE_DATA;
 
-#define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(a) \
-    CR(a, HDA_CONTROLLER_PRIVATE_DATA, DiskIo, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
+    BOOLEAN Buffer64BitSupported;
+    UINT32 *CommandOutboundBuffer;
+    VOID *CommandOutboundMapping;
+    EFI_PHYSICAL_ADDRESS CommandOutboundPhysAddr;
+    UINT32 *CommandInboundBuffer;
+    VOID *CommandInboundMapping;
+    EFI_PHYSICAL_ADDRESS CommandInboundPhysAddr;
+} HDA_CONTROLLER_DEV;
+
+#define HDA_CONTROLLER_DEV_FROM_THIS(This) CR(This, HDA_CONTROLLER_DEV, DiskIo, HDA_CONTROLLER_DEV_SIGNATURE)
+
+#define HDA_CORB_COUNT 256
+#define HDA_CORB_BUFFER_SIZE (HDA_CORB_COUNT * sizeof(UINT32))
+
 
 EFI_STATUS
 EFIAPI

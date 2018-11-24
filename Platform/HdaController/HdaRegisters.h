@@ -44,9 +44,9 @@
 #define HDA_REG_INPAY   0x06
 
 #define HDA_REG_GCTL    0x08
-#define HDA_REG_GCTL_CRST   0x001
-#define HDA_REG_GCTL_FCNTRL 0x002
-#define HDA_REG_GCTL_UNSOL  0x100
+#define HDA_REG_GCTL_CRST   (1 << 0)
+#define HDA_REG_GCTL_FCNTRL (1 << 1)
+#define HDA_REG_GCTL_UNSOL  (1 << 8)
 
 #define HDA_REG_WAKEEN  0x0C
 #define HDA_REG_STATESTS 0x0E
@@ -57,9 +57,20 @@
 #define HDA_REG_CORBUBASE   0x44
 #define HDA_REG_CORBWP      0x48
 #define HDA_REG_CORBRP      0x4A
-#define HDA_REG_CORBCTL     0x4C
-#define HDA_REG_CORBSTS     0x4D
-#define HDA_REG_CORBSIZE    0x4E
+
+#define HDA_REG_CORBCTL         0x4C
+#define HDA_REG_CORBCTL_CORBRUN (1 << 1)
+#define HDA_REG_CORBSTS         0x4D
+#define HDA_REG_CORPSTS_CMEI    (1 << 0)
+
+#define HDA_REG_CORBSIZE                0x4E
+#define HDA_REG_CORPSIZE_CORBSIZE_2     0
+#define HDA_REG_CORPSIZE_CORBSIZE_16    (1 << 0)
+#define HDA_REG_CORPSIZE_CORBSIZE_256   (1 << 1)
+#define HDA_REG_CORPSIZE_CORBSIZE_MASK  ((1 << 0) | (1 << 1))
+#define HDA_REG_CORPSIZE_CORBSZCAP_2    (1 << 4)
+#define HDA_REG_CORPSIZE_CORBSZCAP_16   (1 << 5)
+#define HDA_REG_CORPSIZE_CORBSZCAP_256  (1 << 6)
 
 
 #endif

@@ -26,6 +26,26 @@
 #include "HdaRegisters.h"
 #include "ComponentName.h"
 
+HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
+    IN EFI_PCI_IO_PROTOCOL *PciIo,
+    IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
+    IN UINT64 OriginalPciAttributes) {
+    HDA_CONTROLLER_DEV *HdaDev;
+   // EFI_STATUS Status;
+
+    // Allocate memory.
+    HdaDev = (HDA_CONTROLLER_DEV*)AllocateZeroPool(sizeof(HDA_CONTROLLER_DEV));
+    if (HdaDev == NULL)
+        return NULL;
+
+    // Initialize fields.
+    HdaDev->Signature = HDA_CONTROLLER_DEV_SIGNATURE;
+    HdaDev->PciIo = PciIo;
+    HdaDev->DevicePath = DevicePath;
+    HdaDev->OriginalPciAttributes = OriginalPciAttributes;
+    return HdaDev;
+}
+
 EFI_STATUS
 EFIAPI
 HdaControllerReset(
@@ -80,6 +100,119 @@ HdaControllerReset(
 
     // Controller is reset.
     DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerAllocBuffers(
+    HDA_CONTROLLER_DEV *HdaDev) {
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+
+    VOID *OutboundHostBuffer = NULL;
+    UINTN OutboundLength;
+    VOID *OutboundMapping = NULL;
+    EFI_PHYSICAL_ADDRESS OutboundPhysAddr;
+
+    VOID *InboundHostBuffer = NULL;
+    UINTN InboundLength;
+    VOID *InboundMapping = NULL;
+    EFI_PHYSICAL_ADDRESS InboundPhysAddr;
+
+    // Determine size of buffers.
+
+    // Allocate outbound buffer.
+    Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(HDA_CORB_BUFFER_SIZE), &OutboundHostBuffer, 0);
+    if (EFI_ERROR(Status))
+        return Status;
+    
+    // Map outbound buffer.
+    OutboundLength = HDA_CORB_BUFFER_SIZE;
+    Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, OutboundHostBuffer, &OutboundLength, &OutboundPhysAddr, &OutboundMapping);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    if (OutboundLength != HDA_CORB_BUFFER_SIZE) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto FREE_BUFFER;
+    }
+
+    // Allocate inbound buffer.
+    Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(HDA_CORB_BUFFER_SIZE), &InboundHostBuffer, 0);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    
+    // Map inbound buffer.
+    InboundLength = HDA_CORB_BUFFER_SIZE;
+    Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, InboundHostBuffer, &InboundLength, &InboundPhysAddr, &InboundMapping);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    if (InboundLength != HDA_CORB_BUFFER_SIZE) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto FREE_BUFFER;
+    }
+
+    // Populate device object.
+    HdaDev->CommandOutboundBuffer = OutboundHostBuffer;
+    HdaDev->CommandOutboundMapping = OutboundMapping;
+    HdaDev->CommandOutboundPhysAddr = OutboundPhysAddr;
+    HdaDev->CommandInboundBuffer = InboundHostBuffer;
+    HdaDev->CommandInboundMapping = InboundMapping;
+    HdaDev->CommandInboundPhysAddr = InboundPhysAddr;
+    return EFI_SUCCESS;
+
+FREE_BUFFER:
+    // Unmap if needed.
+    if (OutboundMapping)
+        PciIo->Unmap(PciIo, OutboundMapping);
+    if (InboundMapping)
+        PciIo->Unmap(PciIo, InboundMapping);
+
+    // Free buffers.
+    PciIo->FreeBuffer(PciIo, EFI_SIZE_TO_PAGES(HDA_CORB_BUFFER_SIZE), OutboundHostBuffer);
+    PciIo->FreeBuffer(PciIo, EFI_SIZE_TO_PAGES(HDA_CORB_BUFFER_SIZE), InboundHostBuffer);
+    return Status;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetupBuffers(
+    HDA_CONTROLLER_DEV *HdaDev) {
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+
+    UINT8 HdaCorbCtl;
+    UINT32 HdaLowerCorbBaseAddr;
+    UINT32 HdaUpperCorbBaseAddr;
+    
+
+    // Get value of CORBCTL register.
+    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Ensure CORB is stopped.
+    if (HdaCorbCtl & HDA_REG_CORBCTL_CORBRUN) {
+        HdaCorbCtl &= ~HDA_REG_CORBCTL_CORBRUN;
+        Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
+        if (EFI_ERROR(Status))
+            return Status;
+    }
+    
+    // Set outbound buffer lower base address.
+    HdaLowerCorbBaseAddr = (UINT32)(HdaDev->CommandOutboundPhysAddr & 0xFFFFFFFF);
+    Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint32, HDA_REG_CORBLBASE, 1, &HdaLowerCorbBaseAddr);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // If 64-bit supported, set upper base address.
+    if (HdaDev->Buffer64BitSupported) {
+        HdaUpperCorbBaseAddr = (UINT32)((HdaDev->CommandOutboundPhysAddr >> 32) & 0xFFFFFFF);
+        Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint32, HDA_REG_CORBUBASE, 1, &HdaUpperCorbBaseAddr);
+        if (EFI_ERROR(Status))
+            return Status;
+    }
+
     return EFI_SUCCESS;
 }
 
@@ -211,11 +344,21 @@ HdaControllerDriverBindingStart(
         goto CLOSE_PCIIO;
     }
 
+    // Allocate device.
+    HDA_CONTROLLER_DEV *HdaDev = HdaControllerAllocDevice(PciIo, RemainingDevicePath, OriginalPciAttributes);
+    HdaDev->Buffer64BitSupported = Hda64BitSupported;
+
     // Reset controller.
     Status = HdaControllerReset(PciIo);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
+    // Allocate CORB buffer. This is 1KB in size so allocate one page (4KB).
+    HdaControllerAllocBuffers(HdaDev);
+    DEBUG((DEBUG_INFO, "HDA controller buffers allocated: CORB: 0x%p CIRB: 0x%p\n", HdaDev->CommandOutboundBuffer, HdaDev->CommandInboundBuffer));
+
+
+    
 
 
     return EFI_SUCCESS;
