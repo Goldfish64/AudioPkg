@@ -28,15 +28,14 @@
 
 EFI_STATUS
 EFIAPI
-HdaControllerDxeReset(IN EFI_PCI_IO_PROTOCOL *PciIo) {
-    DEBUG((DEBUG_INFO, "HdaControllerDxeReset()\n"));
+HdaControllerReset(
+    IN EFI_PCI_IO_PROTOCOL *PciIo) {
+    DEBUG((DEBUG_INFO, "HdaControllerReset()\n"));
     EFI_STATUS Status;
 
     UINT32 hdaGCtl;
     UINT64 hdaGCtlPoll;
     UINT16 hdaStatests;
-
-  //  gBS->InstallMultipleProtocolInterfaces
 
     // Get value of CRST bit.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
@@ -213,7 +212,7 @@ HdaControllerDriverBindingStart(
     }
 
     // Reset controller.
-    Status = HdaControllerDxeReset(PciIo);
+    Status = HdaControllerReset(PciIo);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 

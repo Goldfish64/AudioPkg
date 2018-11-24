@@ -51,4 +51,15 @@
 #define HDA_REG_WAKEEN  0x0C
 #define HDA_REG_STATESTS 0x0E
 
+#define HDA_REG_INTCTL      0x20
+#define HDA_REG_INTSTS      0x24
+#define HDA_REG_CORBLBASE   0x40
+#define HDA_REG_CORBUBASE   0x44
+#define HDA_REG_CORBWP      0x48
+#define HDA_REG_CORBRP      0x4A
+#define HDA_REG_CORBCTL     0x4C
+#define HDA_REG_CORBSTS     0x4D
+#define HDA_REG_CORBSIZE    0x4E
+
+
 #endif
