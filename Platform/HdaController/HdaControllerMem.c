@@ -62,6 +62,9 @@ HdaControllerAllocBuffers(
     UINT8 HdaRirbCtl;
     UINT32 HdaLowerRirbBaseAddr;
     UINT32 HdaUpperRirbBaseAddr;
+    UINT16 HdaCorbRp;
+    UINT16 HdaCorbWp;
+    UINT16 HdaRirbWp;
 
     // CORB buffer.
     VOID *OutboundHostBuffer = NULL;
@@ -145,6 +148,10 @@ HdaControllerAllocBuffers(
         goto FREE_BUFFER;
     }
 
+    // Zero out buffers.
+    ZeroMem(OutboundHostBuffer, OutboundLength);
+    ZeroMem(InboundHostBuffer, InboundLength);
+
     // Get value of CORBCTL register and ensure CORB is stopped.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
     if (EFI_ERROR(Status))
@@ -197,6 +204,22 @@ HdaControllerAllocBuffers(
             goto FREE_BUFFER;
     }
 
+    // Reset CORB read pointer.
+    HdaCorbRp = HDA_REG_CORBRP_RST;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbRp);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+
+    // Reset write pointers.
+    HdaCorbWp = 0;
+    HdaRirbWp = HDA_REG_RIRBWP_RST;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWp);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+
     // Populate device object.
     HdaDev->CommandOutboundBuffer = OutboundHostBuffer;
     HdaDev->CommandOutboundBufferEntryCount = OutboundLength / HDA_CORB_ENTRY_SIZE;
@@ -207,6 +230,7 @@ HdaControllerAllocBuffers(
     HdaDev->ResponseInboundMapping = InboundMapping;
     HdaDev->ResponseInboundPhysAddr = InboundPhysAddr;
 
+    // Buffer allocation successful.
     DEBUG((DEBUG_INFO, "HDA controller buffers allocated:\nCORB @ 0x%p (%u entries) RIRB @ 0x%p (%u entries)\n",
         HdaDev->CommandOutboundBuffer, HdaDev->CommandOutboundBufferEntryCount,
         HdaDev->ResponseInboundBuffer, HdaDev->ResponseInboundBufferEntryCount));
