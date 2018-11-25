@@ -27,7 +27,18 @@
 #include "HdaRegisters.h"
 #include "ComponentName.h"
 
-
+VOID
+HdaControllerResponsePollTimerHandler(
+    IN EFI_EVENT Event,
+    IN VOID *Context) {
+    HDA_CONTROLLER_DEV *HdaDev = (HDA_CONTROLLER_DEV*)Context;
+    
+    UINT16 HdaCorbRp;
+    HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbRp);
+    UINT16 HdaRirbWp;
+    HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWp);
+    DEBUG((DEBUG_INFO, "CORB: 0x%X RIRB: 0x%X 0x%X\n", HdaCorbRp, HdaRirbWp, HdaDev->ResponseInboundBuffer[0]));
+}
 
 EFI_STATUS
 EFIAPI
@@ -85,6 +96,8 @@ HdaControllerReset(
     DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
     return EFI_SUCCESS;
 }
+
+
 
 EFI_STATUS
 EFIAPI
@@ -228,10 +241,21 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
+    // Setup response ring buffer poll timer.
+    Status = gBS->SetTimer(HdaDev->ResponsePollTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(1000));
+    if (EFI_ERROR(Status))
+        goto CLOSE_PCIIO;
+
     // Enable ring buffers.
     Status = HdaControllerEnableBuffers(HdaDev);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO; // Do more than this, need to free buffers and such TODO.
+
+    // send test.
+    HdaDev->CommandOutboundBuffer[0] = 0xF0000;
+    HdaDev->CommandOutboundBuffer[1] = 0xF0000;
+    UINT16 HdaCorbWp = 1;
+    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
     
     return EFI_SUCCESS;
 

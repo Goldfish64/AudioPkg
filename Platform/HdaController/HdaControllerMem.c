@@ -31,7 +31,7 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
     IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
     IN UINT64 OriginalPciAttributes) {
     HDA_CONTROLLER_DEV *HdaDev;
-   // EFI_STATUS Status;
+    EFI_STATUS Status;
 
     // Allocate memory.
     HdaDev = (HDA_CONTROLLER_DEV*)AllocateZeroPool(sizeof(HDA_CONTROLLER_DEV));
@@ -43,6 +43,13 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
     HdaDev->PciIo = PciIo;
     HdaDev->DevicePath = DevicePath;
     HdaDev->OriginalPciAttributes = OriginalPciAttributes;
+
+    // Initialize events.
+    Status = gBS->CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_NOTIFY,
+        HdaControllerResponsePollTimerHandler, HdaDev, &HdaDev->ResponsePollTimer);
+    if (EFI_ERROR(Status))
+        return NULL;
+
     return HdaDev;
 }
 
@@ -231,9 +238,9 @@ HdaControllerAllocBuffers(
     HdaDev->ResponseInboundPhysAddr = InboundPhysAddr;
 
     // Buffer allocation successful.
-    DEBUG((DEBUG_INFO, "HDA controller buffers allocated:\nCORB @ 0x%p (%u entries) RIRB @ 0x%p (%u entries)\n",
-        HdaDev->CommandOutboundBuffer, HdaDev->CommandOutboundBufferEntryCount,
-        HdaDev->ResponseInboundBuffer, HdaDev->ResponseInboundBufferEntryCount));
+    DEBUG((DEBUG_INFO, "HDA controller buffers allocated:\nCORB @ 0x%p (0x%p) (%u entries) RIRB @ 0x%p (0x%p) (%u entries)\n",
+        HdaDev->CommandOutboundBuffer, HdaDev->CommandOutboundPhysAddr, HdaDev->CommandOutboundBufferEntryCount,
+        HdaDev->ResponseInboundBuffer, HdaDev->ResponseInboundPhysAddr, HdaDev->ResponseInboundBufferEntryCount));
     return EFI_SUCCESS;
 
 FREE_BUFFER:

@@ -69,10 +69,18 @@ typedef struct {
     UINT32 ResponseInboundBufferEntryCount;
     VOID *ResponseInboundMapping;
     EFI_PHYSICAL_ADDRESS ResponseInboundPhysAddr;
+
+    // Events.
+    EFI_EVENT ResponsePollTimer;
+    EFI_EVENT ExitBootServiceEvent;
 } HDA_CONTROLLER_DEV;
 
 #define HDA_CONTROLLER_DEV_FROM_THIS(This) CR(This, HDA_CONTROLLER_DEV, DiskIo, HDA_CONTROLLER_DEV_SIGNATURE)
 
+VOID
+HdaControllerResponsePollTimerHandler(
+    IN EFI_EVENT Event,
+    IN VOID *Context);
 
 EFI_STATUS
 EFIAPI
