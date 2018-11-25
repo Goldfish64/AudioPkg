@@ -47,25 +47,31 @@ typedef struct {
 #define HDA_CONTROLLER_DEV_SIGNATURE SIGNATURE_32('h','d','a','P')
 
 typedef struct {
+    // Signature.
     UINTN Signature;
 
+    // PCI protocol.
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
     UINT64 OriginalPciAttributes;
 
+    // Whether or not 64-bit addressing is supported.
     BOOLEAN Buffer64BitSupported;
+
+    // Command output buffer (CORB).
     UINT32 *CommandOutboundBuffer;
+    UINT32 CommandOutboundBufferEntryCount;
     VOID *CommandOutboundMapping;
     EFI_PHYSICAL_ADDRESS CommandOutboundPhysAddr;
-    UINT32 *CommandInboundBuffer;
-    VOID *CommandInboundMapping;
-    EFI_PHYSICAL_ADDRESS CommandInboundPhysAddr;
+
+    // Response input buffer (RIRB).
+    UINT64 *ResponseInboundBuffer;
+    UINT32 ResponseInboundBufferEntryCount;
+    VOID *ResponseInboundMapping;
+    EFI_PHYSICAL_ADDRESS ResponseInboundPhysAddr;
 } HDA_CONTROLLER_DEV;
 
 #define HDA_CONTROLLER_DEV_FROM_THIS(This) CR(This, HDA_CONTROLLER_DEV, DiskIo, HDA_CONTROLLER_DEV_SIGNATURE)
-
-#define HDA_CORB_COUNT 256
-#define HDA_CORB_BUFFER_SIZE (HDA_CORB_COUNT * sizeof(UINT32))
 
 
 EFI_STATUS

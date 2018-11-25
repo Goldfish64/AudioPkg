@@ -50,6 +50,8 @@
   HdaController/ComponentName.h
   HdaController/ComponentName.c
   HdaController/HdaRegisters.h
+  HdaController/HdaControllerMem.h
+  HdaController/HdaControllerMem.c
   HdaController/HdaController.h
   HdaController/HdaController.c
   AudioDxe.h
