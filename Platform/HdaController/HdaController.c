@@ -65,7 +65,7 @@ HdaControllerReset(
     }
 
     // Write a one to the CRST bit to begin the process of coming out of reset.
-    hdaGCtl |= HDA_REG_GCTL_CRST;
+    hdaGCtl |= HDA_REG_GCTL_CRST | HDA_REG_GCTL_UNSOL;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
     if (EFI_ERROR(Status))
         return Status;
@@ -76,7 +76,7 @@ HdaControllerReset(
         return Status;
 
     // Wait 10ms to ensure all codecs have also reset.
-    gBS->Stall(10);
+    gBS->Stall(1000);
 
     // Get STATEST register.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
@@ -200,7 +200,7 @@ HdaControllerDriverBindingStart(
         goto CLOSE_PCIIO;
 
     // Enable the PCI device.
-    PciSupports &= (UINT64)EFI_PCI_DEVICE_ENABLE;
+    PciSupports &= EFI_PCI_DEVICE_ENABLE;
     Status = PciIo->Attributes(PciIo, EfiPciIoAttributeOperationEnable, PciSupports, NULL);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
@@ -236,6 +236,8 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
+    //PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, HdaGC
+
     // Setup ring buffers.
     Status = HdaControllerAllocBuffers(HdaDev);
     if (EFI_ERROR(Status))
@@ -246,16 +248,41 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
+    UINT16 dd = 0xFF;
+    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RINTCNT, 1, &dd);
+
     // Enable ring buffers.
     Status = HdaControllerEnableBuffers(HdaDev);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO; // Do more than this, need to free buffers and such TODO.
 
+    gBS->Stall(10000);
+/*
+    UINT32 imSts = 0;
+    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, 0x68, 1, &imSts);
+    imSts = 0xF0000;
+    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x60, 1, &imSts);
+    imSts = 1;
+    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, 0x68, 1, &imSts);
+    gBS->Stall(1000);
+    PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, 0x68, 1, &imSts);
+    UINT32 resp = 0;
+    PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x64, 1, &resp);
+    DEBUG((DEBUG_INFO, "0x%X 0x%X\n", imSts, resp));
+*/
+
+    UINT16 cmd;
+    PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_COMMAND_OFFSET, 1, &cmd);
+    DEBUG((DEBUG_INFO, "0x%X\n", cmd));
+
     // send test.
     HdaDev->CommandOutboundBuffer[0] = 0xF0000;
     HdaDev->CommandOutboundBuffer[1] = 0xF0000;
+    HdaDev->CommandOutboundBuffer[2] = 0xF0000;
     UINT16 HdaCorbWp = 1;
     PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
+
+    while(1);
     
     return EFI_SUCCESS;
 

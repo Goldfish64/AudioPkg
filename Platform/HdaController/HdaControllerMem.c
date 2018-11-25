@@ -172,14 +172,14 @@ HdaControllerAllocBuffers(
     }
     
     // Set outbound buffer lower base address.
-    HdaLowerCorbBaseAddr = (UINT32)(OutboundPhysAddr & 0xFFFFFFFF);
+    HdaLowerCorbBaseAddr = (UINT32)OutboundPhysAddr;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_CORBLBASE, 1, &HdaLowerCorbBaseAddr);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
     // If 64-bit supported, set upper base address.
     if (HdaDev->Buffer64BitSupported) {
-        HdaUpperCorbBaseAddr = (UINT32)((OutboundPhysAddr >> 32) & 0xFFFFFFF);
+        HdaUpperCorbBaseAddr = (UINT32)(OutboundPhysAddr >> 32);
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_CORBUBASE, 1, &HdaUpperCorbBaseAddr);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
@@ -198,14 +198,14 @@ HdaControllerAllocBuffers(
     }
     
     // Set inbound buffer lower base address.
-    HdaLowerRirbBaseAddr = (UINT32)(InboundPhysAddr & 0xFFFFFFFF);
+    HdaLowerRirbBaseAddr = (UINT32)InboundPhysAddr;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_RIRBLBASE, 1, &HdaLowerRirbBaseAddr);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
     // If 64-bit supported, set upper base address.
     if (HdaDev->Buffer64BitSupported) {
-        HdaUpperRirbBaseAddr = (UINT32)((InboundPhysAddr >> 32) & 0xFFFFFFF);
+        HdaUpperRirbBaseAddr = (UINT32)(InboundPhysAddr >> 32);
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_RIRBUBASE, 1, &HdaUpperRirbBaseAddr);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
@@ -213,6 +213,10 @@ HdaControllerAllocBuffers(
 
     // Reset CORB read pointer.
     HdaCorbRp = HDA_REG_CORBRP_RST;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbRp);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    HdaCorbRp = 0;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbRp);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
@@ -276,20 +280,16 @@ HdaControllerEnableBuffers(
         return Status;
     
     // If CORB operation is disabled, enable it.
-    if (!(HdaCorbCtl & HDA_REG_CORBCTL_CORBRUN)) {
-        HdaCorbCtl |= HDA_REG_CORBCTL_CORBRUN;
-        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
-        if (EFI_ERROR(Status))
-            return Status;
-    }
+    HdaCorbCtl |= HDA_REG_CORBCTL_CORBRUN;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // If RIRB operation is disabled, enable it.
-    if (!(HdaRirbCtl & HDA_REG_RIRBCTL_RIRBDMAEN)) {
-        HdaRirbCtl |= HDA_REG_RIRBCTL_RIRBDMAEN;
-        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, 1, &HdaRirbCtl);
-        if (EFI_ERROR(Status))
-            return Status;
-    }
+    HdaRirbCtl |= HDA_REG_RIRBCTL_RIRBDMAEN;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, 1, &HdaRirbCtl);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Success.
     return EFI_SUCCESS;
