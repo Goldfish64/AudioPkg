@@ -248,3 +248,42 @@ FREE_BUFFER:
     PciIo->FreeBuffer(PciIo, EFI_SIZE_TO_PAGES(InboundLength), InboundHostBuffer);
     return Status;
 }
+
+EFI_STATUS
+EFIAPI
+HdaControllerEnableBuffers(
+    HDA_CONTROLLER_DEV *HdaDev) {
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+
+    // HDA register values.
+    UINT8 HdaCorbCtl;
+    UINT8 HdaRirbCtl;
+
+    // Get current value of CORBCTL and RIRBCTL.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, 1, &HdaRirbCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+    
+    // If CORB operation is disabled, enable it.
+    if (!(HdaCorbCtl & HDA_REG_CORBCTL_CORBRUN)) {
+        HdaCorbCtl |= HDA_REG_CORBCTL_CORBRUN;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
+        if (EFI_ERROR(Status))
+            return Status;
+    }
+
+    // If RIRB operation is disabled, enable it.
+    if (!(HdaRirbCtl & HDA_REG_RIRBCTL_RIRBDMAEN)) {
+        HdaRirbCtl |= HDA_REG_RIRBCTL_RIRBDMAEN;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, 1, &HdaRirbCtl);
+        if (EFI_ERROR(Status))
+            return Status;
+    }
+
+    // Success.
+    return EFI_SUCCESS;
+}

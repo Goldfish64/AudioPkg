@@ -40,4 +40,9 @@ EFIAPI
 HdaControllerAllocBuffers(
     HDA_CONTROLLER_DEV *HdaDev);
 
+EFI_STATUS
+EFIAPI
+HdaControllerEnableBuffers(
+    HDA_CONTROLLER_DEV *HdaDev);
+
 #endif

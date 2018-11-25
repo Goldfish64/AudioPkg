@@ -227,6 +227,11 @@ HdaControllerDriverBindingStart(
     Status = HdaControllerAllocBuffers(HdaDev);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
+
+    // Enable ring buffers.
+    Status = HdaControllerEnableBuffers(HdaDev);
+    if (EFI_ERROR(Status))
+        goto CLOSE_PCIIO; // Do more than this, need to free buffers and such TODO.
     
     return EFI_SUCCESS;
 
