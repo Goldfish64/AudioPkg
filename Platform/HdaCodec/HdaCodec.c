@@ -25,6 +25,8 @@
 #include "HdaCodec.h"
 #include "HdaCodecProtocol.h"
 
+EFI_GUID gHdaCodecDevicePathGuid = HDA_CODEC_DEVICE_PATH_GUID;
+
 EFI_STATUS
 EFIAPI
 HdaCodecDriverBindingSupported(
@@ -36,28 +38,33 @@ HdaCodecDriverBindingSupported(
     EFI_STATUS Status;
     HDA_CODEC_PROTOCOL *HdaCodec;
 
+  
+
+ //   DEBUG((DEBUG_INFO, "in su\n"));
     
-    VOID *interfa;
-    Status = gBS->LocateProtocol(&gHdaCodecProtocolGuid, NULL, &interfa);
-    DEBUG((DEBUG_INFO, "new handle: 0x%p\n", ControllerHandle));
+   // VOID *interfa;
+    //Status = gBS->LocateProtocol(&gHdaCodecProtocolGuid, NULL, &interfa);
+   // 
 
-    HDA_CODEC_PROTOCOL *newPt = (HDA_CODEC_PROTOCOL*)interfa;
-    DEBUG((DEBUG_INFO, "%u\n", newPt->Address));
+   // HDA_CODEC_PROTOCOL *newPt = (HDA_CODEC_PROTOCOL*)interfa;
+   // DEBUG((DEBUG_INFO, "%u\n", newPt->Address));
 
-    Status = gBS->HandleProtocol(This->DriverBindingHandle, &gHdaCodecProtocolGuid, &interfa);
-    if (Status == EFI_SUCCESS) {
-        DEBUG((DEBUG_INFO, "blol\n"));
+  //  Status = gBS->HandleProtocol(This->DriverBindingHandle, &gHdaCodecProtocolGuid, &interfa);
+  //  if (Status == EFI_SUCCESS) {
+  //      DEBUG((DEBUG_INFO, "blol\n"));
        // while(1);
-    }
+  //  }
 
-    Status = gBS->OpenProtocol(This->DriverBindingHandle, &gHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+    Status = gBS->OpenProtocol(ControllerHandle, &gHdaCodecProtocolGuid, (VOID**)&HdaCodec,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
 
     DEBUG((DEBUG_INFO, "boop 0x%X\n", HdaCodec->Address));
-    while(1);
-    return EFI_UNSUPPORTED;
+
+    gBS->CloseProtocol(ControllerHandle, &gHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
+    
+    return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -67,7 +74,26 @@ HdaCodecDriverBindingStart(
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
     DEBUG((DEBUG_INFO, "HdaCodecDriverBindingStart()\n"));
-    return EFI_UNSUPPORTED;
+    EFI_STATUS Status;
+     HDA_CODEC_PROTOCOL *HdaCodec;
+        EFI_DEVICE_PATH_PROTOCOL *HdaDevicePath;
+
+    Status = gBS->OpenProtocol(ControllerHandle, &gHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+        This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    DEBUG((DEBUG_INFO, "boop 0x%X\n", HdaCodec->Address));
+
+    // Open Device Path protocol.
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaDevicePath,
+        This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+    //ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR (Status))
+        return Status;
+        DEBUG((DEBUG_INFO, "path: %s\n", ConvertDevicePathToText(HdaDevicePath, FALSE, FALSE)));
+
+    return EFI_SUCCESS;
 }
 
 EFI_STATUS

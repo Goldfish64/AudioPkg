@@ -29,9 +29,10 @@
 // Common UEFI includes and library classes.
 //
 #include <Uefi.h>
-#include <Library/DebugLib.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/DebugLib.h>
+#include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
@@ -40,6 +41,7 @@
 //
 // Proctols that are consumed.
 //
+#include <Protocol/DevicePath.h>
 #include <Protocol/DriverBinding.h>
 
 // Driver version

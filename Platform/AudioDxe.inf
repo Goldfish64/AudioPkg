@@ -37,6 +37,7 @@
 [LibraryClasses]
   BaseMemoryLib
   DebugLib
+  DevicePathLib
   MemoryAllocationLib
   PcdLib
   UefiBootServicesTableLib
@@ -49,12 +50,12 @@
   gHdaCodecProtocolGuid # PRODUCES
 
 [Sources]
+  HdaCodec/HdaCodecProtocol.h
   HdaCodec/HdaCodec.h
   HdaCodec/HdaCodec.c
   HdaController/ComponentName.h
   HdaController/ComponentName.c
   HdaController/HdaRegisters.h
-  HdaController/HdaCodecProtocol.h
   HdaController/HdaControllerMem.h
   HdaController/HdaControllerMem.c
   HdaController/HdaController.h

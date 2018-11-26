@@ -26,6 +26,7 @@
 #define _HDA_CODEC_PROTOCOL_H_
 
 #include <Uefi.h>
+#include <Protocol/DevicePath.h>
 
 #define HDA_CODEC_PROTOCOL_GUID \
     { \
@@ -37,7 +38,36 @@ typedef struct _HDA_CODEC_PROTOCOL HDA_CODEC_PROTOCOL;
 struct _HDA_CODEC_PROTOCOL {
     UINT8 Address;
 };
-
 extern EFI_GUID gHdaCodecProtocolGuid;
+
+#define HDA_CODEC_DEVICE_PATH_GUID \
+    { \
+        0xA9003FEB, 0xD806, 0x41DB, { 0xA4, 0x91, 0x54, 0x05, 0xFE, 0xEF, 0x46, 0xC3 } \
+    }
+
+typedef struct {
+    // Vendor-specific device path fields.
+    EFI_DEVICE_PATH_PROTOCOL Header;
+    EFI_GUID Guid;
+
+    // Codec address.
+    UINT8 Address;
+} HDA_CODEC_DEVICE_PATH;
+
+EFI_GUID gHdaCodecDevicePathGuid;
+
+#define gHdaCodecDevicePath \
+    { \
+        { \
+            MESSAGING_DEVICE_PATH, \
+            MSG_VENDOR_DP, \
+            { \
+                (UINT8)(sizeof(HDA_CODEC_DEVICE_PATH)), \
+                (UINT8)((sizeof(HDA_CODEC_DEVICE_PATH)) >> 8) \
+            } \
+        }, \
+        gHdaCodecDevicePathGuid, \
+        0 \
+    }
 
 #endif

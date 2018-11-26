@@ -56,6 +56,8 @@ typedef struct {
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
     UINT64 OriginalPciAttributes;
+    EFI_HANDLE ControllerHandle;
+    EFI_DRIVER_BINDING_PROTOCOL *DriverBinding;
 
     // Whether or not 64-bit addressing is supported.
     BOOLEAN Buffer64BitSupported;

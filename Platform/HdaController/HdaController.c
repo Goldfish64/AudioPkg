@@ -29,6 +29,7 @@
 
 #include "HdaCodecProtocol.h"
 #include "HdaCodec.h"
+#include <Protocol/DevicePathUtilities.h>
 
 VOID
 HdaControllerResponsePollTimerHandler(
@@ -40,7 +41,7 @@ HdaControllerResponsePollTimerHandler(
     HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbRp);
     UINT16 HdaRirbWp;
     HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWp);
-    DEBUG((DEBUG_INFO, "CORB: 0x%X RIRB: 0x%X 0x%X\n", HdaCorbRp, HdaRirbWp, HdaDev->RirbBuffer[1]));
+    //DEBUG((DEBUG_INFO, "CORB: 0x%X RIRB: 0x%X 0x%X\n", HdaCorbRp, HdaRirbWp, HdaDev->RirbBuffer[1]));
 }
 
 EFI_STATUS
@@ -89,7 +90,9 @@ HdaControllerReset(
 EFI_STATUS
 EFIAPI
 HdaControllerScanCodecs(
-    IN HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle) {
     DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): start\n"));
 
     // Create variables.
@@ -113,8 +116,32 @@ HdaControllerScanCodecs(
             codecProtocol->Address = 34;
             EFI_HANDLE ProtocolHandle = NULL;
 
+            HDA_CODEC_DEVICE_PATH *hdaCodecPath = AllocateZeroPool(sizeof(HDA_CODEC_DEVICE_PATH));
+
+            HDA_CODEC_DEVICE_PATH hdaCodecDevicePathTemplate = gHdaCodecDevicePath;
+            CopyMem(hdaCodecPath, &hdaCodecDevicePathTemplate, sizeof(HDA_CODEC_DEVICE_PATH));
+           // *hdaCodecPath = gHdaCodecDevicePath;
+            hdaCodecPath->Address = 12;
+
+            EFI_DEVICE_PATH_PROTOCOL *newDevPath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)hdaCodecPath);
+
+            DEBUG((DEBUG_INFO, "path %s\n", ConvertDevicePathToText(newDevPath, FALSE, FALSE)));
+            
+
             // Install a protocol for the codec. The codec driver will later bind to this.
-            gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gHdaCodecProtocolGuid, codecProtocol);
+            Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, newDevPath, &gHdaCodecProtocolGuid, codecProtocol, NULL);
+            ASSERT_EFI_ERROR(Status);
+            
+        /*    EFI_DEVICE_PATH_PROTOCOL *devPath;
+            Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&devPath, HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
+            ASSERT_EFI_ERROR(Status);
+
+            
+*/
+
+            void *tmpCodec;
+            Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&tmpCodec, HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
+            ASSERT_EFI_ERROR(Status);
             HdaCodecRegisterDriver(ProtocolHandle);
             
         }
@@ -252,8 +279,10 @@ HdaControllerDriverBindingStart(
     }
 
     // Allocate device.
-    HDA_CONTROLLER_DEV *HdaDev = HdaControllerAllocDevice(PciIo, RemainingDevicePath, OriginalPciAttributes);
+    HDA_CONTROLLER_DEV *HdaDev = HdaControllerAllocDevice(PciIo, HdaDevicePath, OriginalPciAttributes);
     HdaDev->Buffer64BitSupported = Hda64BitSupported;
+    HdaDev->ControllerHandle = ControllerHandle;
+    HdaDev->DriverBinding = This;
 
     // Reset controller.
     Status = HdaControllerReset(PciIo);
@@ -286,12 +315,12 @@ HdaControllerDriverBindingStart(
         goto CLEANUP_CORB_RIRB;
 
     // Scan for codecs.
-    Status = HdaControllerScanCodecs(HdaDev);
+    Status = HdaControllerScanCodecs(HdaDev, This, ControllerHandle);
 
     // send test.
-    HdaDev->CorbBuffer[1] = 0xF0000;
-    UINT16 HdaCorbWp = 1;
-    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
+   // HdaDev->CorbBuffer[1] = 0xF0000;
+   // UINT16 HdaCorbWp = 1;
+   // PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
 
     //while(1);
     
