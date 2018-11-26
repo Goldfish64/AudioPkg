@@ -37,7 +37,7 @@ HdaControllerResponsePollTimerHandler(
     HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbRp);
     UINT16 HdaRirbWp;
     HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWp);
-    DEBUG((DEBUG_INFO, "CORB: 0x%X RIRB: 0x%X 0x%X\n", HdaCorbRp, HdaRirbWp, HdaDev->ResponseInboundBuffer[0]));
+    DEBUG((DEBUG_INFO, "CORB: 0x%X RIRB: 0x%X 0x%X\n", HdaCorbRp, HdaRirbWp, HdaDev->RirbBuffer[1]));
 }
 
 EFI_STATUS
@@ -49,7 +49,7 @@ HdaControllerReset(
 
     UINT32 hdaGCtl;
     UINT64 hdaGCtlPoll;
-    UINT16 hdaStatests;
+
 
     // Get value of CRST bit.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
@@ -65,7 +65,7 @@ HdaControllerReset(
     }
 
     // Write a one to the CRST bit to begin the process of coming out of reset.
-    hdaGCtl |= HDA_REG_GCTL_CRST | HDA_REG_GCTL_UNSOL;
+    hdaGCtl |= HDA_REG_GCTL_CRST;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
     if (EFI_ERROR(Status))
         return Status;
@@ -76,21 +76,7 @@ HdaControllerReset(
         return Status;
 
     // Wait 10ms to ensure all codecs have also reset.
-    gBS->Stall(1000);
-
-    // Get STATEST register.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
-    if (EFI_ERROR(Status))
-        return Status;
-    DEBUG((DEBUG_INFO, "HDA STATESTS: 0x%X\n", hdaStatests));
-
-    // Identify codecs on controller.
-    DEBUG((DEBUG_INFO, "Codecs present at:"));
-    for (UINT8 i = 0; i < 15; i++) {
-        if (hdaStatests & (1 << i))
-            DEBUG((DEBUG_INFO, " 0x%X", i));
-    }
-    DEBUG((DEBUG_INFO, "\n"));
+    gBS->Stall(10);
 
     // Controller is reset.
     DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
@@ -166,6 +152,7 @@ HdaControllerDriverBindingStart(
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *HdaDevicePath;
+        UINT16 hdaStatests;
 
     UINT64 OriginalPciAttributes;
     UINT64 PciSupports;
@@ -236,55 +223,60 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
-    //PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, HdaGC
-
-    // Setup ring buffers.
-    Status = HdaControllerAllocBuffers(HdaDev);
+    // Get STATEST register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
     if (EFI_ERROR(Status))
-        goto CLOSE_PCIIO;
+        return Status;
+    DEBUG((DEBUG_INFO, "HDA STATESTS: 0x%X\n", hdaStatests));
+
+    // Identify codecs on controller.
+    DEBUG((DEBUG_INFO, "Codecs present at:"));
+    for (UINT8 i = 0; i < 15; i++) {
+        if (hdaStatests & (1 << i))
+            DEBUG((DEBUG_INFO, " 0x%X", i));
+    }
+    DEBUG((DEBUG_INFO, "\n"));
+
+    // Initialize CORB and RIRB.
+    Status = HdaControllerInitCorb(HdaDev);
+    if (EFI_ERROR(Status))
+        goto CLEANUP_CORB_RIRB;
+    Status = HdaControllerInitRirb(HdaDev);
+    if (EFI_ERROR(Status))
+        goto CLEANUP_CORB_RIRB;
 
     // Setup response ring buffer poll timer.
     Status = gBS->SetTimer(HdaDev->ResponsePollTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(1000));
     if (EFI_ERROR(Status))
-        goto CLOSE_PCIIO;
+        goto CLEANUP_CORB_RIRB;
 
+    // needed for QEMU.
     UINT16 dd = 0xFF;
     PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RINTCNT, 1, &dd);
 
-    // Enable ring buffers.
-    Status = HdaControllerEnableBuffers(HdaDev);
+    // Start CORB and RIRB
+    Status = HdaControllerEnableCorb(HdaDev);
     if (EFI_ERROR(Status))
-        goto CLOSE_PCIIO; // Do more than this, need to free buffers and such TODO.
-
-    gBS->Stall(10000);
-/*
-    UINT32 imSts = 0;
-    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, 0x68, 1, &imSts);
-    imSts = 0xF0000;
-    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x60, 1, &imSts);
-    imSts = 1;
-    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, 0x68, 1, &imSts);
-    gBS->Stall(1000);
-    PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, 0x68, 1, &imSts);
-    UINT32 resp = 0;
-    PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x64, 1, &resp);
-    DEBUG((DEBUG_INFO, "0x%X 0x%X\n", imSts, resp));
-*/
-
-    UINT16 cmd;
-    PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_COMMAND_OFFSET, 1, &cmd);
-    DEBUG((DEBUG_INFO, "0x%X\n", cmd));
+        goto CLEANUP_CORB_RIRB;
+    Status = HdaControllerEnableRirb(HdaDev);
+    if (EFI_ERROR(Status))
+        goto CLEANUP_CORB_RIRB;
 
     // send test.
-    HdaDev->CommandOutboundBuffer[0] = 0xF0000;
-    HdaDev->CommandOutboundBuffer[1] = 0xF0000;
-    HdaDev->CommandOutboundBuffer[2] = 0xF0000;
+    HdaDev->CorbBuffer[1] = 0xF0000;
     UINT16 HdaCorbWp = 1;
     PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
 
-    while(1);
+    //while(1);
     
     return EFI_SUCCESS;
+
+CLEANUP_CORB_RIRB:
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): Abort via CLEANUP_CORB_RIRB.\n"));
+
+    // Cleanup CORB and RIRB.
+    HdaControllerCleanupCorb(HdaDev);
+    HdaControllerCleanupRirb(HdaDev);
 
 CLOSE_PCIIO:
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): Abort via CLOSE_PCIIO.\n"));

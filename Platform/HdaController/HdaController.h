@@ -59,16 +59,18 @@ typedef struct {
     BOOLEAN Buffer64BitSupported;
 
     // Command output buffer (CORB).
-    UINT32 *CommandOutboundBuffer;
-    UINT32 CommandOutboundBufferEntryCount;
-    VOID *CommandOutboundMapping;
-    EFI_PHYSICAL_ADDRESS CommandOutboundPhysAddr;
+    UINT32 *CorbBuffer;
+    UINT32 CorbEntryCount;
+    VOID *CorbMapping;
+    EFI_PHYSICAL_ADDRESS CorbPhysAddr;
+    UINT16 CorbWritePointer;
 
     // Response input buffer (RIRB).
-    UINT64 *ResponseInboundBuffer;
-    UINT32 ResponseInboundBufferEntryCount;
-    VOID *ResponseInboundMapping;
-    EFI_PHYSICAL_ADDRESS ResponseInboundPhysAddr;
+    UINT64 *RirbBuffer;
+    UINT32 RirbEntryCount;
+    VOID *RirbMapping;
+    EFI_PHYSICAL_ADDRESS RirbPhysAddr;
+    UINT16 RirbReadPointer;
 
     // Events.
     EFI_EVENT ResponsePollTimer;

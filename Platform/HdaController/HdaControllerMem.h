@@ -37,12 +37,42 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
 
 EFI_STATUS
 EFIAPI
-HdaControllerAllocBuffers(
+HdaControllerInitCorb(
     HDA_CONTROLLER_DEV *HdaDev);
 
 EFI_STATUS
 EFIAPI
-HdaControllerEnableBuffers(
+HdaControllerCleanupCorb(
+    HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerEnableCorb(
+    HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerDisableCorb(
+    HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerInitRirb(
+    HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerCleanupRirb(
+    HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerEnableRirb(
+    HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerDisableRirb(
     HDA_CONTROLLER_DEV *HdaDev);
 
 #endif
