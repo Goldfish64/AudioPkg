@@ -142,7 +142,7 @@ HdaControllerScanCodecs(
             void *tmpCodec;
             Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&tmpCodec, HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
            // ASSERT_EFI_ERROR(Status);
-            HdaCodecRegisterDriver(ProtocolHandle);
+            HdaCodecRegisterDriver();
             
         }
     }
@@ -384,12 +384,10 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding = {
 
 EFI_STATUS
 EFIAPI
-HdaControllerRegisterDriver(
-    IN EFI_HANDLE ImageHandle,
-    IN EFI_SYSTEM_TABLE *SystemTable) {
+HdaControllerRegisterDriver(VOID) {
     EFI_STATUS Status;
 
-    // Register HdaControllerDxe driver binding.
+    // Register HdaController driver binding.
     Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaControllerDriverBinding,
         gAudioDxeImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
     ASSERT_EFI_ERROR(Status);

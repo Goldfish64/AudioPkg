@@ -90,8 +90,6 @@ HdaControllerResponsePollTimerHandler(
 
 EFI_STATUS
 EFIAPI
-HdaControllerRegisterDriver(
-    IN EFI_HANDLE ImageHandle,
-    IN EFI_SYSTEM_TABLE *SystemTable);
+HdaControllerRegisterDriver(VOID);
 
 #endif

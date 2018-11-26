@@ -29,7 +29,6 @@
 
 EFI_STATUS
 EFIAPI
-HdaCodecRegisterDriver(
-    IN EFI_HANDLE DriverHandle);
+HdaCodecRegisterDriver(VOID);
 
 #endif

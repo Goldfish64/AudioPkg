@@ -39,32 +39,15 @@ HdaCodecDriverBindingSupported(
     EFI_STATUS Status;
     HDA_CODEC_PROTOCOL *HdaCodec;
 
-  
-
- //   DEBUG((DEBUG_INFO, "in su\n"));
-    
-   // VOID *interfa;
-    //Status = gBS->LocateProtocol(&gHdaCodecProtocolGuid, NULL, &interfa);
-   // 
-
-   // HDA_CODEC_PROTOCOL *newPt = (HDA_CODEC_PROTOCOL*)interfa;
-   // DEBUG((DEBUG_INFO, "%u\n", newPt->Address));
-
-  //  Status = gBS->HandleProtocol(This->DriverBindingHandle, &gHdaCodecProtocolGuid, &interfa);
-  //  if (Status == EFI_SUCCESS) {
-  //      DEBUG((DEBUG_INFO, "blol\n"));
-       // while(1);
-  //  }
-
+    // Attempt to open the HDA codec protocol. If it can be opened, we can support it.
     Status = gBS->OpenProtocol(ControllerHandle, &gHdaCodecProtocolGuid, (VOID**)&HdaCodec,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
+    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported(): attaching to codec 0x%X\n", HdaCodec->Address));
 
-    DEBUG((DEBUG_INFO, "boop 0x%X\n", HdaCodec->Address));
-
+    // Close protocol.
     gBS->CloseProtocol(ControllerHandle, &gHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
-    
     return EFI_SUCCESS;
 }
 
@@ -119,11 +102,8 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding = {
 
 EFI_STATUS
 EFIAPI
-HdaCodecRegisterDriver(
-    IN EFI_HANDLE DriverHandle) {
+HdaCodecRegisterDriver(VOID) {
     EFI_STATUS Status;
-
-  //  EFI_HANDLE
 
     // Register driver binding.
     Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaCodecDriverBinding,

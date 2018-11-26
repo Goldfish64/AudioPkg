@@ -40,6 +40,6 @@ AudioDxeInit(
     gAudioDxeSystemTable = SystemTable;
 
     // Register HdaController driver.
-    Status = HdaControllerRegisterDriver(ImageHandle, SystemTable);
+    Status = HdaControllerRegisterDriver();
     return Status;
 }
