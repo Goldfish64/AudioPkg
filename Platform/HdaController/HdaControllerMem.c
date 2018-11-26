@@ -56,7 +56,7 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
 EFI_STATUS
 EFIAPI
 HdaControllerInitCorb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerInitCorb(): start\n"));
 
     // Status and PCI I/O protocol.
@@ -182,7 +182,7 @@ FREE_BUFFER:
 EFI_STATUS
 EFIAPI
 HdaControllerCleanupCorb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerCleanupCorb(): start\n"));
 
     // Create variables.
@@ -211,7 +211,7 @@ HdaControllerCleanupCorb(
 EFI_STATUS
 EFIAPI
 HdaControllerEnableCorb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerEnableCorb(): start\n"));
 
     // Create variables.
@@ -237,7 +237,7 @@ HdaControllerEnableCorb(
 EFI_STATUS
 EFIAPI
 HdaControllerDisableCorb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerDisableCorb(): start\n"));
 
     // Create variables.
@@ -263,7 +263,7 @@ HdaControllerDisableCorb(
 EFI_STATUS
 EFIAPI
 HdaControllerInitRirb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerInitRirb(): start\n"));
 
     // Status and PCI I/O protocol.
@@ -372,7 +372,7 @@ FREE_BUFFER:
 EFI_STATUS
 EFIAPI
 HdaControllerCleanupRirb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerCleanupRirb(): start\n"));
 
     // Create variables.
@@ -401,7 +401,7 @@ HdaControllerCleanupRirb(
 EFI_STATUS
 EFIAPI
 HdaControllerEnableRirb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerEnableRirb(): start\n"));
 
     // Create variables.
@@ -427,7 +427,7 @@ HdaControllerEnableRirb(
 EFI_STATUS
 EFIAPI
 HdaControllerDisableRirb(
-    HDA_CONTROLLER_DEV *HdaDev) {
+    IN HDA_CONTROLLER_DEV *HdaDev) {
     DEBUG((DEBUG_INFO, "HdaControllerDisableRirb(): start\n"));
 
     // Create variables.

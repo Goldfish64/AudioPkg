@@ -83,7 +83,34 @@ HdaControllerReset(
     return EFI_SUCCESS;
 }
 
+EFI_STATUS
+EFIAPI
+HdaControllerScanCodecs(
+    IN HDA_CONTROLLER_DEV *HdaDev) {
+    DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): start\n"));
 
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+    UINT16 HdaStatests;
+
+    // Get STATEST register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &HdaStatests);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Iterate through register looking for active codecs.
+    for (UINT8 i = 0; i < HDA_MAX_CODECS; i++) {
+        // Do we have a codec at this address?
+        if (HdaStatests & (1 << i)) {
+            DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): found codec @ 0x%X\n", i));
+
+            // Install a protocol for the codec. The codec driver will later bind to this.
+        }
+    }
+
+    return EFI_SUCCESS;
+}
 
 EFI_STATUS
 EFIAPI
@@ -91,7 +118,7 @@ HdaControllerDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
-    
+
     // Create variables.
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo;
@@ -152,7 +179,6 @@ HdaControllerDriverBindingStart(
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *HdaDevicePath;
-        UINT16 hdaStatests;
 
     UINT64 OriginalPciAttributes;
     UINT64 PciSupports;
@@ -223,20 +249,6 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
-    // Get STATEST register.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &hdaStatests);
-    if (EFI_ERROR(Status))
-        return Status;
-    DEBUG((DEBUG_INFO, "HDA STATESTS: 0x%X\n", hdaStatests));
-
-    // Identify codecs on controller.
-    DEBUG((DEBUG_INFO, "Codecs present at:"));
-    for (UINT8 i = 0; i < 15; i++) {
-        if (hdaStatests & (1 << i))
-            DEBUG((DEBUG_INFO, " 0x%X", i));
-    }
-    DEBUG((DEBUG_INFO, "\n"));
-
     // Initialize CORB and RIRB.
     Status = HdaControllerInitCorb(HdaDev);
     if (EFI_ERROR(Status))
@@ -261,6 +273,9 @@ HdaControllerDriverBindingStart(
     Status = HdaControllerEnableRirb(HdaDev);
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
+
+    // Scan for codecs.
+    Status = HdaControllerScanCodecs(HdaDev);
 
     // send test.
     HdaDev->CorbBuffer[1] = 0xF0000;

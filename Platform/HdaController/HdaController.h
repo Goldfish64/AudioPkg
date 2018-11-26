@@ -44,6 +44,8 @@ typedef struct {
 
 #define PCI_CLASS_MEDIA_HDA 0x3
 
+#define HDA_MAX_CODECS 15
+
 #define HDA_CONTROLLER_DEV_SIGNATURE SIGNATURE_32('h','d','a','P')
 
 typedef struct {
