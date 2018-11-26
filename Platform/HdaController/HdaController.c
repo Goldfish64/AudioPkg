@@ -27,6 +27,9 @@
 #include "HdaRegisters.h"
 #include "ComponentName.h"
 
+#include "HdaCodecProtocol.h"
+#include "HdaCodec.h"
+
 VOID
 HdaControllerResponsePollTimerHandler(
     IN EFI_EVENT Event,
@@ -105,7 +108,15 @@ HdaControllerScanCodecs(
         if (HdaStatests & (1 << i)) {
             DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): found codec @ 0x%X\n", i));
 
+            // Allocate protocol.
+            HDA_CODEC_PROTOCOL *codecProtocol = AllocateZeroPool(sizeof(HDA_CODEC_PROTOCOL));
+            codecProtocol->Address = 34;
+            EFI_HANDLE ProtocolHandle = NULL;
+
             // Install a protocol for the codec. The codec driver will later bind to this.
+            gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gHdaCodecProtocolGuid, codecProtocol);
+            HdaCodecRegisterDriver(ProtocolHandle);
+            
         }
     }
 
@@ -350,7 +361,7 @@ HdaControllerRegisterDriver(
     EFI_STATUS Status;
 
     // Register HdaControllerDxe driver binding.
-    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDriverBinding,
+    Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaControllerDriverBinding,
         ImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
     ASSERT_EFI_ERROR(Status);
     return Status;

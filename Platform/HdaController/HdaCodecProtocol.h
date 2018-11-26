@@ -1,5 +1,5 @@
 /*
- * File: AudioDxe.h
+ * File: HdaCodecProtocol.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,30 +22,22 @@
  * SOFTWARE.
  */
 
-#ifndef __EFI_AUDIODXE_H__
-#define __EFI_AUDIODXE_H__
+#ifndef _HDA_CODEC_PROTOCOL_H_
+#define _HDA_CODEC_PROTOCOL_H_
 
-//
-// Common UEFI includes and library classes.
-//
 #include <Uefi.h>
-#include <Library/DebugLib.h>
-#include <Library/BaseLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/MemoryAllocationLib.h>
-#include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiRuntimeServicesTableLib.h>
-#include <Library/UefiLib.h>
 
-//
-// Proctols that are consumed.
-//
-#include <Protocol/DriverBinding.h>
+#define HDA_CODEC_PROTOCOL_GUID \
+    { \
+        0xA090D7F9, 0xB50A, 0x4EA1, { 0xBD, 0xE9, 0x1A, 0xA5, 0xE9, 0x81, 0x2F, 0x45 } \
+    }
 
-// Driver version
-#define AUDIODXE_VERSION    0xA
+typedef struct _HDA_CODEC_PROTOCOL HDA_CODEC_PROTOCOL;
 
-extern EFI_HANDLE gAudioDxeImageHandle;
-extern EFI_SYSTEM_TABLE *gAudioDxeSystemTable;
+struct _HDA_CODEC_PROTOCOL {
+    UINT8 Address;
+};
+
+extern EFI_GUID gHdaCodecProtocolGuid;
 
 #endif
