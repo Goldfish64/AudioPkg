@@ -28,10 +28,10 @@
 // HdaControllerDxe.
 //
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_UNICODE_STRING_TABLE gHdaDriverNameTable[] = {
+EFI_UNICODE_STRING_TABLE gHdaCodecDriverNameTable[] = {
     {
         "eng;en",
-        L"Hda Controller Driver"
+        L"Hda Codec Driver"
     },
     {
         NULL,
@@ -40,10 +40,10 @@ EFI_UNICODE_STRING_TABLE gHdaDriverNameTable[] = {
 };
 
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_UNICODE_STRING_TABLE gHdaControllerNameTable[] = {
+EFI_UNICODE_STRING_TABLE gHdaCodecControllerNameTable[] = {
     {
         "eng;en",
-        L"Hda Controller"
+        L"Hda Codec"
     },
     {
         NULL,
@@ -52,37 +52,37 @@ EFI_UNICODE_STRING_TABLE gHdaControllerNameTable[] = {
 };
 
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME_PROTOCOL gHdaControllerComponentName = {
-    HdaControllerComponentNameGetDriverName,
-    HdaControllerComponentNameGetControllerName,
+EFI_COMPONENT_NAME_PROTOCOL gHdaCodecComponentName = {
+    HdaCodecComponentNameGetDriverName,
+    HdaCodecComponentNameGetControllerName,
     "eng"
 };
 
 GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME2_PROTOCOL gHdaControllerComponentName2 = {
-    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaControllerComponentNameGetDriverName,
-    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaControllerComponentNameGetControllerName,
+EFI_COMPONENT_NAME2_PROTOCOL gHdaCodecComponentName2 = {
+    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaCodecComponentNameGetDriverName,
+    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaCodecComponentNameGetControllerName,
     "en"
 };
 
 EFI_STATUS
 EFIAPI
-HdaControllerComponentNameGetDriverName(
+HdaCodecComponentNameGetDriverName(
     IN EFI_COMPONENT_NAME_PROTOCOL *This,
     IN CHAR8 *Language,
     OUT CHAR16 **DriverName) {
-    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaDriverNameTable,
-        DriverName, (BOOLEAN)(This == &gHdaControllerComponentName));
+    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecDriverNameTable,
+        DriverName, (BOOLEAN)(This == &gHdaCodecComponentName));
 }
 
 EFI_STATUS
 EFIAPI
-HdaControllerComponentNameGetControllerName(
+HdaCodecComponentNameGetControllerName(
     IN EFI_COMPONENT_NAME_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_HANDLE ChildHandle OPTIONAL,
     IN CHAR8 *Language,
     OUT CHAR16 **ControllerName) {
-    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaControllerNameTable,
-        ControllerName, (BOOLEAN)(This == &gHdaControllerComponentName));
+    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecControllerNameTable,
+        ControllerName, (BOOLEAN)(This == &gHdaCodecComponentName));
 }

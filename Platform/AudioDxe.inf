@@ -50,6 +50,8 @@
   gHdaCodecProtocolGuid # PRODUCES
 
 [Sources]
+  HdaCodec/ComponentName.h
+  HdaCodec/ComponentName.c
   HdaCodec/HdaCodecProtocol.h
   HdaCodec/HdaCodec.h
   HdaCodec/HdaCodec.c

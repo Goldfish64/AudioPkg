@@ -24,6 +24,7 @@
 
 #include "HdaCodec.h"
 #include "HdaCodecProtocol.h"
+#include "ComponentName.h"
 
 EFI_GUID gHdaCodecDevicePathGuid = HDA_CODEC_DEVICE_PATH_GUID;
 
@@ -122,8 +123,11 @@ HdaCodecRegisterDriver(
     IN EFI_HANDLE DriverHandle) {
     EFI_STATUS Status;
 
+  //  EFI_HANDLE
+
     // Register driver binding.
-    Status = EfiLibInstallDriverBinding(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaCodecDriverBinding, DriverHandle);
+    Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaCodecDriverBinding,
+        NULL, &gHdaCodecComponentName, &gHdaCodecComponentName2);
     ASSERT_EFI_ERROR(Status);
     return Status;
 }

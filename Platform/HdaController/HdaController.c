@@ -121,7 +121,7 @@ HdaControllerScanCodecs(
             HDA_CODEC_DEVICE_PATH hdaCodecDevicePathTemplate = gHdaCodecDevicePath;
             CopyMem(hdaCodecPath, &hdaCodecDevicePathTemplate, sizeof(HDA_CODEC_DEVICE_PATH));
            // *hdaCodecPath = gHdaCodecDevicePath;
-            hdaCodecPath->Address = 12;
+            hdaCodecPath->Address = i;
 
             EFI_DEVICE_PATH_PROTOCOL *newDevPath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)hdaCodecPath);
 
@@ -138,10 +138,10 @@ HdaControllerScanCodecs(
 
             
 */
-
+            // Connect child to parent.
             void *tmpCodec;
             Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&tmpCodec, HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
-            ASSERT_EFI_ERROR(Status);
+           // ASSERT_EFI_ERROR(Status);
             HdaCodecRegisterDriver(ProtocolHandle);
             
         }
@@ -391,7 +391,7 @@ HdaControllerRegisterDriver(
 
     // Register HdaControllerDxe driver binding.
     Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaControllerDriverBinding,
-        ImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
+        gAudioDxeImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
     ASSERT_EFI_ERROR(Status);
     return Status;
 }
