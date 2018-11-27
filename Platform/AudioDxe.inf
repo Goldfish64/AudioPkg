@@ -47,7 +47,7 @@
 
 [Protocols]
   gEfiPciIoProtocolGuid # CONSUMES
-  gHdaCodecProtocolGuid # PRODUCES
+  gEfiHdaCodecProtocolGuid # PRODUCES
 
 [Sources]
   HdaCodec/ComponentName.h

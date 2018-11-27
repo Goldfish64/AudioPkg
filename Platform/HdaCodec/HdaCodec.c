@@ -26,8 +26,6 @@
 #include "HdaCodecProtocol.h"
 #include "ComponentName.h"
 
-EFI_GUID gHdaCodecDevicePathGuid = HDA_CODEC_DEVICE_PATH_GUID;
-
 EFI_STATUS
 EFIAPI
 HdaCodecDriverBindingSupported(
@@ -37,17 +35,20 @@ HdaCodecDriverBindingSupported(
 
     // Create variables.
     EFI_STATUS Status;
-    HDA_CODEC_PROTOCOL *HdaCodec;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodec;
 
     // Attempt to open the HDA codec protocol. If it can be opened, we can support it.
-    Status = gBS->OpenProtocol(ControllerHandle, &gHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodec,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
-    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported(): attaching to codec 0x%X\n", HdaCodec->Address));
+    
+    UINT8 Address;
+    HdaCodec->GetAddress(HdaCodec, &Address);
+    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported(): attaching to codec 0x%X\n", Address));
 
     // Close protocol.
-    gBS->CloseProtocol(ControllerHandle, &gHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
+    gBS->CloseProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     return EFI_SUCCESS;
 }
 
@@ -59,16 +60,18 @@ HdaCodecDriverBindingStart(
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
     DEBUG((DEBUG_INFO, "HdaCodecDriverBindingStart()\n"));
     EFI_STATUS Status;
-     HDA_CODEC_PROTOCOL *HdaCodec;
+     EFI_HDA_CODEC_PROTOCOL *HdaCodec;
         EFI_DEVICE_PATH_PROTOCOL *HdaDevicePath;
 
-    Status = gBS->OpenProtocol(ControllerHandle, &gHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodec,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
 
-    DEBUG((DEBUG_INFO, "boop 0x%X\n", HdaCodec->Address));
-    HdaCodec->SendCommand(HdaCodec);
+    UINT8 Address;
+    HdaCodec->GetAddress(HdaCodec, &Address);
+    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingStart(): attached to codec 0x%X\n", Address));
+    //HdaCodec->SendCommand(HdaCodec);
 
     // Open Device Path protocol.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaDevicePath,

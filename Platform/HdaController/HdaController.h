@@ -77,14 +77,15 @@ typedef struct {
     EFI_EVENT ExitBootServiceEvent;
 } HDA_CONTROLLER_DEV;
 
-#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('h','d','a','P')
+#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')
 
 typedef struct {
     // Signature.
     UINTN Signature;
 
-    // Codec protocol.
-    HDA_CODEC_PROTOCOL HdaCodec;
+    // HDA Codec protocol and address.
+    EFI_HDA_CODEC_PROTOCOL HdaCodec;
+    UINT8 HdaCodecAddress;
 
     // HDA controller.
     HDA_CONTROLLER_DEV *HdaDev;

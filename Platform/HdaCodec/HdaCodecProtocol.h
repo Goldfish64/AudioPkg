@@ -22,39 +22,65 @@
  * SOFTWARE.
  */
 
-#ifndef _HDA_CODEC_PROTOCOL_H_
-#define _HDA_CODEC_PROTOCOL_H_
+#ifndef _EFI_HDA_CODEC_PROTOCOL_H_
+#define _EFI_HDA_CODEC_PROTOCOL_H_
 
 #include <Uefi.h>
 #include <Protocol/DevicePath.h>
 
-typedef struct _HDA_CODEC_PROTOCOL HDA_CODEC_PROTOCOL;
+//
+// HDA Codec protocol.
+//
 
+// HDA Codec protocol GUID.
+#define EFI_HDA_CODEC_PROTOCOL_GUID { \
+    0xA090D7F9, 0xB50A, 0x4EA1, { 0xBD, 0xE9, 0x1A, 0xA5, 0xE9, 0x81, 0x2F, 0x45 } \
+}
+extern EFI_GUID gEfiHdaCodecProtocolGuid;
+typedef struct _EFI_HDA_CODEC_PROTOCOL EFI_HDA_CODEC_PROTOCOL;
+
+/**                                                                 
+  Retrieves this codec's address.
+            
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.  
+  @param  CodecAddress          The codec's address.
+                                  
+  @retval EFI_SUCCESS           The codec's address was returned.                                                       
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                              
+                                     
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_GET_ADDRESS)(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    OUT UINT8 *CodecAddress);
+
+// Send command function.
 typedef
 EFI_STATUS
 (EFIAPI *EFI_HDA_CODEC_SEND_COMMAND)(
-  IN HDA_CODEC_PROTOCOL           *This
-  );
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN UINT8 Node,
+    IN UINT32 Verb,
+    OUT UINT32 *Response);
 
-#define HDA_CODEC_PROTOCOL_GUID \
-    { \
-        0xA090D7F9, 0xB50A, 0x4EA1, { 0xBD, 0xE9, 0x1A, 0xA5, 0xE9, 0x81, 0x2F, 0x45 } \
-    }
-
-
-
-struct _HDA_CODEC_PROTOCOL {
+// HDA Codec protocol structure.
+struct _EFI_HDA_CODEC_PROTOCOL {
+    EFI_HDA_CODEC_GET_ADDRESS GetAddress;
     EFI_HDA_CODEC_SEND_COMMAND SendCommand;
-
-    UINT8 Address;
 };
-extern EFI_GUID gHdaCodecProtocolGuid;
 
-#define HDA_CODEC_DEVICE_PATH_GUID \
-    { \
-        0xA9003FEB, 0xD806, 0x41DB, { 0xA4, 0x91, 0x54, 0x05, 0xFE, 0xEF, 0x46, 0xC3 } \
-    }
+//
+// HDA Codec Device Path protocol.
+//
 
+// HDA Codec Device Path GUID.
+#define EFI_HDA_CODEC_DEVICE_PATH_GUID { \
+    0xA9003FEB, 0xD806, 0x41DB, { 0xA4, 0x91, 0x54, 0x05, 0xFE, 0xEF, 0x46, 0xC3 } \
+}
+EFI_GUID gEfiHdaCodecDevicePathGuid;
+
+// HDA Codec Device Path structure.
 typedef struct {
     // Vendor-specific device path fields.
     EFI_DEVICE_PATH_PROTOCOL Header;
@@ -62,22 +88,20 @@ typedef struct {
 
     // Codec address.
     UINT8 Address;
-} HDA_CODEC_DEVICE_PATH;
+} EFI_HDA_CODEC_DEVICE_PATH;
 
-EFI_GUID gHdaCodecDevicePathGuid;
-
-#define gHdaCodecDevicePath \
+// Template for HDA Codec Device Path protocol.
+#define EFI_HDA_CODEC_DEVICE_PATH_TEMPLATE { \
     { \
+        MESSAGING_DEVICE_PATH, \
+        MSG_VENDOR_DP, \
         { \
-            MESSAGING_DEVICE_PATH, \
-            MSG_VENDOR_DP, \
-            { \
-                (UINT8)(sizeof(HDA_CODEC_DEVICE_PATH)), \
-                (UINT8)((sizeof(HDA_CODEC_DEVICE_PATH)) >> 8) \
-            } \
-        }, \
-        gHdaCodecDevicePathGuid, \
-        0 \
-    }
+            (UINT8)(sizeof(EFI_HDA_CODEC_DEVICE_PATH)), \
+            (UINT8)((sizeof(EFI_HDA_CODEC_DEVICE_PATH)) >> 8) \
+        } \
+    }, \
+    gEfiHdaCodecDevicePathGuid, \
+    0 \
+}
 
 #endif

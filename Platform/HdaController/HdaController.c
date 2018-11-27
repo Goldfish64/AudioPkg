@@ -31,6 +31,35 @@
 #include "HdaCodec.h"
 #include <Protocol/DevicePathUtilities.h>
 
+// HDA Codec Device Path GUID.
+EFI_GUID gEfiHdaCodecDevicePathGuid = EFI_HDA_CODEC_DEVICE_PATH_GUID;
+
+/**                                                                 
+  Retrieves this codec's address.
+
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.
+  @param  CodecAddress          The codec's address.
+
+  @retval EFI_SUCCESS           The codec's address was returned.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+**/
+EFI_STATUS
+EFIAPI
+HdaControllerCodecProtocolGetAddress(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    OUT UINT8 *CodecAddress) {
+    HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData;
+
+    // If paramters are NULL, return error.
+    if (This == NULL || CodecAddress == NULL)
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data and codec address.
+    HdaPrivateData = HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This);
+    *CodecAddress = HdaPrivateData->HdaCodecAddress;
+    return EFI_SUCCESS;
+}
+
 VOID
 HdaControllerResponsePollTimerHandler(
     IN EFI_EVENT Event,
@@ -89,7 +118,7 @@ HdaControllerReset(
 
 EFI_STATUS
 EFIAPI HdaControllerCodecSend(
-  IN HDA_CODEC_PROTOCOL           *This
+  IN EFI_HDA_CODEC_PROTOCOL           *This
   ) {
       HDA_CONTROLLER_PRIVATE_DATA *privData = HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This);
       DEBUG((DEBUG_INFO, "private 0x%X\n", privData->HdaDev->CorbPhysAddr));
@@ -110,6 +139,10 @@ HdaControllerScanCodecs(
     EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
     UINT16 HdaStatests;
 
+    EFI_DEVICE_PATH_PROTOCOL *HdaCodecDevicePath;
+    EFI_HANDLE ProtocolHandle;
+    VOID *TmpProtocol;
+
     // Get STATEST register.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_STATESTS, 1, &HdaStatests);
     if (EFI_ERROR(Status))
@@ -121,47 +154,29 @@ HdaControllerScanCodecs(
         if (HdaStatests & (1 << i)) {
             DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): found codec @ 0x%X\n", i));
 
+            // Create private data.
             HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData = AllocateZeroPool(sizeof(HDA_CONTROLLER_PRIVATE_DATA));
             HdaPrivateData->Signature = HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE;
+            HdaPrivateData->HdaCodecAddress = i;
             HdaPrivateData->HdaDev = HdaDev;
-            HdaPrivateData->HdaCodec.Address = i;// = codecProtocol;
-            HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecSend;
+            HdaPrivateData->HdaCodec.GetAddress = HdaControllerCodecProtocolGetAddress;
+            //HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecSend;
 
-            // Allocate protocol.
-           // HDA_CODEC_PROTOCOL *codecProtocol = AllocateZeroPool(sizeof(HDA_CODEC_PROTOCOL));
-            //codecProtocol->Address = i;
-            EFI_HANDLE ProtocolHandle = NULL;
+            // Create Device Path for codec.
+            EFI_HDA_CODEC_DEVICE_PATH HdaCodecDevicePathNode = EFI_HDA_CODEC_DEVICE_PATH_TEMPLATE;
+            HdaCodecDevicePathNode.Address = i;
+            HdaCodecDevicePath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)&HdaCodecDevicePathNode);
 
-            HDA_CODEC_DEVICE_PATH *hdaCodecPath = AllocateZeroPool(sizeof(HDA_CODEC_DEVICE_PATH));
+            // Install protocols for the codec. The codec driver will later bind to this.
+            ProtocolHandle = NULL;
+            Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
+                &gEfiHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
+            ASSERT_EFI_ERROR(Status); // TODO: Free device path and such on error.
 
-            HDA_CODEC_DEVICE_PATH hdaCodecDevicePathTemplate = gHdaCodecDevicePath;
-            CopyMem(hdaCodecPath, &hdaCodecDevicePathTemplate, sizeof(HDA_CODEC_DEVICE_PATH));
-           // *hdaCodecPath = gHdaCodecDevicePath;
-            hdaCodecPath->Address = i;
-
-            EFI_DEVICE_PATH_PROTOCOL *newDevPath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)hdaCodecPath);
-
-            DEBUG((DEBUG_INFO, "path %s\n", ConvertDevicePathToText(newDevPath, FALSE, FALSE)));
-
-            
-            
-
-            // Install a protocol for the codec. The codec driver will later bind to this.
-            Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, newDevPath, &gHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
-            ASSERT_EFI_ERROR(Status);
-            
-        /*    EFI_DEVICE_PATH_PROTOCOL *devPath;
-            Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&devPath, HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
-            ASSERT_EFI_ERROR(Status);
-
-            
-*/
             // Connect child to parent.
-            void *tmpCodec;
-            Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&tmpCodec, HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
-           // ASSERT_EFI_ERROR(Status);
+            Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, &TmpProtocol,
+                HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
             HdaCodecRegisterDriver();
-            
         }
     }
 
