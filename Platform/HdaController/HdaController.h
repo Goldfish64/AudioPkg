@@ -93,6 +93,29 @@ typedef struct {
 
 #define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CONTROLLER_PRIVATE_DATA, HdaCodec, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
 
+EFI_STATUS
+EFIAPI
+HdaControllerCodecProtocolSendCommand(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN UINT8 Node,
+    IN UINT32 Verb,
+    OUT UINT32 *Response);
+
+EFI_STATUS
+EFIAPI
+HdaControllerCodecProtocolSendCommands(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN UINT8 Node,
+    IN EFI_HDA_CODEC_VERB_LIST *Verbs);
+
+EFI_STATUS
+EFIAPI
+HdaControllerSendCommands(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN UINT8 CodecAddress,
+    IN UINT8 Node,
+    IN EFI_HDA_CODEC_VERB_LIST *Verbs);
+
 VOID
 HdaControllerResponsePollTimerHandler(
     IN EFI_EVENT Event,

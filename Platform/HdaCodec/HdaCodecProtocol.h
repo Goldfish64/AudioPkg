@@ -39,15 +39,21 @@
 extern EFI_GUID gEfiHdaCodecProtocolGuid;
 typedef struct _EFI_HDA_CODEC_PROTOCOL EFI_HDA_CODEC_PROTOCOL;
 
+// Verb list structure.
+typedef struct {
+    UINT32 Count;
+    UINT32 *Verbs ;
+    UINT32 *Responses;
+} EFI_HDA_CODEC_VERB_LIST;
+
 /**                                                                 
   Retrieves this codec's address.
-            
-  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.  
+
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.
   @param  CodecAddress          The codec's address.
-                                  
-  @retval EFI_SUCCESS           The codec's address was returned.                                                       
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                              
-                                     
+
+  @retval EFI_SUCCESS           The codec's address was returned.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
 **/
 typedef
 EFI_STATUS
@@ -55,7 +61,17 @@ EFI_STATUS
     IN EFI_HDA_CODEC_PROTOCOL *This,
     OUT UINT8 *CodecAddress);
 
-// Send command function.
+/**                                                                 
+  Sends a single command to the codec.
+
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.
+  @param  Node                  The destination node.
+  @param  Verb                  The verb to send.
+  @param  Response              The response received.
+
+  @retval EFI_SUCCESS           The verb was sent successfully and a response received.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+**/
 typedef
 EFI_STATUS
 (EFIAPI *EFI_HDA_CODEC_SEND_COMMAND)(
@@ -64,10 +80,28 @@ EFI_STATUS
     IN UINT32 Verb,
     OUT UINT32 *Response);
 
+/**                                                                 
+  Sends a set of commands to the codec.
+
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.
+  @param  Node                  The destination node.
+  @param  Verbs                 The verbs to send. Responses will be delievered in the same list.
+
+  @retval EFI_SUCCESS           The verbs were sent successfully and all responses received.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_SEND_COMMANDS)(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN UINT8 Node,
+    IN EFI_HDA_CODEC_VERB_LIST *Verbs);
+
 // HDA Codec protocol structure.
 struct _EFI_HDA_CODEC_PROTOCOL {
     EFI_HDA_CODEC_GET_ADDRESS GetAddress;
     EFI_HDA_CODEC_SEND_COMMAND SendCommand;
+    EFI_HDA_CODEC_SEND_COMMANDS SendCommands;
 };
 
 //

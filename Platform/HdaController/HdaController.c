@@ -50,7 +50,7 @@ HdaControllerCodecProtocolGetAddress(
     OUT UINT8 *CodecAddress) {
     HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData;
 
-    // If paramters are NULL, return error.
+    // If parameters are NULL, return error.
     if (This == NULL || CodecAddress == NULL)
         return EFI_INVALID_PARAMETER;
 
@@ -58,6 +58,63 @@ HdaControllerCodecProtocolGetAddress(
     HdaPrivateData = HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This);
     *CodecAddress = HdaPrivateData->HdaCodecAddress;
     return EFI_SUCCESS;
+}
+
+/**                                                                 
+  Sends a single command to the codec.
+
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.
+  @param  Node                  The destination node.
+  @param  Verb                  The verb to send.
+  @param  Response              The response received.
+
+  @retval EFI_SUCCESS           The verb was sent successfully and a response received.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+**/
+EFI_STATUS
+EFIAPI
+HdaControllerCodecProtocolSendCommand(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN UINT8 Node,
+    IN UINT32 Verb,
+    OUT UINT32 *Response) {
+
+    // Create verb list with single item.
+    EFI_HDA_CODEC_VERB_LIST HdaCodecVerbList;
+    HdaCodecVerbList.Count = 1;
+    HdaCodecVerbList.Verbs = &Verb;
+    HdaCodecVerbList.Responses = Response;
+
+    // Call SendCommands().
+    return HdaControllerCodecProtocolSendCommands(This, Node, &HdaCodecVerbList);
+}
+
+/**                                                                 
+  Sends a set of commands to the codec.
+
+  @param  This                  A pointer to the HDA_CODEC_PROTOCOL instance.
+  @param  Node                  The destination node.
+  @param  Verbs                 The verbs to send. Responses will be delievered in the same list.
+
+  @retval EFI_SUCCESS           The verbs were sent successfully and all responses received.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+**/
+EFI_STATUS
+EFIAPI
+HdaControllerCodecProtocolSendCommands(
+    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN UINT8 Node,
+    IN EFI_HDA_CODEC_VERB_LIST *Verbs) {
+    // Create variables.
+    HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData;
+
+    // If parameters are NULL, return error.
+    if (This == NULL || Verbs == NULL)
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data and send commands.
+    HdaPrivateData = HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This);
+    return HdaControllerSendCommands(HdaPrivateData->HdaDev, HdaPrivateData->HdaCodecAddress, Node, Verbs);
 }
 
 VOID
@@ -160,7 +217,7 @@ HdaControllerScanCodecs(
             HdaPrivateData->HdaCodecAddress = i;
             HdaPrivateData->HdaDev = HdaDev;
             HdaPrivateData->HdaCodec.GetAddress = HdaControllerCodecProtocolGetAddress;
-            //HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecSend;
+            HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecProtocolSendCommand;
 
             // Create Device Path for codec.
             EFI_HDA_CODEC_DEVICE_PATH HdaCodecDevicePathNode = EFI_HDA_CODEC_DEVICE_PATH_TEMPLATE;
@@ -179,6 +236,21 @@ HdaControllerScanCodecs(
             HdaCodecRegisterDriver();
         }
     }
+
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerSendCommands(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN UINT8 CodecAddress,
+    IN UINT8 Node,
+    IN EFI_HDA_CODEC_VERB_LIST *Verbs) {
+
+    // Ensure parameters are valid.
+    if (CodecAddress >= HDA_MAX_CODECS || Verbs == NULL || Verbs->Count < 1)
+        return EFI_INVALID_PARAMETER;
 
     return EFI_SUCCESS;
 }
