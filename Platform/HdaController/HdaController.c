@@ -247,10 +247,88 @@ HdaControllerSendCommands(
     IN UINT8 CodecAddress,
     IN UINT8 Node,
     IN EFI_HDA_CODEC_VERB_LIST *Verbs) {
+    DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+    UINT32 *HdaCorb;
+    UINT64 *HdaRirb;
 
     // Ensure parameters are valid.
     if (CodecAddress >= HDA_MAX_CODECS || Verbs == NULL || Verbs->Count < 1)
         return EFI_INVALID_PARAMETER;
+
+    // Get pointers to CORB and RIRB.
+    HdaCorb = HdaDev->CorbBuffer;
+    HdaRirb = HdaDev->RirbBuffer;
+
+    UINT32 RemainingVerbs = Verbs->Count;
+    UINT32 RemainingResponses = Verbs->Count;
+    UINT16 HdaCorbReadPointer;
+    UINT16 HdaRirbWritePointer;
+    BOOLEAN ResponseReceived;
+    UINT64 RirbResponse;
+
+    do {
+        // Keep sending verbs until they are all sent.
+        if (RemainingVerbs) {
+            // Get current CORB read pointer.
+            Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointer);
+            if (EFI_ERROR(Status))
+                return Status;
+
+            // Add verbs to CORB until all of them are added or the CORB becomes full.
+            while (RemainingVerbs && ((HdaDev->CorbWritePointer + 1 % HdaDev->CorbEntryCount) != HdaCorbReadPointer)) {
+                DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): %u verbs remaining\n", RemainingVerbs));
+
+                // Move write pointer and write verb to CORB.
+                HdaDev->CorbWritePointer++;
+                HdaDev->CorbWritePointer %= HdaDev->CorbEntryCount;
+                HdaCorb[HdaDev->CorbWritePointer] = Verbs->Verbs[Verbs->Count - RemainingVerbs];
+                DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): 0x%llX verb written\n", Verbs->Verbs[Verbs->Count - RemainingVerbs]));
+
+                // Move to next verb.
+                RemainingVerbs--;
+            }
+
+            // Set CORB write pointer.
+            Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaDev->CorbWritePointer);
+            if (EFI_ERROR(Status))
+                return Status;
+        }
+
+        // Get responses from RIRB.
+        ResponseReceived = FALSE;
+        while (!ResponseReceived) {
+            // Get current RIRB write pointer.
+            Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWritePointer);
+            if (EFI_ERROR(Status))
+                return Status;
+
+            // If the read and write pointers differ, there are responses waiting.
+            while (HdaDev->RirbReadPointer != HdaRirbWritePointer) {
+                DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): %u responses remaining\n", RemainingResponses));
+                
+                // Increment RIRB read pointer.
+                HdaDev->RirbReadPointer++;
+                HdaDev->RirbReadPointer %= HdaDev->RirbEntryCount;
+
+                // Get response and ensure it belongs to the current codec.
+                RirbResponse = HdaRirb[HdaDev->RirbReadPointer];
+                DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): 0x%llX response read\n", RirbResponse));
+                if (HDA_RIRB_CAD(RirbResponse) != CodecAddress || HDA_RIRB_UNSOL(RirbResponse))
+                    continue;
+
+                // Add response to list.
+                Verbs->Responses[Verbs->Count - RemainingResponses] = HDA_RIRB_RESP(RirbResponse);
+                RemainingResponses--;
+                ResponseReceived = TRUE;
+            }
+        }
+
+    } while (RemainingVerbs || RemainingResponses);
+    DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): done\n"));
 
     return EFI_SUCCESS;
 }

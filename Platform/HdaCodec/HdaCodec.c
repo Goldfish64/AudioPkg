@@ -76,6 +76,7 @@ HdaCodecDriverBindingStart(
     // Get vendor id.
     UINT32 Response;
     HdaCodec->SendCommand(HdaCodec, 0, 0xF0000, &Response);
+    DEBUG((DEBUG_INFO, "Got response 0x%X\n", Response));
 
     // Open Device Path protocol.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaDevicePath,

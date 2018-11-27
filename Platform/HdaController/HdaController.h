@@ -47,6 +47,10 @@ typedef struct {
 
 #define HDA_MAX_CODECS 15
 
+#define HDA_RIRB_RESP(Response)     ((UINT32)Response)
+#define HDA_RIRB_CAD(Response)      ((Response >> 32) & 0xF)
+#define HDA_RIRB_UNSOL(Response)    ((Response >> 36) & 0x1)
+
 typedef struct {
     // PCI protocol.
     EFI_PCI_IO_PROTOCOL *PciIo;
