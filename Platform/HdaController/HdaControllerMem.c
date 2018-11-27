@@ -39,7 +39,7 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
         return NULL;
 
     // Initialize fields.
-    HdaDev->Signature = HDA_CONTROLLER_DEV_SIGNATURE;
+    //HdaDev->Signature = HDA_CONTROLLER_DEV_SIGNATURE;
     HdaDev->PciIo = PciIo;
     HdaDev->DevicePath = DevicePath;
     HdaDev->OriginalPciAttributes = OriginalPciAttributes;

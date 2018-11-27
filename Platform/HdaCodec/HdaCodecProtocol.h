@@ -28,14 +28,24 @@
 #include <Uefi.h>
 #include <Protocol/DevicePath.h>
 
+typedef struct _HDA_CODEC_PROTOCOL HDA_CODEC_PROTOCOL;
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_SEND_COMMAND)(
+  IN HDA_CODEC_PROTOCOL           *This
+  );
+
 #define HDA_CODEC_PROTOCOL_GUID \
     { \
         0xA090D7F9, 0xB50A, 0x4EA1, { 0xBD, 0xE9, 0x1A, 0xA5, 0xE9, 0x81, 0x2F, 0x45 } \
     }
 
-typedef struct _HDA_CODEC_PROTOCOL HDA_CODEC_PROTOCOL;
+
 
 struct _HDA_CODEC_PROTOCOL {
+    EFI_HDA_CODEC_SEND_COMMAND SendCommand;
+
     UINT8 Address;
 };
 extern EFI_GUID gHdaCodecProtocolGuid;

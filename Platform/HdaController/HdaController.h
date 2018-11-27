@@ -26,6 +26,7 @@
 #define EFI_HDA_CONTROLLER_H_
 
 #include "AudioDxe.h"
+#include "HdaCodecProtocol.h"
 
 //
 // Consumed protocols.
@@ -46,12 +47,7 @@ typedef struct {
 
 #define HDA_MAX_CODECS 15
 
-#define HDA_CONTROLLER_DEV_SIGNATURE SIGNATURE_32('h','d','a','P')
-
 typedef struct {
-    // Signature.
-    UINTN Signature;
-
     // PCI protocol.
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
@@ -81,7 +77,20 @@ typedef struct {
     EFI_EVENT ExitBootServiceEvent;
 } HDA_CONTROLLER_DEV;
 
-#define HDA_CONTROLLER_DEV_FROM_THIS(This) CR(This, HDA_CONTROLLER_DEV, DiskIo, HDA_CONTROLLER_DEV_SIGNATURE)
+#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('h','d','a','P')
+
+typedef struct {
+    // Signature.
+    UINTN Signature;
+
+    // Codec protocol.
+    HDA_CODEC_PROTOCOL HdaCodec;
+
+    // HDA controller.
+    HDA_CONTROLLER_DEV *HdaDev;
+} HDA_CONTROLLER_PRIVATE_DATA;
+
+#define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CONTROLLER_PRIVATE_DATA, HdaCodec, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
 
 VOID
 HdaControllerResponsePollTimerHandler(

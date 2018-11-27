@@ -88,6 +88,16 @@ HdaControllerReset(
 }
 
 EFI_STATUS
+EFIAPI HdaControllerCodecSend(
+  IN HDA_CODEC_PROTOCOL           *This
+  ) {
+      HDA_CONTROLLER_PRIVATE_DATA *privData = HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This);
+      DEBUG((DEBUG_INFO, "private 0x%X\n", privData->HdaDev->CorbPhysAddr));
+
+      return EFI_SUCCESS;
+  }
+
+EFI_STATUS
 EFIAPI
 HdaControllerScanCodecs(
     IN HDA_CONTROLLER_DEV *HdaDev,
@@ -111,9 +121,15 @@ HdaControllerScanCodecs(
         if (HdaStatests & (1 << i)) {
             DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): found codec @ 0x%X\n", i));
 
+            HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData = AllocateZeroPool(sizeof(HDA_CONTROLLER_PRIVATE_DATA));
+            HdaPrivateData->Signature = HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE;
+            HdaPrivateData->HdaDev = HdaDev;
+            HdaPrivateData->HdaCodec.Address = i;// = codecProtocol;
+            HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecSend;
+
             // Allocate protocol.
-            HDA_CODEC_PROTOCOL *codecProtocol = AllocateZeroPool(sizeof(HDA_CODEC_PROTOCOL));
-            codecProtocol->Address = 34;
+           // HDA_CODEC_PROTOCOL *codecProtocol = AllocateZeroPool(sizeof(HDA_CODEC_PROTOCOL));
+            //codecProtocol->Address = i;
             EFI_HANDLE ProtocolHandle = NULL;
 
             HDA_CODEC_DEVICE_PATH *hdaCodecPath = AllocateZeroPool(sizeof(HDA_CODEC_DEVICE_PATH));
@@ -126,10 +142,12 @@ HdaControllerScanCodecs(
             EFI_DEVICE_PATH_PROTOCOL *newDevPath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)hdaCodecPath);
 
             DEBUG((DEBUG_INFO, "path %s\n", ConvertDevicePathToText(newDevPath, FALSE, FALSE)));
+
+            
             
 
             // Install a protocol for the codec. The codec driver will later bind to this.
-            Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, newDevPath, &gHdaCodecProtocolGuid, codecProtocol, NULL);
+            Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, newDevPath, &gHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
             ASSERT_EFI_ERROR(Status);
             
         /*    EFI_DEVICE_PATH_PROTOCOL *devPath;
