@@ -30,14 +30,29 @@
 #define HDA_CODEC_VERB_12BIT(Verb, Payload) ((((UINT32)Verb) << 8) | (Payload & 0xFF))
 
 //
-// Verbs
+// "Get" Verbs
 //
-#define HDA_VERB_GET_PARAMETER 0xF00 // Get Parameter: Payload - parameter ID, Response: parameter value.
+#define HDA_VERB_GET_PARAMETER                  0xF00 // Get Parameter.
 
 //
-// Parameters.
+// Parameters for HDA_VERB_GET_PARAMETER.
 //
-#define HDA_PARAMETER_VENDOR_ID     0x00
-#define HDA_PARAMETER_REVISION_ID   0x02
+#define HDA_PARAMETER_VENDOR_ID                 0x00 // Vendor ID.
+#define HDA_PARAMETER_REVISION_ID               0x02 // Revision ID.
+#define HDA_PARAMETER_SUBNODE_COUNT             0x04 // Subordinate Node Count.
+#define HDA_PARAMETER_FUNC_GROUP_TYPE           0x05 // Function Group Type.
+#define HDA_PARAMETER_FUNC_GROUP_CAPS           0x08 // Audio Function Group Capabilities.
+#define HDA_PARAMETER_WIDGET_CAPS               0x09 // Audio Widget Capabilities.
+#define HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES  0x0A // Sample Size, Rate CAPs.
+#define HDA_PARAMETER_SUPPORTED_STREAM_FORMATS  0x0B // Stream Formats.
+#define HDA_PARAMETER_PIN_CAPS                  0x0C // Pin Capabilities.
+#define HDA_PARAMETER_AMP_CAPS_INPUT            0x0D // Input Amp Capabilities.
+#define HDA_PARAMETER_CONN_LIST_LENGTH          0x0E // Connection List Length.
+#define HDA_PARAMETER_SUPPORTED_POWER_STATES    0x0F // Supported Power States.
+#define HDA_PARAMETER_PROCESSING_CAPS           0x10 // Processing Capabilities.
+#define HDA_PARAMETER_GPIO_COUNT                0x11 // GPIO Count.
+#define HDA_PARAMETER_AMP_CAPS_OUTPUT           0x12 // Output Amp Capabilities.
+#define HDA_PARAMETER_VOLUME_KNOB_CAPS          0x13 // Volume Knob Capabilities.
+#define HDA_PARAMETER_HDMI_LPCM_CAD             0x20 // HDMI LPCM CAD (Obsolete).
 
 #endif
