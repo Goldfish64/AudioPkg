@@ -415,7 +415,7 @@ HdaControllerDriverBindingStart(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
-    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart()\n"));
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -466,12 +466,14 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR (Status))
         goto CLOSE_PCIIO;
 
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): attached to controller %4X:%4X\n",
+        (HdaVendorDeviceId >> 16) & 0xFFFF, HdaVendorDeviceId & 0xFFFF));
+
     // Is this an Intel controller?
     if ((HdaVendorDeviceId & 0xFFFF) == INTEL_VEN_ID) {
         DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
         UINT8 HdaTcSel;
         
-
         // Set TC0 in TCSEL register.
         Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_TCSEL_OFFSET, 1, &HdaTcSel);
         if (EFI_ERROR (Status))
@@ -480,8 +482,6 @@ HdaControllerDriverBindingStart(
         Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_TCSEL_OFFSET, 1, &HdaTcSel);
         if (EFI_ERROR (Status))
             goto CLOSE_PCIIO;
-
-
     }
 
     // Disable No Snoop Enable bit.
