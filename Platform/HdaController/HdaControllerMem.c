@@ -116,12 +116,14 @@ HdaControllerInitCorb(
 
     // Disable CORB.
     Status = HdaControllerDisableCorb(HdaDev);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
     // Set outbound buffer lower base address.
     HdaLowerCorbBaseAddr = (UINT32)CorbPhysAddr;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_CORBLBASE, 1, &HdaLowerCorbBaseAddr);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
@@ -129,6 +131,7 @@ HdaControllerInitCorb(
     if (HdaDev->Buffer64BitSupported) {
         HdaUpperCorbBaseAddr = (UINT32)(CorbPhysAddr >> 32);
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_CORBUBASE, 1, &HdaUpperCorbBaseAddr);
+        ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
     }
@@ -136,24 +139,25 @@ HdaControllerInitCorb(
     // Reset write pointer to zero.
     HdaCorbWp = 0;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbWp);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
-    // Reset read pointer by setting bit, waiting until bit is set.
+    // Reset read pointer by setting bit.
     HdaCorbRp = HDA_REG_CORBRP_RST;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbRp);
-    if (EFI_ERROR(Status))
-        goto FREE_BUFFER;
-    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, HDA_REG_CORBRP_RST, HDA_REG_CORBRP_RST, 10, &HdaCorbRpPollResult);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
     // Docs state we need to clear the bit and wait for it to clear.
     HdaCorbRp = 0;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbRp);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
-    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, HDA_REG_CORBRP_RST, 0, 10, &HdaCorbRpPollResult);
+    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, HDA_REG_CORBRP_RST, 0, 50000000, &HdaCorbRpPollResult);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         goto FREE_BUFFER;
 
