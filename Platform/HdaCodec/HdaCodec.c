@@ -24,7 +24,7 @@
 
 #include "HdaCodec.h"
 #include "HdaCodecProtocol.h"
-#include "ComponentName.h"
+#include "HdaCodecComponentName.h"
 
 EFI_STATUS
 EFIAPI

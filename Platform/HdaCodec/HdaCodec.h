@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef _HDA_CODEC_H_
-#define _HDA_CODEC_H_
+#ifndef _EFI_HDA_CODEC_H_
+#define _EFI_HDA_CODEC_H_
 
 #include "AudioDxe.h"
 

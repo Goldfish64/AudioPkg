@@ -1,5 +1,5 @@
 /*
- * File: ComponentName.c
+ * File: HdaControllerComponentName.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "ComponentName.h"
+#include "HdaControllerComponentName.h"
 
 //
 // HdaControllerDxe.

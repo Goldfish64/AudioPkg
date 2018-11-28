@@ -1,5 +1,5 @@
 /*
- * File: EfiComponentName.h
+ * File: HdaControllerComponentName.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef EFI_COMPONENT_NAME_H_
-#define EFI_COMPONENT_NAME_H_
+#ifndef _EFI_HDA_CONTROLLER_COMPONENT_NAME_H_
+#define _EFI_HDA_CONTROLLER_COMPONENT_NAME_H_
 
 #include <Library/UefiLib.h>
 #include <Protocol/ComponentName.h>

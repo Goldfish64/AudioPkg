@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef EFI_HDA_CONTROLLER_MEM_H_
-#define EFI_HDA_CONTROLLER_MEM_H_
+#ifndef _EFI_HDA_CONTROLLER_MEM_H_
+#define _EFI_HDA_CONTROLLER_MEM_H_
 
 #include "HdaController.h"
 

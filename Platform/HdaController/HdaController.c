@@ -25,7 +25,7 @@
 #include "HdaController.h"
 #include "HdaControllerMem.h"
 #include "HdaRegisters.h"
-#include "ComponentName.h"
+#include "HdaControllerComponentName.h"
 
 #include "HdaCodecProtocol.h"
 #include "HdaCodec.h"

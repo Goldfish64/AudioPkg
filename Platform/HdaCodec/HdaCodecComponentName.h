@@ -1,5 +1,5 @@
 /*
- * File: ComponentName.c
+ * File: HdaCodecComponentName.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,58 +22,18 @@
  * SOFTWARE.
  */
 
-#include "ComponentName.h"
+#ifndef _EFI_HDA_CODEC_COMPONENT_NAME_H_
+#define _EFI_HDA_CODEC_COMPONENT_NAME_H_
 
-//
-// HdaControllerDxe.
-//
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_UNICODE_STRING_TABLE gHdaCodecDriverNameTable[] = {
-    {
-        "eng;en",
-        L"Hda Codec Driver"
-    },
-    {
-        NULL,
-        NULL
-    }
-};
-
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_UNICODE_STRING_TABLE gHdaCodecControllerNameTable[] = {
-    {
-        "eng;en",
-        L"Hda Codec"
-    },
-    {
-        NULL,
-        NULL
-    }
-};
-
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME_PROTOCOL gHdaCodecComponentName = {
-    HdaCodecComponentNameGetDriverName,
-    HdaCodecComponentNameGetControllerName,
-    "eng"
-};
-
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_COMPONENT_NAME2_PROTOCOL gHdaCodecComponentName2 = {
-    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaCodecComponentNameGetDriverName,
-    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaCodecComponentNameGetControllerName,
-    "en"
-};
+#include <Library/UefiLib.h>
+#include <Protocol/ComponentName.h>
 
 EFI_STATUS
 EFIAPI
 HdaCodecComponentNameGetDriverName(
     IN EFI_COMPONENT_NAME_PROTOCOL *This,
     IN CHAR8 *Language,
-    OUT CHAR16 **DriverName) {
-    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecDriverNameTable,
-        DriverName, (BOOLEAN)(This == &gHdaCodecComponentName));
-}
+    OUT CHAR16 **DriverName);
 
 EFI_STATUS
 EFIAPI
@@ -82,7 +42,9 @@ HdaCodecComponentNameGetControllerName(
     IN EFI_HANDLE ControllerHandle,
     IN EFI_HANDLE ChildHandle OPTIONAL,
     IN CHAR8 *Language,
-    OUT CHAR16 **ControllerName) {
-    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecControllerNameTable,
-        ControllerName, (BOOLEAN)(This == &gHdaCodecComponentName));
-}
+    OUT CHAR16 **ControllerName);
+
+extern EFI_COMPONENT_NAME_PROTOCOL gHdaCodecComponentName;
+extern EFI_COMPONENT_NAME2_PROTOCOL gHdaCodecComponentName2;
+
+#endif

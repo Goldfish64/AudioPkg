@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef __EFI_HDA_REGS_H__
-#define __EFI_HDA_REGS_H__
+#ifndef _EFI_HDA_REGS_H__
+#define _EFI_HDA_REGS_H__
 
 // HDA controller is accessed via MMIO on BAR #0.
 #define PCI_HDA_BAR 0

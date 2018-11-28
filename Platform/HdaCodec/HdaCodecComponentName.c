@@ -1,5 +1,5 @@
 /*
- * File: EfiComponentName.h
+ * File: HdaCodecComponentName.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,18 +22,58 @@
  * SOFTWARE.
  */
 
-#ifndef EFI_HDA_CODEC_COMPONENT_NAME_H_
-#define EFI_HDA_CODEC_COMPONENT_NAME_H_
+#include "HdaCodecComponentName.h"
 
-#include <Library/UefiLib.h>
-#include <Protocol/ComponentName.h>
+//
+// HdaControllerDxe.
+//
+GLOBAL_REMOVE_IF_UNREFERENCED
+EFI_UNICODE_STRING_TABLE gHdaCodecDriverNameTable[] = {
+    {
+        "eng;en",
+        L"Hda Codec Driver"
+    },
+    {
+        NULL,
+        NULL
+    }
+};
+
+GLOBAL_REMOVE_IF_UNREFERENCED
+EFI_UNICODE_STRING_TABLE gHdaCodecControllerNameTable[] = {
+    {
+        "eng;en",
+        L"Hda Codec"
+    },
+    {
+        NULL,
+        NULL
+    }
+};
+
+GLOBAL_REMOVE_IF_UNREFERENCED
+EFI_COMPONENT_NAME_PROTOCOL gHdaCodecComponentName = {
+    HdaCodecComponentNameGetDriverName,
+    HdaCodecComponentNameGetControllerName,
+    "eng"
+};
+
+GLOBAL_REMOVE_IF_UNREFERENCED
+EFI_COMPONENT_NAME2_PROTOCOL gHdaCodecComponentName2 = {
+    (EFI_COMPONENT_NAME2_GET_DRIVER_NAME)HdaCodecComponentNameGetDriverName,
+    (EFI_COMPONENT_NAME2_GET_CONTROLLER_NAME)HdaCodecComponentNameGetControllerName,
+    "en"
+};
 
 EFI_STATUS
 EFIAPI
 HdaCodecComponentNameGetDriverName(
     IN EFI_COMPONENT_NAME_PROTOCOL *This,
     IN CHAR8 *Language,
-    OUT CHAR16 **DriverName);
+    OUT CHAR16 **DriverName) {
+    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecDriverNameTable,
+        DriverName, (BOOLEAN)(This == &gHdaCodecComponentName));
+}
 
 EFI_STATUS
 EFIAPI
@@ -42,9 +82,7 @@ HdaCodecComponentNameGetControllerName(
     IN EFI_HANDLE ControllerHandle,
     IN EFI_HANDLE ChildHandle OPTIONAL,
     IN CHAR8 *Language,
-    OUT CHAR16 **ControllerName);
-
-extern EFI_COMPONENT_NAME_PROTOCOL gHdaCodecComponentName;
-extern EFI_COMPONENT_NAME2_PROTOCOL gHdaCodecComponentName2;
-
-#endif
+    OUT CHAR16 **ControllerName) {
+    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecControllerNameTable,
+        ControllerName, (BOOLEAN)(This == &gHdaCodecComponentName));
+}
