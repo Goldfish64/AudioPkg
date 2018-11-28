@@ -169,8 +169,8 @@ HdaControllerReset(
     if (EFI_ERROR(Status))
         return Status;
 
-    // Wait 10ms to ensure all codecs have also reset.
-    gBS->Stall(10);
+    // Wait 50ms to ensure all codecs have also reset.
+    gBS->Stall(50000);
 
     // Controller is reset.
     DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
@@ -343,7 +343,8 @@ HdaControllerSendCommands(
                 }
 
                 ResponseTimeout--;
-                gBS->Stall(100);
+                gBS->Stall(50000);
+                DEBUG((DEBUG_INFO, "Timeout reached while waiting for response!\n"));
             }
         }
 
