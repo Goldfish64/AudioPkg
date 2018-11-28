@@ -49,7 +49,7 @@ typedef struct {
 
 #define INTEL_VEN_ID 0x8086
 
-#define PCI_HDA_TCSEL_OFFSET    0x40
+#define PCI_HDA_TCSEL_OFFSET    0x44
 #define PCI_HDA_TCSEL_TC0_MASK  0xF8
 #define PCI_HDA_DEVC_OFFSET     0x78
 #define PCI_HDA_DEVC_NOSNOOPEN  (1 < 11)
