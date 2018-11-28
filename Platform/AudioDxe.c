@@ -24,6 +24,7 @@
 
 #include "AudioDxe.h"
 #include "HdaController/HdaController.h"
+#include "HdaCodec/HdaCodec.h"
 
 EFI_HANDLE gAudioDxeImageHandle;
 EFI_SYSTEM_TABLE *gAudioDxeSystemTable;
@@ -39,7 +40,16 @@ AudioDxeInit(
     gAudioDxeImageHandle = ImageHandle;
     gAudioDxeSystemTable = SystemTable;
 
-    // Register HdaController driver.
+    // Register controller driver.
     Status = HdaControllerRegisterDriver();
+    ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Register codec driver.
+    Status = HdaCodecRegisterDriver();
+    ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR(Status))
+        return Status;
     return Status;
 }

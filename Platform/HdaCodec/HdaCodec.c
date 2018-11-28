@@ -33,6 +33,7 @@ HdaCodecDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
+    //DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported():start \n"));
 
     // Create variables.
     EFI_STATUS Status;

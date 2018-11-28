@@ -143,6 +143,7 @@ HdaControllerReset(
 
     // Get value of CRST bit.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
@@ -150,6 +151,7 @@ HdaControllerReset(
     if (!(hdaGCtl & HDA_REG_GCTL_CRST)) {
         hdaGCtl &= ~HDA_REG_GCTL_CRST;
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+        ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             return Status;
     }
@@ -157,11 +159,13 @@ HdaControllerReset(
     // Write a one to the CRST bit to begin the process of coming out of reset.
     hdaGCtl |= HDA_REG_GCTL_CRST;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
     // Wait for bit to be set. Once bit is set, the controller is ready.
-    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, 5, &hdaGCtlPoll);
+    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, 1000, &hdaGCtlPoll);
+    ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
@@ -223,10 +227,10 @@ HdaControllerScanCodecs(
             // Connect child to parent.
             Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, &TmpProtocol,
                 HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
-            HdaCodecRegisterDriver();
+            ASSERT_EFI_ERROR(Status);
         }
     }
-
+    
     return EFI_SUCCESS;
 }
 
@@ -258,6 +262,7 @@ HdaControllerSendCommands(
     UINT16 HdaCorbReadPointer;
     UINT16 HdaRirbWritePointer;
     BOOLEAN ResponseReceived;
+    UINT8 ResponseTimeout;
     UINT64 RirbResponse;
     UINT32 VerbCommand;
 
@@ -302,6 +307,7 @@ HdaControllerSendCommands(
 
         // Get responses from RIRB.
         ResponseReceived = FALSE;
+        ResponseTimeout = 10;
         while (!ResponseReceived) {
             // Get current RIRB write pointer.
             Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWritePointer);
@@ -327,6 +333,17 @@ HdaControllerSendCommands(
                 Verbs->Responses[Verbs->Count - RemainingResponses] = HDA_RIRB_RESP(RirbResponse);
                 RemainingResponses--;
                 ResponseReceived = TRUE;
+            }
+
+            // If no response still, wait a bit.
+            if (!ResponseReceived) {
+                // If timeout reached, fail.
+                if (!ResponseTimeout) {
+                    return EFI_TIMEOUT;
+                }
+
+                ResponseTimeout--;
+                gBS->Stall(100);
             }
         }
 
@@ -452,7 +469,7 @@ HdaControllerDriverBindingStart(
     if ((HdaVendorDeviceId & 0xFFFF) == INTEL_VEN_ID) {
         DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
         UINT8 HdaTcSel;
-        UINT16 HdaDevC;
+        
 
         // Set TC0 in TCSEL register.
         Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_TCSEL_OFFSET, 1, &HdaTcSel);
@@ -463,15 +480,18 @@ HdaControllerDriverBindingStart(
         if (EFI_ERROR (Status))
             goto CLOSE_PCIIO;
 
-        // Disable No Snoop Enable bit.
-        Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
-        if (EFI_ERROR (Status))
-            goto CLOSE_PCIIO;
-        HdaDevC &= ~PCI_HDA_DEVC_NOSNOOPEN;
-        Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
-        if (EFI_ERROR (Status))
-            goto CLOSE_PCIIO;
+
     }
+
+    // Disable No Snoop Enable bit.
+    UINT16 HdaDevC;
+    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
+    if (EFI_ERROR (Status))
+        goto CLOSE_PCIIO;
+    HdaDevC &= ~PCI_HDA_DEVC_NOSNOOPEN;
+    Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
+    if (EFI_ERROR (Status))
+        goto CLOSE_PCIIO;
 
     // Get major/minor version and GCAP.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &HdaMajorVersion);
@@ -533,7 +553,9 @@ HdaControllerDriverBindingStart(
 
     // Scan for codecs.
     Status = HdaControllerScanCodecs(HdaDev, This, ControllerHandle);
+    ASSERT_EFI_ERROR(Status);
     
+    DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));
     return EFI_SUCCESS;
 
 CLEANUP_CORB_RIRB:
