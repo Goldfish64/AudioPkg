@@ -71,7 +71,6 @@ HdaCodecDriverBindingStart(
     UINT8 Address;
     HdaCodec->GetAddress(HdaCodec, &Address);
     DEBUG((DEBUG_INFO, "HdaCodecDriverBindingStart(): attached to codec 0x%X\n", Address));
-    //HdaCodec->SendCommand(HdaCodec);
 
     // Get vendor id.
     UINT32 Response;
