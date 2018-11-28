@@ -1,5 +1,5 @@
 /*
- * File: HdaCodecProtocol.h
+ * File: HdaVerbs.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,15 +22,22 @@
  * SOFTWARE.
  */
 
-#ifndef _EFI_HDA_CODEC_H_
-#define _EFI_HDA_CODEC_H_
+#ifndef _EFI_HDA_VERBS_H_
+#define _EFI_HDA_VERBS_H_
 
-#include "AudioDxe.h"
+// Macros for building verbs.
+#define HDA_CODEC_VERB_4BIT(Verb, Payload)  ((((UINT32)Verb) << 16) | (Payload & 0xFFFF))
+#define HDA_CODEC_VERB_12BIT(Verb, Payload) ((((UINT32)Verb) << 8) | (Payload & 0xFF))
 
+//
+// Verbs
+//
+#define HDA_VERB_GET_PARAMETER 0xF00 // Get Parameter: Payload - parameter ID, Response: parameter value.
 
-
-EFI_STATUS
-EFIAPI
-HdaCodecRegisterDriver(VOID);
+//
+// Parameters.
+//
+#define HDA_PARAMETER_VENDOR_ID     0x00
+#define HDA_PARAMETER_REVISION_ID   0x02
 
 #endif

@@ -50,6 +50,7 @@
   gEfiHdaCodecProtocolGuid # PRODUCES
 
 [Sources]
+  HdaCodec/HdaVerbs.h
   HdaCodec/HdaCodecComponentName.h
   HdaCodec/HdaCodecComponentName.c
   HdaCodec/HdaCodecProtocol.h
