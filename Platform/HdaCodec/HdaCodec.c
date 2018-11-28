@@ -125,24 +125,3 @@ HdaCodecDriverBindingStop(
     DEBUG((DEBUG_INFO, "HdaCodecDriverBindingStop()\n"));
     return EFI_UNSUPPORTED;
 }
-
-EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding = {
-    HdaCodecDriverBindingSupported,
-    HdaCodecDriverBindingStart,
-    HdaCodecDriverBindingStop,
-    AUDIODXE_VERSION,
-    NULL,
-    NULL
-};
-
-EFI_STATUS
-EFIAPI
-HdaCodecRegisterDriver(VOID) {
-    EFI_STATUS Status;
-
-    // Register driver binding.
-    Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaCodecDriverBinding,
-        NULL, &gHdaCodecComponentName, &gHdaCodecComponentName2);
-    ASSERT_EFI_ERROR(Status);
-    return Status;
-}

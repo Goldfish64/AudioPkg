@@ -24,30 +24,50 @@
 
 #include "AudioDxe.h"
 #include "HdaController/HdaController.h"
+#include "HdaController/HdaControllerComponentName.h"
 #include "HdaCodec/HdaCodec.h"
+#include "HdaCodec/HdaCodecComponentName.h"
 
-EFI_HANDLE gAudioDxeImageHandle;
-EFI_SYSTEM_TABLE *gAudioDxeSystemTable;
+// HdaController Driver Binding.
+EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding = {
+    HdaControllerDriverBindingSupported,
+    HdaControllerDriverBindingStart,
+    HdaControllerDriverBindingStop,
+    AUDIODXE_VERSION,
+    NULL,
+    NULL
+};
+
+// HdaCodec Driver Binding.
+EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding = {
+    HdaCodecDriverBindingSupported,
+    HdaCodecDriverBindingStart,
+    HdaCodecDriverBindingStop,
+    AUDIODXE_VERSION,
+    NULL,
+    NULL
+};
 
 EFI_STATUS
 EFIAPI
 AudioDxeInit(
     IN EFI_HANDLE ImageHandle,
     IN EFI_SYSTEM_TABLE *SystemTable) {
-
-    EFI_STATUS Status;
     DEBUG((DEBUG_INFO, "Starting AudioDxe...\n"));
-    gAudioDxeImageHandle = ImageHandle;
-    gAudioDxeSystemTable = SystemTable;
 
-    // Register controller driver.
-    Status = HdaControllerRegisterDriver();
+    // Create variables.
+    EFI_STATUS Status;
+    
+    // Register HdaController Driver Binding.
+    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDriverBinding,
+        ImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
-    // Register codec driver.
-    Status = HdaCodecRegisterDriver();
+    // Register HdaCodec Driver Binding.
+    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaCodecDriverBinding,
+        NULL, &gHdaCodecComponentName, &gHdaCodecComponentName2);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;

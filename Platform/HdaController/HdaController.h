@@ -136,6 +136,24 @@ HdaControllerResponsePollTimerHandler(
 
 EFI_STATUS
 EFIAPI
-HdaControllerRegisterDriver(VOID);
+HdaControllerDriverBindingSupported(
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaControllerDriverBindingStart(
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaControllerDriverBindingStop(
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN UINTN NumberOfChildren,
+    IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
 
 #endif

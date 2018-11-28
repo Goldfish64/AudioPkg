@@ -47,7 +47,8 @@
 // Driver version
 #define AUDIODXE_VERSION    0xA
 
-extern EFI_HANDLE gAudioDxeImageHandle;
-extern EFI_SYSTEM_TABLE *gAudioDxeSystemTable;
+// Driver Bindings.
+EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding;
+EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
 
 #endif

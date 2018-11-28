@@ -598,31 +598,3 @@ HdaControllerDriverBindingStop(
     //FreePool(private);
     return EFI_SUCCESS;
 }
-
-
-
-
-
-//
-// Driver Binding Protocol
-//
-EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding = {
-    HdaControllerDriverBindingSupported,
-    HdaControllerDriverBindingStart,
-    HdaControllerDriverBindingStop,
-    AUDIODXE_VERSION,
-    NULL,
-    NULL
-};
-
-EFI_STATUS
-EFIAPI
-HdaControllerRegisterDriver(VOID) {
-    EFI_STATUS Status;
-
-    // Register HdaController driver binding.
-    Status = EfiLibInstallDriverBindingComponentName2(gAudioDxeImageHandle, gAudioDxeSystemTable, &gHdaControllerDriverBinding,
-        gAudioDxeImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
-    ASSERT_EFI_ERROR(Status);
-    return Status;
-}
