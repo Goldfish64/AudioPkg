@@ -47,6 +47,8 @@ typedef struct {
 
 #define HDA_MAX_CODECS 15
 
+#define HDA_CORB_VERB(Cad, Nid, Verb) ((((UINT32)Cad) << 28) | (((UINT32)Nid) << 20) | (Verb & 0xFFFFF))
+
 #define HDA_RIRB_RESP(Response)     ((UINT32)Response)
 #define HDA_RIRB_CAD(Response)      ((Response >> 32) & 0xF)
 #define HDA_RIRB_UNSOL(Response)    ((Response >> 36) & 0x1)
