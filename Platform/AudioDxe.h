@@ -49,6 +49,8 @@
 // Driver version
 #define AUDIODXE_VERSION    0xA
 
+#define MS_TO_MICROSECOND(a) (a * 1000)
+
 // Driver Bindings.
 EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding;
 EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;

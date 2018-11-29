@@ -411,8 +411,9 @@ HdaControllerSendCommands(
                 }
 
                 ResponseTimeout--;
-                gBS->Stall(50000);
-                DEBUG((DEBUG_INFO, "Timeout reached while waiting for response!\n"));
+                gBS->Stall(MS_TO_MICROSECOND(5));
+                if (ResponseTimeout < 5)
+                    DEBUG((DEBUG_INFO, "%u timeouts reached while waiting for response!\n", ResponseTimeout));
             }
         }
 
