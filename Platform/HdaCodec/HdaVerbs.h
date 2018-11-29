@@ -25,6 +25,8 @@
 #ifndef _EFI_HDA_VERBS_H_
 #define _EFI_HDA_VERBS_H_
 
+#include "AudioDxe.h"
+
 // Root node ID.
 #define HDA_NID_ROOT    0
 
@@ -151,5 +153,182 @@
 #define HDA_PARAMETER_AMP_CAPS_OUTPUT           0x12 // Output Amp Capabilities.
 #define HDA_PARAMETER_VOLUME_KNOB_CAPS          0x13 // Volume Knob Capabilities.
 #define HDA_PARAMETER_HDMI_LPCM_CAD             0x20 // HDMI LPCM CAD (Obsolete).
+
+//
+// Paramemter responses for HDA_VERB_GET_PARAMETER.
+//
+#pragma pack(1)
+// See https://stackoverflow.com/a/28091428.
+
+// Response from HDA_PARAMETER_VENDOR_ID.
+typedef struct {
+    UINT16 DeviceId;
+    UINT16 VendorId;
+} HDA_VENDOR_ID;
+
+// Response from HDA_PARAMETER_REVISION_ID.
+typedef struct {
+    UINT8 SteppingId;
+    UINT8 RevisionId;
+    UINT8 MinRev : 4;
+    UINT8 MajRev : 4;
+    UINT8 Reserved;
+} HDA_REVISION_ID;
+
+// Response from HDA_PARAMETER_SUBNODE_COUNT.
+typedef struct {
+    UINT8 NodeCount;
+    UINT8 Reserved1;
+    UINT8 StartNode;
+    UINT8 Reserved2;
+} HDA_SUBNODE_COUNT;
+
+// Response from HDA_PARAMETER_FUNC_GROUP_TYPE.
+typedef struct {
+    UINT8 NodeType : 8;
+    BOOLEAN UnSolCapable : 1;
+    UINT8 Reserved1 : 7;
+    UINT16 Reserved2;
+} HDA_FUNC_GROUP_TYPE;
+
+#define HDA_FUNC_GROUP_TYPE_AUDIO   0x01
+#define HDA_FUNC_GROUP_TYPE_MODEM   0x02
+
+// Response from HDA_PARAMETER_FUNC_GROUP_CAPS.
+typedef struct {
+    UINT8 OutputDelay : 4;
+    UINT8 Reserved1 : 4;
+    UINT8 InputDelay : 4;
+    UINT8 Reserved2 : 4;
+    BOOLEAN BeepGen : 1;
+    UINT8 Reserved3 : 7;
+    UINT8 Reserved4 : 8;
+} HDA_FUNC_GROUP_CAPS;
+
+// Response from HDA_PARAMETER_WIDGET_CAPS.
+typedef struct {
+    UINT8 ChannelCountLsb : 1;
+    BOOLEAN InAmpPresent : 1;
+    BOOLEAN OutAmpPresent : 1;
+    BOOLEAN AmpParamOverride : 1;
+    BOOLEAN FormatOverride : 1;
+    BOOLEAN Stripe : 1;
+    BOOLEAN ProcessingWidget : 1;
+    BOOLEAN UnSolCapable : 1;
+    BOOLEAN ConnectionList : 1;
+    BOOLEAN Digital : 1;
+    BOOLEAN PowerControl : 1;
+    BOOLEAN LeftRightSwapped : 1;
+    BOOLEAN ContentProtectionSupported : 1;
+    UINT8 ChannelCountExt : 3;
+    UINT8 Delay : 4;
+    UINT8 Type : 4;
+    UINT8 Reserved : 8;
+} HDA_WIDGET_CAPS;
+
+// Widget types.
+#define HDA_WIDGET_TYPE_OUTPUT          0x0
+#define HDA_WIDGET_TYPE_INPUT           0x1
+#define HDA_WIDGET_TYPE_MIXER           0x2
+#define HDA_WIDGET_TYPE_SELECTOR        0x3
+#define HDA_WIDGET_TYPE_PIN_COMPLEX     0x4
+#define HDA_WIDGET_TYPE_POWER           0x5
+#define HDA_WIDGET_TYPE_VOLUME_KNOB     0x6
+#define HDA_WIDGET_TYPE_BEEP_GEN        0x7
+#define HDA_WIDGET_TYPE_VENDOR          0xF
+
+
+// Response from HDA_PARAMETER_SUPPORTED_STREAM_FORMATS.
+typedef struct {
+    BOOLEAN PcmSupported : 1;
+    BOOLEAN Float32Supported : 1;
+    BOOLEAN Ac3Supported : 1;
+    UINT8 Reserved1 : 5;
+    UINT8 Reserved2;
+    UINT16 Reserved3;
+} HDA_SUPPORTED_STREAM_FORMATS;
+
+// Response from HDA_PARAMETER_PIN_CAPS.
+typedef struct {
+    BOOLEAN ImpedanceSense : 1;
+    BOOLEAN TriggerRequired : 1;
+    BOOLEAN PresenceDetect : 1;
+    BOOLEAN HeadphoneDrive : 1;
+    BOOLEAN Output : 1;
+    BOOLEAN Input : 1;
+    BOOLEAN BalancedIo : 1;
+    BOOLEAN Hdmi : 1;
+    UINT8 VrefControl : 8;
+    BOOLEAN Eapd : 1;
+    UINT8 Reserved1 : 7;
+    BOOLEAN DisplayPort : 1;
+    UINT8 Reserved2 : 2;
+    BOOLEAN HighBitRate : 1;
+    UINT8 Reserved3 : 4;
+} HDA_PIN_CAPS;
+
+// Response from HDA_PARAMETER_AMP_CAPS_INPUT and HDA_PARAMETER_AMP_CAPS_OUTPUT.
+typedef struct {
+    UINT8 Offset : 7;
+    UINT8 Reserved1 : 1;
+    UINT8 NumSteps : 7;
+    UINT8 Reserved2 : 1;
+    UINT8 StepSize : 7;
+    UINT8 Reserved3 : 1;
+    UINT8 Reserved4 : 7;
+    BOOLEAN MuteCapable : 1;
+} HDA_AMP_CAPS;
+
+// Response from HDA_PARAMETER_CONN_LIST_LENGTH.
+typedef struct {
+    UINT8 Length : 7;
+    BOOLEAN LongForm : 1;
+    UINT8 Reserved1 : 8;
+    UINT16 Reserved2 : 16;
+} HDA_CONN_LIST_LENGTH;
+
+// Response from HDA_PARAMETER_SUPPORTED_POWER_STATES.
+typedef struct {
+    BOOLEAN D0Supported : 1;
+    BOOLEAN D1Supported : 1;
+    BOOLEAN D2Supported : 1;
+    BOOLEAN D3Supported : 1;
+    BOOLEAN D3ColdSupported : 1;
+    UINT8 Reserved1 : 3;
+    UINT8 Reserved2 : 8;
+    UINT8 Reserved3 : 8;
+    UINT8 Reserved4 : 5;
+    BOOLEAN S3D3Supported : 1;
+    BOOLEAN ClockStop : 1;
+    BOOLEAN Epss : 1;
+} HDA_SUPPORTED_POWER_STATES;
+
+// Response from HDA_PARAMETER_PROCESSING_CAPS.
+typedef struct {
+    BOOLEAN Benign : 1;
+    UINT8 Zero : 7;
+    UINT8 NumCoeff;
+    UINT16 Reserved;
+} HDA_PROCESSING_CAPS;
+
+// Response from HDA_PARAMETER_GPIO_COUNT.
+typedef struct {
+    UINT8 NumGpios;
+    UINT8 NumGpos;
+    UINT8 NumGpis;
+    UINT8 Reserved : 6;
+    BOOLEAN GpiUnsol : 1;
+    BOOLEAN GpiWake : 1;
+} HDA_GPIO_COUNT;
+
+// Response from HDA_PARAMETER_VOLUME_KNOB_CAPS.
+typedef struct {
+    UINT8 NumSteps : 7;
+    BOOLEAN Delta : 1;
+    UINT8 Reserved1;
+    UINT16 Reserved2;
+} HDA_VOLUME_KNOB_CAPS;
+
+#pragma pack()
 
 #endif

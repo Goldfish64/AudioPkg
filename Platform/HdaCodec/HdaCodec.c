@@ -110,8 +110,8 @@ HdaCodecDriverBindingStart(
         DEBUG((DEBUG_INFO, "Probing function group 0x%X\n", fNid));
 
         // Get type.
-        UINT32 fType;
-        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &fType);
+        HDA_FUNC_GROUP_TYPE fType;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), (UINT32*)&fType);
         ASSERT_EFI_ERROR(Status);
 
         // Get caps.
@@ -124,7 +124,7 @@ HdaCodecDriverBindingStart(
         Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&fNodes);
         ASSERT_EFI_ERROR(Status);
 
-        DEBUG((DEBUG_INFO, "Function Type: 0x%X Caps: 0x%X Nodes: %u (0x%X)\n", fType, fCaps, fNodes.NodeCount, fNodes.StartNode));
+        DEBUG((DEBUG_INFO, "Function Type: 0x%X (%u) Caps: 0x%X Nodes: %u (0x%X)\n", fType.NodeType, sizeof(HDA_VOLUME_KNOB_CAPS), fCaps, fNodes.NodeCount, fNodes.StartNode));
 
         // Go through each widget.
         for (UINT8 wNid = fNodes.StartNode; wNid < fNodes.StartNode + fNodes.NodeCount; wNid++) {
