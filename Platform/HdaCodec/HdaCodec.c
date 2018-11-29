@@ -134,6 +134,7 @@ HdaCodecDriverBindingStart(
             ASSERT_EFI_ERROR(Status);
 
             DEBUG((DEBUG_INFO, "Widget caps: 0x%8X\n", wCaps));
+                    wType = L"Input";
         }
     }
 
