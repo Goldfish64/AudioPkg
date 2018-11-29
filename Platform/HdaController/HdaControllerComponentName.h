@@ -25,8 +25,9 @@
 #ifndef _EFI_HDA_CONTROLLER_COMPONENT_NAME_H_
 #define _EFI_HDA_CONTROLLER_COMPONENT_NAME_H_
 
-#include <Library/UefiLib.h>
+#include "AudioDxe.h"
 #include <Protocol/ComponentName.h>
+#include "HdaController.h"
 
 EFI_STATUS
 EFIAPI

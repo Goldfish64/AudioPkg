@@ -106,7 +106,7 @@ HdaCodecDriverBindingStart(
         return Status;
         DEBUG((DEBUG_INFO, "path: %s\n", ConvertDevicePathToText(HdaDevicePath, FALSE, FALSE)));
 
-    gBS->Stall(10000000);
+   // gBS->Stall(10000000);
 
     return EFI_SUCCESS;
 CLOSE_HDA:

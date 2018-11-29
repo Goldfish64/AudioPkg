@@ -37,6 +37,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Protocol/DevicePathUtilities.h>
 
 //
 // Proctols that are consumed.
@@ -50,5 +51,39 @@
 // Driver Bindings.
 EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding;
 EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
+
+// Vendor IDs.
+#define VEN_AMD_ID      0x1002
+#define VEN_IDT_ID      0x111D
+#define VEN_INTEL_ID    0x8086
+#define VEN_NVIDIA_ID   0x10DE
+#define VEN_QEMU_ID     0x1AF4
+#define VEN_REALTEK_ID  0x10EC
+#define VEN_INVALID_ID  0xFFFF
+
+#define GET_PCI_VENDOR_ID(a)    (a & 0xFFFF)
+#define GET_PCI_DEVICE_ID(a)    ((a >> 16) & 0xFFFF)
+#define GET_CODEC_VENDOR_ID(a)  ((a >> 16) & 0xFFFF)
+#define GET_CODEC_DEVICE_ID(a)  (a & 0xFFFF)
+
+// Vendor strings.
+#define VEN_INTEL_CONTROLLER_STR    L"Intel HDA Controller"
+#define VEN_NVIDIA_CONTROLLER_STR   L"NVIDIA HDA Controller"
+#define VEN_AMD_CONTROLLER_STR      L"AMD HDA Controller"
+#define VEN_INVALID_CONTROLLER_STR  L"HDA Controller"
+
+#define VEN_AMD_STR         L"AMD"
+#define VEN_IDT_STR         L"IDT"
+#define VEN_INTEL_STR       L"Intel"
+#define VEN_NVIDIA_STR      L"NVIDIA"
+#define VEN_QEMU_STR        L"QEMU"
+#define VEN_REALTEK_STR     L"Realtek"
+#define HDA_CODEC_STR       L"HDA Codec"
+
+CHAR16*
+EFIAPI
+AudioDxeGetCodecName(
+    IN UINT16 VendorId,
+    IN UINT16 DeviceId);
 
 #endif

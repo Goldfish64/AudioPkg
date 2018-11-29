@@ -22,28 +22,16 @@
  * SOFTWARE.
  */
 
+#include "AudioDxe.h"
 #include "HdaCodecComponentName.h"
+#include "HdaCodecProtocol.h"
+#include "HdaController.h"
 
-//
-// HdaControllerDxe.
-//
 GLOBAL_REMOVE_IF_UNREFERENCED
 EFI_UNICODE_STRING_TABLE gHdaCodecDriverNameTable[] = {
     {
         "eng;en",
         L"Hda Codec Driver"
-    },
-    {
-        NULL,
-        NULL
-    }
-};
-
-GLOBAL_REMOVE_IF_UNREFERENCED
-EFI_UNICODE_STRING_TABLE gHdaCodecControllerNameTable[] = {
-    {
-        "eng;en",
-        L"Hda Codec"
     },
     {
         NULL,
@@ -83,6 +71,30 @@ HdaCodecComponentNameGetControllerName(
     IN EFI_HANDLE ChildHandle OPTIONAL,
     IN CHAR8 *Language,
     OUT CHAR16 **ControllerName) {
-    return LookupUnicodeString2(Language, This->SupportedLanguages, gHdaCodecControllerNameTable,
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodec;
+    HDA_CONTROLLER_PRIVATE_DATA *HdaControllerData;
+
+    // Ensure there is no child handle.
+    if (ChildHandle != NULL)
+        return EFI_UNSUPPORTED;
+
+    // Ensure controller is being managed by HdaCodec.
+    Status = EfiTestManagedDevice(ControllerHandle, gHdaCodecDriverBinding.DriverBindingHandle, &gEfiHdaCodecProtocolGuid);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Get protocol.
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+        gHdaCodecDriverBinding.DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Get private data.
+    HdaControllerData = HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(HdaCodec);
+
+    // Return string.
+    return LookupUnicodeString2(Language, This->SupportedLanguages, HdaControllerData->HdaCodecNameTable,
         ControllerName, (BOOLEAN)(This == &gHdaCodecComponentName));
 }

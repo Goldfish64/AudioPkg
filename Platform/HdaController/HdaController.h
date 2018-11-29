@@ -47,8 +47,6 @@ typedef struct {
 
 #define HDA_MAX_CODECS 15
 
-#define INTEL_VEN_ID 0x8086
-
 #define PCI_HDA_TCSEL_OFFSET    0x44
 #define PCI_HDA_TCSEL_TC0_MASK  0xF8
 #define PCI_HDA_DEVC_OFFSET     0x78
@@ -99,6 +97,9 @@ typedef struct {
     // HDA Codec protocol and address.
     EFI_HDA_CODEC_PROTOCOL HdaCodec;
     UINT8 HdaCodecAddress;
+    UINT16 VendorId;
+    UINT16 DeviceId;
+    EFI_UNICODE_STRING_TABLE *HdaCodecNameTable;
 
     // HDA controller.
     HDA_CONTROLLER_DEV *HdaDev;

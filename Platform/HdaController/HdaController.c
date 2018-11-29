@@ -27,9 +27,10 @@
 #include "HdaRegisters.h"
 #include "HdaControllerComponentName.h"
 
-#include "HdaCodecProtocol.h"
-#include "HdaCodec.h"
-#include <Protocol/DevicePathUtilities.h>
+#include "HdaCodec/HdaCodecProtocol.h"
+#include "HdaCodec/HdaCodec.h"
+#include "HdaCodec/HdaCodecComponentName.h"
+#include "HdaCodec/HdaVerbs.h"
 
 // HDA Codec Device Path GUID.
 EFI_GUID gEfiHdaCodecDevicePathGuid = EFI_HDA_CODEC_DEVICE_PATH_GUID;
@@ -189,7 +190,9 @@ HdaControllerScanCodecs(
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
     UINT16 HdaStatests;
+    UINT32 HdaCodecVendorDeviceId;
 
+    CHAR16 *HdaCodecName;
     EFI_DEVICE_PATH_PROTOCOL *HdaCodecDevicePath;
     EFI_HANDLE ProtocolHandle;
     VOID *TmpProtocol;
@@ -213,21 +216,65 @@ HdaControllerScanCodecs(
             HdaPrivateData->HdaCodec.GetAddress = HdaControllerCodecProtocolGetAddress;
             HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecProtocolSendCommand;
 
+            // Get vendor/device ID for codec.
+            Status = HdaPrivateData->HdaCodec.SendCommand(&HdaPrivateData->HdaCodec, 0,
+                HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &HdaCodecVendorDeviceId);
+            if (EFI_ERROR(Status))
+                goto HDA_CODEC_CLEANUP;
+            HdaPrivateData->VendorId = GET_CODEC_VENDOR_ID(HdaCodecVendorDeviceId);
+            HdaPrivateData->DeviceId = GET_CODEC_DEVICE_ID(HdaCodecVendorDeviceId);
+
+            // Get codec name.
+            HdaCodecName = AudioDxeGetCodecName(HdaPrivateData->VendorId, HdaPrivateData->DeviceId);
+
+            // Add names.
+            Status = AddUnicodeString2("eng", gHdaCodecComponentName.SupportedLanguages, &HdaPrivateData->HdaCodecNameTable, HdaCodecName, TRUE);
+            if (EFI_ERROR(Status))
+                goto HDA_CODEC_CLEANUP;
+            Status = AddUnicodeString2("en", gHdaCodecComponentName2.SupportedLanguages, &HdaPrivateData->HdaCodecNameTable, HdaCodecName, TRUE);
+            if (EFI_ERROR(Status))
+                goto HDA_CODEC_CLEANUP;
+
             // Create Device Path for codec.
             EFI_HDA_CODEC_DEVICE_PATH HdaCodecDevicePathNode = EFI_HDA_CODEC_DEVICE_PATH_TEMPLATE;
             HdaCodecDevicePathNode.Address = i;
             HdaCodecDevicePath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)&HdaCodecDevicePathNode);
+            if (HdaCodecDevicePath == NULL) {
+                Status = EFI_INVALID_PARAMETER;
+                goto HDA_CODEC_CLEANUP;
+            }
 
             // Install protocols for the codec. The codec driver will later bind to this.
             ProtocolHandle = NULL;
             Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
                 &gEfiHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
-            ASSERT_EFI_ERROR(Status); // TODO: Free device path and such on error.
+            if (EFI_ERROR(Status))
+                goto HDA_CODEC_CLEANUP;
 
             // Connect child to parent.
             Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, &TmpProtocol,
                 HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
-            ASSERT_EFI_ERROR(Status);
+            if (EFI_ERROR(Status))
+                goto HDA_CODEC_CLEANUP;
+
+            // Codec registered successfully.
+            Status = EFI_SUCCESS;
+            continue;
+
+HDA_CODEC_CLEANUP:
+            // If error, cleanup codec.
+            if (EFI_ERROR(Status)) {
+                DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
+
+                // Remove protocol interfaces.
+                gBS->UninstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
+                    &gEfiHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
+
+                // Free objects.
+                FreeUnicodeStringTable(HdaPrivateData->HdaCodecNameTable);
+                FreePool(HdaCodecDevicePath);
+                FreePool(HdaPrivateData);
+            }
         }
     }
     
@@ -399,8 +446,8 @@ HdaControllerDriverBindingSupported(
         goto CLOSE_PCIIO;
 
     // Print HDA controller info.
-    DEBUG((DEBUG_INFO, "Found HDA controller (%4X:%4X) at %2X:%2X.%X!\n", HdaVendorDeviceId & 0xFFFF,
-        (HdaVendorDeviceId >> 16) & 0xFFFF, HdaBusNo, HdaDeviceNo, HdaFunctionNo));
+    DEBUG((DEBUG_INFO, "Found HDA controller (%4X:%4X) at %2X:%2X.%X!\n", GET_PCI_VENDOR_ID(HdaVendorDeviceId),
+        GET_PCI_DEVICE_ID(HdaVendorDeviceId), HdaBusNo, HdaDeviceNo, HdaFunctionNo));
     Status = EFI_SUCCESS;
 
 CLOSE_PCIIO:
@@ -467,10 +514,10 @@ HdaControllerDriverBindingStart(
         goto CLOSE_PCIIO;
 
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): attached to controller %4X:%4X\n",
-        (HdaVendorDeviceId >> 16) & 0xFFFF, HdaVendorDeviceId & 0xFFFF));
+        GET_PCI_VENDOR_ID(HdaVendorDeviceId), GET_PCI_DEVICE_ID(HdaVendorDeviceId)));
 
     // Is this an Intel controller?
-    if ((HdaVendorDeviceId & 0xFFFF) == INTEL_VEN_ID) {
+    if (GET_PCI_VENDOR_ID(HdaVendorDeviceId) == VEN_INTEL_ID) {
         DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
         UINT8 HdaTcSel;
         
