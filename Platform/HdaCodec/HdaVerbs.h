@@ -152,7 +152,6 @@
 #define HDA_PARAMETER_GPIO_COUNT                0x11 // GPIO Count.
 #define HDA_PARAMETER_AMP_CAPS_OUTPUT           0x12 // Output Amp Capabilities.
 #define HDA_PARAMETER_VOLUME_KNOB_CAPS          0x13 // Volume Knob Capabilities.
-#define HDA_PARAMETER_HDMI_LPCM_CAD             0x20 // HDMI LPCM CAD (Obsolete).
 
 //
 // Paramemter responses for HDA_VERB_GET_PARAMETER.
@@ -237,6 +236,30 @@ typedef struct {
 #define HDA_WIDGET_TYPE_BEEP_GEN        0x7
 #define HDA_WIDGET_TYPE_VENDOR          0xF
 
+// Response from HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES.
+typedef struct {
+    BOOLEAN Hz8000 : 1;
+    BOOLEAN Hz11025 : 1;
+    BOOLEAN Hz16000 : 1;
+    BOOLEAN Hz22050 : 1;
+    BOOLEAN Hz32000 : 1;
+    BOOLEAN Hz44100 : 1;
+    BOOLEAN Hz48000 : 1;
+    BOOLEAN Hz88200 : 1;
+    BOOLEAN Hz96000 : 1;
+    BOOLEAN Hz176400 : 1;
+    BOOLEAN Hz192000 : 1;
+    BOOLEAN Hz384000 : 1;
+    UINT8 Reserved1 : 4;
+
+    BOOLEAN Bits8 : 1;
+    BOOLEAN Bits16 : 1;
+    BOOLEAN Bits20 : 1;
+    BOOLEAN Bits24 : 1;
+    BOOLEAN Bits32 : 1;
+    UINT8 Reserved2 : 3;
+    UINT8 Reserved3 : 8;
+} HDA_SUPPORTED_PCM_SIZE_RATES;
 
 // Response from HDA_PARAMETER_SUPPORTED_STREAM_FORMATS.
 typedef struct {
