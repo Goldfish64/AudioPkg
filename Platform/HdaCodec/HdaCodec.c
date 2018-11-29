@@ -84,7 +84,7 @@ HdaCodecDriverBindingStart(
     HdaCodec->GetAddress(HdaCodec, &CodecAddress);
 
     // Get vendor/device IDs.
-    Status = HdaCodec->SendCommand(HdaCodec, 0, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &VendorId);
+    Status = HdaCodec->SendCommand(HdaCodec, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &VendorId);
     if (EFI_ERROR(Status))
         goto CLOSE_HDA;
 
@@ -97,6 +97,46 @@ HdaCodecDriverBindingStart(
     //ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR (Status))
         return Status;
+
+    // Get function group count.
+    HDA_SUBNODE_COUNT FuncGroupCount;
+    Status = HdaCodec->SendCommand(HdaCodec, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&FuncGroupCount);
+    ASSERT_EFI_ERROR(Status);
+
+    DEBUG((DEBUG_INFO, "%u function groups. Starting node: 0x%X\n", FuncGroupCount.NodeCount, FuncGroupCount.StartNode));
+
+    // Go through function groups.
+    for (UINT8 fNid = FuncGroupCount.StartNode; fNid < FuncGroupCount.StartNode + FuncGroupCount.NodeCount; fNid++) {
+        DEBUG((DEBUG_INFO, "Probing function group 0x%X\n", fNid));
+
+        // Get type.
+        UINT32 fType;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &fType);
+        ASSERT_EFI_ERROR(Status);
+
+        // Get caps.
+        UINT32 fCaps;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &fCaps);
+        ASSERT_EFI_ERROR(Status);
+
+        // Get node count.
+        HDA_SUBNODE_COUNT fNodes;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&fNodes);
+        ASSERT_EFI_ERROR(Status);
+
+        DEBUG((DEBUG_INFO, "Function Type: 0x%X Caps: 0x%X Nodes: %u (0x%X)\n", fType, fCaps, fNodes.NodeCount, fNodes.StartNode));
+
+        // Go through each widget.
+        for (UINT8 wNid = fNodes.StartNode; wNid < fNodes.StartNode + fNodes.NodeCount; wNid++) {
+            // Get caps.
+            UINT32 wCaps;
+            Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &wCaps);
+            ASSERT_EFI_ERROR(Status);
+
+            DEBUG((DEBUG_INFO, "Widget caps: 0x%8X\n", wCaps));
+        }
+    }
+
 
     return EFI_SUCCESS;
 CLOSE_HDA:

@@ -25,6 +25,9 @@
 #ifndef _EFI_HDA_VERBS_H_
 #define _EFI_HDA_VERBS_H_
 
+// Root node ID.
+#define HDA_NID_ROOT    0
+
 // Macros for building verbs.
 #define HDA_CODEC_VERB_4BIT(Verb, Payload)  ((((UINT32)Verb) << 16) | (Payload & 0xFFFF))
 #define HDA_CODEC_VERB_12BIT(Verb, Payload) ((((UINT32)Verb) << 8) | (Payload & 0xFF))

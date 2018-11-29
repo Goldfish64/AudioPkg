@@ -27,6 +27,16 @@
 
 #include "AudioDxe.h"
 
+// Response from HDA_PARAMETER_SUBNODE_COUNT.
+#pragma pack(1)
+typedef struct {
+    UINT8 NodeCount;
+    UINT8 Reserved1;
+    UINT8 StartNode;
+    UINT8 Reserved2;
+} HDA_SUBNODE_COUNT;
+#pragma pack()
+
 EFI_STATUS
 EFIAPI
 HdaCodecDriverBindingSupported(

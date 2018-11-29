@@ -217,7 +217,7 @@ HdaControllerScanCodecs(
             HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecProtocolSendCommand;
 
             // Get vendor/device ID for codec.
-            Status = HdaPrivateData->HdaCodec.SendCommand(&HdaPrivateData->HdaCodec, 0,
+            Status = HdaPrivateData->HdaCodec.SendCommand(&HdaPrivateData->HdaCodec, HDA_NID_ROOT,
                 HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &HdaCodecVendorDeviceId);
             if (EFI_ERROR(Status))
                 goto HDA_CODEC_CLEANUP;
@@ -305,7 +305,7 @@ HdaControllerSendCommands(
     IN UINT8 CodecAddress,
     IN UINT8 Node,
     IN EFI_HDA_CODEC_VERB_LIST *Verbs) {
-    DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
