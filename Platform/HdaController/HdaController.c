@@ -235,46 +235,63 @@ HdaControllerScanCodecs(
             if (EFI_ERROR(Status))
                 goto HDA_CODEC_CLEANUP;
 
+            // Add to array.
+            HdaDev->PrivateDatas[i] = HdaPrivateData;
+            Status = EFI_SUCCESS;
+            continue;
+
+HDA_CODEC_CLEANUP:
+            DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
+            HdaDev->PrivateDatas[i] = NULL;
+
+            // Free objects.
+            FreeUnicodeStringTable(HdaPrivateData->HdaCodecNameTable);
+            FreePool(HdaPrivateData);
+        }
+    }
+
+    // Install protocols on each codec.
+    for (UINT8 i = 0; i < HDA_MAX_CODECS; i++) {
+        // Do we have a codec at this address?
+        if (HdaDev->PrivateDatas[i] != NULL) {
             // Create Device Path for codec.
             EFI_HDA_CODEC_DEVICE_PATH HdaCodecDevicePathNode = EFI_HDA_CODEC_DEVICE_PATH_TEMPLATE;
             HdaCodecDevicePathNode.Address = i;
             HdaCodecDevicePath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)&HdaCodecDevicePathNode);
             if (HdaCodecDevicePath == NULL) {
                 Status = EFI_INVALID_PARAMETER;
-                goto HDA_CODEC_CLEANUP;
+                goto HDA_CODEC_CLEANUP_POST;
             }
 
             // Install protocols for the codec. The codec driver will later bind to this.
             ProtocolHandle = NULL;
             Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
-                &gEfiHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
+                &gEfiHdaCodecProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
             if (EFI_ERROR(Status))
-                goto HDA_CODEC_CLEANUP;
+                goto HDA_CODEC_CLEANUP_POST;
 
             // Connect child to parent.
             Status = gBS->OpenProtocol(HdaDev->ControllerHandle, &gEfiPciIoProtocolGuid, &TmpProtocol,
                 HdaDev->DriverBinding->DriverBindingHandle, ProtocolHandle, EFI_OPEN_PROTOCOL_BY_CHILD_CONTROLLER);
             if (EFI_ERROR(Status))
-                goto HDA_CODEC_CLEANUP;
+                goto HDA_CODEC_CLEANUP_POST;
 
             // Codec registered successfully.
             Status = EFI_SUCCESS;
             continue;
 
-HDA_CODEC_CLEANUP:
-            // If error, cleanup codec.
-            if (EFI_ERROR(Status)) {
-                DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
+HDA_CODEC_CLEANUP_POST:
+            DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
 
-                // Remove protocol interfaces.
-                gBS->UninstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
-                    &gEfiHdaCodecProtocolGuid, &HdaPrivateData->HdaCodec, NULL);
+            // Remove protocol interfaces.
+            gBS->UninstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
+                &gEfiHdaCodecProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
 
-                // Free objects.
-                FreeUnicodeStringTable(HdaPrivateData->HdaCodecNameTable);
-                FreePool(HdaCodecDevicePath);
-                FreePool(HdaPrivateData);
-            }
+            // Free objects.
+            FreeUnicodeStringTable(HdaDev->PrivateDatas[i]->HdaCodecNameTable);
+            FreePool(HdaCodecDevicePath);
+            FreePool(HdaDev->PrivateDatas[i]);
+            HdaDev->PrivateDatas[i] = NULL;
         }
     }
     
@@ -313,18 +330,21 @@ HdaControllerSendCommands(
     UINT64 RirbResponse;
     UINT32 VerbCommand;
 
+    // Lock.
+    AcquireSpinLock(&HdaDev->SpinLock);
+
     do {
         // Keep sending verbs until they are all sent.
         if (RemainingVerbs) {
             // Get current CORB read pointer.
             Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointer);
             if (EFI_ERROR(Status))
-                return Status;
+                goto DONE;
 
             // Add verbs to CORB until all of them are added or the CORB becomes full.
-            DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current CORB W: %u R: %u\n", HdaDev->CorbWritePointer, HdaCorbReadPointer));
+            //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current CORB W: %u R: %u\n", HdaDev->CorbWritePointer, HdaCorbReadPointer));
             while (RemainingVerbs && ((HdaDev->CorbWritePointer + 1 % HdaDev->CorbEntryCount) != HdaCorbReadPointer)) {
-                DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): %u verbs remaining\n", RemainingVerbs));
+                //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): %u verbs remaining\n", RemainingVerbs));
 
                 // Move write pointer and write verb to CORB.
                 HdaDev->CorbWritePointer++;
@@ -340,17 +360,17 @@ HdaControllerSendCommands(
             // Set CORB write pointer.
             Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaDev->CorbWritePointer);
             if (EFI_ERROR(Status))
-                return Status;
+                goto DONE;
         }
 
-        UINT16 corpwrite;
-        Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &corpwrite);
-            if (EFI_ERROR(Status))
-                return Status;
-        Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointer);
-        if (EFI_ERROR(Status))
-            return Status;
-        DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current CORB W: %u R: %u\n", corpwrite, HdaCorbReadPointer));
+       // UINT16 corpwrite;
+       // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &corpwrite);
+        //    if (EFI_ERROR(Status))
+        //        goto Done;
+       // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointer);
+       // if (EFI_ERROR(Status))
+        //    goto Done;
+        //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current CORB W: %u R: %u\n", corpwrite, HdaCorbReadPointer));
 
         // Get responses from RIRB.
         ResponseReceived = FALSE;
@@ -359,7 +379,7 @@ HdaControllerSendCommands(
             // Get current RIRB write pointer.
             Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWritePointer);
             if (EFI_ERROR(Status))
-                return Status;
+                goto DONE;
 
             // If the read and write pointers differ, there are responses waiting.
             //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current RIRB W: %u R: %u\n", HdaRirbWritePointer, HdaDev->RirbReadPointer));
@@ -386,7 +406,8 @@ HdaControllerSendCommands(
             if (!ResponseReceived) {
                 // If timeout reached, fail.
                 if (!ResponseTimeout) {
-                    return EFI_TIMEOUT;
+                    Status = EFI_TIMEOUT;
+                    goto DONE;
                 }
 
                 ResponseTimeout--;
@@ -398,7 +419,10 @@ HdaControllerSendCommands(
     } while (RemainingVerbs || RemainingResponses);
     //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): done\n"));
 
-    return EFI_SUCCESS;
+    Status = EFI_SUCCESS;
+DONE:
+    ReleaseSpinLock(&HdaDev->SpinLock);
+    return Status;
 }
 
 EFI_STATUS

@@ -39,7 +39,6 @@ HdaCodecDriverBindingSupported(
     EFI_STATUS Status;
     EFI_HDA_CODEC_PROTOCOL *HdaCodec;
     UINT8 CodecAddress;
-    UINT32 VendorId;
 
     // Attempt to open the HDA codec protocol. If it can be opened, we can support it.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodec,
@@ -52,13 +51,7 @@ HdaCodecDriverBindingSupported(
     if (EFI_ERROR(Status))
         goto CLOSE_HDA;
 
-    // Get vendor/device IDs.
-    Status = HdaCodec->SendCommand(HdaCodec, 0, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &VendorId);
-    if (EFI_ERROR(Status))
-        goto CLOSE_HDA;
-
-    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported(): attaching to codec %4X:%4X @ 0x%X\n",
-        (VendorId >> 16) & 0xFFFF, VendorId & 0xFFFF, CodecAddress));
+    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported(): attaching to codec 0x%X\n", CodecAddress));
     Status = EFI_SUCCESS;
 
 CLOSE_HDA:
@@ -104,9 +97,6 @@ HdaCodecDriverBindingStart(
     //ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR (Status))
         return Status;
-        DEBUG((DEBUG_INFO, "path: %s\n", ConvertDevicePathToText(HdaDevicePath, FALSE, FALSE)));
-
-   // gBS->Stall(10000000);
 
     return EFI_SUCCESS;
 CLOSE_HDA:

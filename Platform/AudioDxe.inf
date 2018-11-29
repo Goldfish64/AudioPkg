@@ -36,6 +36,7 @@
 
 [LibraryClasses]
   BaseMemoryLib
+  BaseSynchronizationLib
   DebugLib
   DevicePathLib
   MemoryAllocationLib

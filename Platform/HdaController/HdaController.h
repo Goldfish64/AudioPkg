@@ -58,6 +58,7 @@ typedef struct {
 #define HDA_RIRB_CAD(Response)      ((Response >> 32) & 0xF)
 #define HDA_RIRB_UNSOL(Response)    ((Response >> 36) & 0x1)
 
+typedef struct _HDA_CONTROLLER_PRIVATE_DATA HDA_CONTROLLER_PRIVATE_DATA;
 typedef struct {
     // PCI protocol.
     EFI_PCI_IO_PROTOCOL *PciIo;
@@ -86,11 +87,13 @@ typedef struct {
     // Events.
     EFI_EVENT ResponsePollTimer;
     EFI_EVENT ExitBootServiceEvent;
+    SPIN_LOCK SpinLock;
+    HDA_CONTROLLER_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
 } HDA_CONTROLLER_DEV;
 
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')
 
-typedef struct {
+struct _HDA_CONTROLLER_PRIVATE_DATA {
     // Signature.
     UINTN Signature;
 
@@ -103,7 +106,7 @@ typedef struct {
 
     // HDA controller.
     HDA_CONTROLLER_DEV *HdaDev;
-} HDA_CONTROLLER_PRIVATE_DATA;
+};
 
 #define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CONTROLLER_PRIVATE_DATA, HdaCodec, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
 

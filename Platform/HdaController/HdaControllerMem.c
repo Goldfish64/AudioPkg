@@ -43,6 +43,7 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
     HdaDev->PciIo = PciIo;
     HdaDev->DevicePath = DevicePath;
     HdaDev->OriginalPciAttributes = OriginalPciAttributes;
+    InitializeSpinLock(&HdaDev->SpinLock);
 
     // Initialize events.
     Status = gBS->CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_NOTIFY,

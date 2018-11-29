@@ -37,6 +37,7 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Library/SynchronizationLib.h>
 #include <Protocol/DevicePathUtilities.h>
 
 //
