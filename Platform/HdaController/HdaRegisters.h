@@ -25,6 +25,8 @@
 #ifndef _EFI_HDA_REGS_H__
 #define _EFI_HDA_REGS_H__
 
+#include "AudioDxe.h"
+
 // HDA controller is accessed via MMIO on BAR #0.
 #define PCI_HDA_BAR 0
 
@@ -35,18 +37,13 @@
 //
 // HDA registers.
 //
-#define HDA_REG_GCAP    0x00
-#define HDA_REG_GCAP_64BIT 0x1
-
-#define HDA_REG_VMIN    0x02
-#define HDA_REG_VMAJ    0x03
-#define HDA_REG_OUTPAY  0x04
-#define HDA_REG_INPAY   0x06
-
-#define HDA_REG_GCTL    0x08
+#define HDA_REG_GCAP    0x00 // Global Capabilities; 2 bytes.
+#define HDA_REG_VMIN    0x02 // Minor Version; 1 byte.
+#define HDA_REG_VMAJ    0x03 // Major Version; 1 byte.
+#define HDA_REG_OUTPAY  0x04 // Output Payload Capability; 2 bytes.
+#define HDA_REG_INPAY   0x06 // Input Payload Capability; 2 bytes.
+#define HDA_REG_GCTL    0x08 // Global Control; 4 bytes.
 #define HDA_REG_GCTL_CRST   (1 << 0)
-#define HDA_REG_GCTL_FCNTRL (1 << 1)
-#define HDA_REG_GCTL_UNSOL  (1 << 8)
 
 #define HDA_REG_WAKEEN  0x0C
 #define HDA_REG_STATESTS 0x0E
@@ -105,5 +102,28 @@
 #define HDA_REG_RIRBSIZE_RIRBSZCAP_2    (1 << 4) // 16 B = 2 entries.
 #define HDA_REG_RIRBSIZE_RIRBSZCAP_16   (1 << 5) // 128 B = 16 entries.
 #define HDA_REG_RIRBSIZE_RIRBSZCAP_256  (1 << 6) // 2 KB = 256 entries.
+
+#pragma pack(1)
+
+// GCAP register.
+typedef struct {
+    BOOLEAN Addressing64Bit : 1;
+    UINT8 NumSerialDataOutSignals : 2;
+    UINT8 NumBidirStreams : 5;
+    UINT8 NumInputStreams : 4;
+    UINT8 NumOutputStreams : 4;
+} HDA_GCAP;
+
+// GCTL register.
+typedef struct {
+    BOOLEAN Reset : 1;
+    BOOLEAN Flush : 1;
+    UINT8 Reserved1 : 6;
+    BOOLEAN AcceptUnsolResponses : 1;
+    UINT8 Reserved2 : 7;
+    UINT8 Reserved3 : 8;
+} HDA_GCTL;
+
+#pragma pack()
 
 #endif

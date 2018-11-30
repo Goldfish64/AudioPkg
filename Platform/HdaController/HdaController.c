@@ -139,27 +139,27 @@ HdaControllerReset(
 
     // Create variables.
     EFI_STATUS Status;
-    UINT32 hdaGCtl;
+    HDA_GCTL HdaGCtl;
     UINT64 hdaGCtlPoll;
 
     // Get value of CRST bit.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, (UINT32*)&HdaGCtl);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
     // Check if the controller is already in reset. If not, set bit to zero.
-    if (!(hdaGCtl & HDA_REG_GCTL_CRST)) {
-        hdaGCtl &= ~HDA_REG_GCTL_CRST;
-        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    if (!HdaGCtl.Reset) {
+        HdaGCtl.Reset = FALSE;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, (UINT32*)&HdaGCtl);
         ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             return Status;
     }
 
     // Write a one to the CRST bit to begin the process of coming out of reset.
-    hdaGCtl |= HDA_REG_GCTL_CRST;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &hdaGCtl);
+    HdaGCtl.Reset = TRUE;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, (UINT32*)&HdaGCtl);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
@@ -499,10 +499,8 @@ HdaControllerDriverBindingStart(
     BOOLEAN PciAttributesSaved = FALSE;
     UINT32 HdaVendorDeviceId;
 
-    // Version, GCAP, and whether or not 64-bit addressing is supported.
+    // Version.
     UINT8 HdaMajorVersion, HdaMinorVersion;
-    UINT16 HdaGCap;
-    BOOLEAN Hda64BitSupported;
 
     // Open PCI I/O protocol.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, (VOID**)&PciIo,
@@ -566,23 +564,16 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR (Status))
         goto CLOSE_PCIIO;
 
-    // Get major/minor version and GCAP.
+    // Get major/minor version.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &HdaMajorVersion);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMIN, 1, &HdaMinorVersion);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &HdaGCap);
-    if (EFI_ERROR(Status))
-        goto CLOSE_PCIIO;
-    
-    // Get value of 64BIT bit.
-    Hda64BitSupported = (BOOLEAN)(HdaGCap & HDA_REG_GCAP_64BIT);
 
     // Validate version. If invalid abort.
-    DEBUG((DEBUG_INFO, "HDA controller version %u.%u. Max addressing mode supported: %u-bit.\n", HdaMajorVersion,
-        HdaMinorVersion, Hda64BitSupported ? 64 : 32));
+    DEBUG((DEBUG_INFO, "HDA controller version %u.%u.\n", HdaMajorVersion, HdaMinorVersion));
     if (HdaMajorVersion < HDA_VERSION_MIN_MAJOR) {
         Status = EFI_UNSUPPORTED;
         goto CLOSE_PCIIO;
@@ -590,9 +581,19 @@ HdaControllerDriverBindingStart(
 
     // Allocate device.
     HDA_CONTROLLER_DEV *HdaDev = HdaControllerAllocDevice(PciIo, HdaDevicePath, OriginalPciAttributes);
-    HdaDev->Buffer64BitSupported = Hda64BitSupported;
     HdaDev->ControllerHandle = ControllerHandle;
     HdaDev->DriverBinding = This;
+    HdaDev->MajorVersion = HdaMajorVersion;
+    HdaDev->MinorVersion = HdaMinorVersion;
+
+    // Get capabilities.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, (UINT16*)&HdaDev->Capabilities);
+    if (EFI_ERROR(Status))
+        goto CLOSE_PCIIO;
+    DEBUG((DEBUG_INFO, "HDA controller capabilities:\n  64-bit: %s  Serial Data Out Signals: %u\n",
+        HdaDev->Capabilities.Addressing64Bit ? L"Yes" : L"No", HdaDev->Capabilities.NumSerialDataOutSignals));    
+    DEBUG((DEBUG_INFO, "  Bidir streams: %u  Input streams: %u  Output streams: %u\n", HdaDev->Capabilities.NumBidirStreams,
+        HdaDev->Capabilities.NumInputStreams, HdaDev->Capabilities.NumOutputStreams));
 
     // Reset controller.
     Status = HdaControllerReset(PciIo);

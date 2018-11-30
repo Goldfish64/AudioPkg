@@ -124,17 +124,160 @@ HdaCodecDriverBindingStart(
         Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&fNodes);
         ASSERT_EFI_ERROR(Status);
 
-        DEBUG((DEBUG_INFO, "Function Type: 0x%X (%u) Caps: 0x%X Nodes: %u (0x%X)\n", fType.NodeType, sizeof(HDA_VOLUME_KNOB_CAPS), fCaps, fNodes.NodeCount, fNodes.StartNode));
+        DEBUG((DEBUG_INFO, "Function Type: 0x%X Caps: 0x%X Nodes: %u (0x%X)\n", fType.NodeType, fCaps, fNodes.NodeCount, fNodes.StartNode));
 
         // Go through each widget.
         for (UINT8 wNid = fNodes.StartNode; wNid < fNodes.StartNode + fNodes.NodeCount; wNid++) {
             // Get caps.
-            UINT32 wCaps;
-            Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &wCaps);
+            HDA_WIDGET_CAPS wCaps;
+            Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), (UINT32*)&wCaps);
             ASSERT_EFI_ERROR(Status);
 
-            DEBUG((DEBUG_INFO, "Widget caps: 0x%8X\n", wCaps));
+            CHAR16 *wType;
+            switch (wCaps.Type) {
+                case HDA_WIDGET_TYPE_OUTPUT:
+                    wType = L"Output";
+                    break;
+
+                case HDA_WIDGET_TYPE_INPUT:
                     wType = L"Input";
+                    break;
+
+                case HDA_WIDGET_TYPE_MIXER:
+                    wType = L"Mixer";
+                    break;
+
+                case HDA_WIDGET_TYPE_SELECTOR:
+                    wType = L"Selector";
+                    break;
+
+                case HDA_WIDGET_TYPE_PIN_COMPLEX:
+                    wType = L"Pin Complex";
+                    break;
+
+                case HDA_WIDGET_TYPE_POWER:
+                    wType = L"Power";
+                    break;
+
+                case HDA_WIDGET_TYPE_VOLUME_KNOB:
+                    wType = L"Volume Knob";
+                    break;
+
+                case HDA_WIDGET_TYPE_BEEP_GEN:
+                    wType = L"Beep Generator";
+                    break;
+
+                case HDA_WIDGET_TYPE_VENDOR:
+                    wType = L"Vendor-defined";
+                    break;
+
+                default:
+                    wType = L"Unknown";
+            }
+
+            CHAR16 *wChannels = L"Mono";
+            if (wCaps.ChannelCountLsb)
+                wChannels = L"Stereo";
+
+            CHAR16 *wDigital = L"";
+            if (wCaps.Digital)
+                wDigital = L" Digital";
+
+            CHAR16 *wAmpOut = L"";
+            if (wCaps.OutAmpPresent)
+                wAmpOut = L" Amp-Out";
+
+            CHAR16 *wAmpIn = L"";
+            if (wCaps.InAmpPresent)
+                wAmpIn = L" Amp-In";
+
+            CHAR16 *wRlSwapped = L"";
+            if (wCaps.LeftRightSwapped)
+                wRlSwapped = L" R/L";
+
+            DEBUG((DEBUG_INFO, "Node 0x%X [%s] wcaps 0x%X: %s%s%s%s%s\n",
+                wNid, wType, *((UINT32*)&wCaps), wChannels, wDigital, wAmpOut, wAmpIn, wRlSwapped));
+
+            // If in amp is present, show caps.
+            if (wCaps.InAmpPresent) {
+                HDA_AMP_CAPS wInAmpCaps;
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), (UINT32*)&wInAmpCaps);
+                ASSERT_EFI_ERROR(Status);
+                DEBUG((DEBUG_INFO, "  Amp-In caps: ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2X, mute=%u\n",
+                    wInAmpCaps.Offset, wInAmpCaps.NumSteps, wInAmpCaps.StepSize, wInAmpCaps.MuteCapable));
+            }
+
+            // If out amp is present, show caps.
+            if (wCaps.OutAmpPresent) {
+                HDA_AMP_CAPS wOutAmpCaps;
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), (UINT32*)&wOutAmpCaps);
+                ASSERT_EFI_ERROR(Status);
+                DEBUG((DEBUG_INFO, "  Amp-Out caps: ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2X, mute=%u\n",
+                    wOutAmpCaps.Offset, wOutAmpCaps.NumSteps, wOutAmpCaps.StepSize, wOutAmpCaps.MuteCapable));
+            }
+
+            // If this is an input or output node, show stream data.
+            if (wCaps.Type == HDA_WIDGET_TYPE_INPUT || wCaps.Type == HDA_WIDGET_TYPE_OUTPUT) {
+                // Get supported PCM bits and rates.
+                HDA_SUPPORTED_PCM_SIZE_RATES wPcmRates;
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), (UINT32*)&wPcmRates);
+                ASSERT_EFI_ERROR(Status);
+
+                // Get supported stream formats.
+                HDA_SUPPORTED_STREAM_FORMATS wStreamFormats;
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), (UINT32*)&wStreamFormats);
+                ASSERT_EFI_ERROR(Status);
+
+                DEBUG((DEBUG_INFO, "  PCM:\n"));
+                DEBUG((DEBUG_INFO, "    rates [0x%X]:", ((UINT16*)&wPcmRates)[0]));
+                if (wPcmRates.Hz8000)
+                    DEBUG((DEBUG_INFO, " 8000"));
+                if (wPcmRates.Hz11025)
+                    DEBUG((DEBUG_INFO, " 11025"));
+                if (wPcmRates.Hz16000)
+                    DEBUG((DEBUG_INFO, " 16000"));
+                if (wPcmRates.Hz22050)
+                    DEBUG((DEBUG_INFO, " 22050"));
+                if (wPcmRates.Hz32000)
+                    DEBUG((DEBUG_INFO, " 32000"));
+                if (wPcmRates.Hz44100)
+                    DEBUG((DEBUG_INFO, " 44100"));
+                if (wPcmRates.Hz48000)
+                    DEBUG((DEBUG_INFO, " 48000"));
+                if (wPcmRates.Hz88200)
+                    DEBUG((DEBUG_INFO, " 88200"));
+                if (wPcmRates.Hz96000)
+                    DEBUG((DEBUG_INFO, " 96000"));
+                if (wPcmRates.Hz176400)
+                    DEBUG((DEBUG_INFO, " 176400"));
+                if (wPcmRates.Hz192000)
+                    DEBUG((DEBUG_INFO, " 192000"));
+                if (wPcmRates.Hz384000)
+                    DEBUG((DEBUG_INFO, " 384000"));
+                DEBUG((DEBUG_INFO, "\n"));
+
+                DEBUG((DEBUG_INFO, "    bits [0x%X]:", ((UINT16*)&wPcmRates)[1]));
+                if (wPcmRates.Bits8)
+                    DEBUG((DEBUG_INFO, " 8"));
+                if (wPcmRates.Bits16)
+                    DEBUG((DEBUG_INFO, " 16"));
+                if (wPcmRates.Bits20)
+                    DEBUG((DEBUG_INFO, " 20"));
+                if (wPcmRates.Bits24)
+                    DEBUG((DEBUG_INFO, " 24"));
+                if (wPcmRates.Bits32)
+                    DEBUG((DEBUG_INFO, " 32"));
+                DEBUG((DEBUG_INFO, "\n"));
+
+                DEBUG((DEBUG_INFO, "    formats [0x%X]:", *((UINT32*)&wStreamFormats)));
+                if (wStreamFormats.PcmSupported)
+                    DEBUG((DEBUG_INFO, " PCM"));
+                if (wStreamFormats.Float32Supported)
+                    DEBUG((DEBUG_INFO, " FLOAT32"));
+                if (wStreamFormats.Ac3Supported)
+                    DEBUG((DEBUG_INFO, " AC3"));
+                DEBUG((DEBUG_INFO, "\n"));
+            }
         }
     }
 

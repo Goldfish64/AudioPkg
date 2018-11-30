@@ -129,7 +129,7 @@ HdaControllerInitCorb(
         goto FREE_BUFFER;
 
     // If 64-bit supported, set upper base address.
-    if (HdaDev->Buffer64BitSupported) {
+    if (HdaDev->Capabilities.Addressing64Bit) {
         HdaUpperCorbBaseAddr = (UINT32)(CorbPhysAddr >> 32);
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_CORBUBASE, 1, &HdaUpperCorbBaseAddr);
         ASSERT_EFI_ERROR(Status);
@@ -336,7 +336,7 @@ HdaControllerInitRirb(
         goto FREE_BUFFER;
 
     // If 64-bit supported, set upper base address.
-    if (HdaDev->Buffer64BitSupported) {
+    if (HdaDev->Capabilities.Addressing64Bit) {
         HdaUpperRirbBaseAddr = (UINT32)(RirbPhysAddr >> 32);
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_RIRBUBASE, 1, &HdaUpperRirbBaseAddr);
         if (EFI_ERROR(Status))

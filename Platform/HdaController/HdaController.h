@@ -26,6 +26,7 @@
 #define _EFI_HDA_CONTROLLER_H_
 
 #include "AudioDxe.h"
+#include "HdaRegisters.h"
 #include "HdaCodecProtocol.h"
 
 //
@@ -67,8 +68,10 @@ typedef struct {
     EFI_HANDLE ControllerHandle;
     EFI_DRIVER_BINDING_PROTOCOL *DriverBinding;
 
-    // Whether or not 64-bit addressing is supported.
-    BOOLEAN Buffer64BitSupported;
+    // Capabilites.
+    UINT8 MajorVersion;
+    UINT8 MinorVersion;
+    HDA_GCAP Capabilities;
 
     // Command output buffer (CORB).
     UINT32 *CorbBuffer;

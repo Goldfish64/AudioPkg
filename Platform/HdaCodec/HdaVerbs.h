@@ -153,11 +153,162 @@
 #define HDA_PARAMETER_AMP_CAPS_OUTPUT           0x12 // Output Amp Capabilities.
 #define HDA_PARAMETER_VOLUME_KNOB_CAPS          0x13 // Volume Knob Capabilities.
 
+// Packed structures.
+// See https://stackoverflow.com/a/28091428.
+#pragma pack(1)
+
+//
+// Control structures.
+//
+
+// Amplifier Gain/Mute Get Payload.
+typedef struct {
+    UINT8 Index : 4;
+    UINT8 Zero1 : 4;
+    UINT8 Zero2 : 5;
+    UINT8 Channel : 1;
+    UINT8 Zero3 : 1;
+    UINT8 Amp : 1;
+} HDA_VERB_GET_AMP_GAIN_MUTE_PAYLOAD;
+#define HDA_AMP_GAIN_MUTE_CHANNEL_RIGHT 0
+#define HDA_AMP_GAIN_MUTE_CHANNEL_LEFT  1
+#define HDA_AMP_GAIN_MUTE_AMP_INPUT     0
+#define HDA_AMP_GAIN_MUTE_AMP_OUTPUT    1
+
+// Amplifier Gain/Mute Get Response.
+typedef struct {
+    UINT8 Gain : 7;
+    BOOLEAN Mute : 1;
+    UINT8 Zero1;
+    UINT16 Zero2;
+} HDA_VERB_GET_AMP_GAIN_MUTE_RESPONSE;
+
+// Amplifier Gain/Mute Set Payload.
+typedef struct {
+    UINT8 Gain : 7;
+    BOOLEAN Mute : 1;
+    UINT8 Index : 4;
+    BOOLEAN Right : 1;
+    BOOLEAN Left: 1;
+    BOOLEAN Input : 1;
+    BOOLEAN Output : 1;
+} HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD;
+
+// PinCntl format.
+typedef struct {
+    UINT8 Vref : 3;
+    UINT8 Reserved : 2;
+    BOOLEAN InEnabled : 1;
+    BOOLEAN OutEnabled : 1;
+    BOOLEAN HeadphoneAmpEnable : 1;
+    UINT8 Zero1;
+    UINT16 Zero2;
+} HDA_VERB_PIN_WIDGET_CONTROL_FORMAT;
+
+// EAPD/BTL Enable format.
+typedef struct {
+    BOOLEAN BalancedIo : 1;
+    BOOLEAN Eapd : 1;
+    BOOLEAN LeftRightSwap : 1;
+    UINT8 Reserved1 : 5;
+    UINT16 Reserved2;
+} HDA_VERB_EAPD_BTL_ENABLE_FORMAT;
+
+// Volume Knob format.
+typedef struct {
+    UINT8 Volume : 7;
+    BOOLEAN Direct : 1;
+    UINT8 Zero1;
+    UINT16 Zero2;
+} HDA_VERB_VOLUME_KNOB_FORMAT;
+
+//
+// Configuration Default format.
+//
+typedef struct {
+    UINT8 Sequence : 4;
+    UINT8 DefaultAssociaton : 4;
+    UINT8 Misc : 4;
+    UINT8 Color : 4;
+    UINT8 ConnectionType : 4;
+    UINT8 DefaultDevice : 4;
+    UINT8 LocationSpecific : 4;
+    UINT8 LocationSurface : 2;
+    UINT8 PortConnectivity : 2;
+} HDA_VERB_CONFIGURATION_DEFAULT_FORMAT;
+
+// Configuration Default misc.
+#define HDA_CONFIG_DEFAULT_MISC_JACK_DETECT_OVERRIDE 0x1;
+
+// Configuration Default color.
+#define HDA_CONFIG_DEFAULT_COLOR_UNKNOWN    0x0
+#define HDA_CONFIG_DEFAULT_COLOR_BLACK      0x1
+#define HDA_CONFIG_DEFAULT_COLOR_GREY       0x2
+#define HDA_CONFIG_DEFAULT_COLOR_BLUE       0x3
+#define HDA_CONFIG_DEFAULT_COLOR_GREEN      0x4
+#define HDA_CONFIG_DEFAULT_COLOR_RED        0x5
+#define HDA_CONFIG_DEFAULT_COLOR_ORANGE     0x6
+#define HDA_CONFIG_DEFAULT_COLOR_YELLOW     0x7
+#define HDA_CONFIG_DEFAULT_COLOR_PURPLE     0x8
+#define HDA_CONFIG_DEFAULT_COLOR_PINK       0x9
+#define HDA_CONFIG_DEFAULT_COLOR_WHITE      0xE
+#define HDA_CONFIG_DEFAULT_COLOR_OTHER      0xF
+
+// Configuration Default connection type.
+#define HDA_CONFIG_DEFAULT_CONN_UNKNOWN         0x0
+#define HDA_CONFIG_DEFAULT_CONN_1_8_STEREO      0x1
+#define HDA_CONFIG_DEFAULT_CONN_1_4_STEREO      0x2
+#define HDA_CONFIG_DEFAULT_CONN_ATAPI           0x3
+#define HDA_CONFIG_DEFAULT_CONN_RCA             0x4
+#define HDA_CONFIG_DEFAULT_CONN_OPTICAL         0x5
+#define HDA_CONFIG_DEFAULT_CONN_DIGITAL_OTHER   0x6
+#define HDA_CONFIG_DEFAULT_CONN_ANALOG_OTHER    0x7
+#define HDA_CONFIG_DEFAULT_CONN_MULTI_ANALOG    0x8
+#define HDA_CONFIG_DEFAULT_CONN_XLR             0x9
+#define HDA_CONFIG_DEFAULT_CONN_RJ11            0xA
+#define HDA_CONFIG_DEFAULT_CONN_COMBO           0xB
+#define HDA_CONFIG_DEFAULT_CONN_OTHER           0xF
+
+// Configuration Default default device.
+#define HDA_CONFIG_DEFAULT_DEVICE_LINE_OUT          0x0
+#define HDA_CONFIG_DEFAULT_DEVICE_SPEAKER           0x1
+#define HDA_CONFIG_DEFAULT_DEVICE_HEADPHONE_OUT     0x2
+#define HDA_CONFIG_DEFAULT_DEVICE_CD                0x3
+#define HDA_CONFIG_DEFAULT_DEVICE_SPDIF_OUT         0x4
+#define HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_OUT 0x5
+#define HDA_CONFIG_DEFAULT_DEVICE_MODEM_LINE        0x6
+#define HDA_CONFIG_DEFAULT_DEVICE_MODEM_HANDSET     0x7
+#define HDA_CONFIG_DEFAULT_DEVICE_LINE_IN           0x8
+#define HDA_CONFIG_DEFAULT_DEVICE_AUX               0x9
+#define HDA_CONFIG_DEFAULT_DEVICE_MIC_IN            0xA
+#define HDA_CONFIG_DEFAULT_DEVICE_TELEPHONY         0xB
+#define HDA_CONFIG_DEFAULT_DEVICE_SPDIF_IN          0xC
+#define HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_IN  0xD
+#define HDA_CONFIG_DEFAULT_DEVICE_OTHER             0xF
+
+// Configuration Default location.
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_NA      0x0
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_REAR    0x1
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_FRONT   0x2
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_LEFT    0x3
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_RIGHT   0x4
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_TOP     0x5
+#define HDA_CONFIG_DEFAULT_LOC_SPEC_BOTTOM  0x6
+
+#define HDA_CONFIG_DEFAULT_LOC_SURF_EXTERNAL    0x0
+#define HDA_CONFIG_DEFAULT_LOC_SURF_INTERNAL    0x1
+#define HDA_CONFIG_DEFAULT_LOC_SURF_SEPARATE    0x2
+#define HDA_CONFIG_DEFAULT_LOC_SURF_OTHER       0x3
+
+// Configuration Default port connectivity.
+#define HDA_CONFIG_DEFAULT_PORT_CONN_JACK           0x0
+#define HDA_CONFIG_DEFAULT_PORT_CONN_NONE           0x1
+#define HDA_CONFIG_DEFAULT_PORT_CONN_FIXED_DEVICE   0x2
+#define HDA_CONFIG_DEFAULT_PORT_CONN_INT_JACK       0x3
+
 //
 // Paramemter responses for HDA_VERB_GET_PARAMETER.
 //
-#pragma pack(1)
-// See https://stackoverflow.com/a/28091428.
 
 // Response from HDA_PARAMETER_VENDOR_ID.
 typedef struct {
