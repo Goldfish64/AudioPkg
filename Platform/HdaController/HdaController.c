@@ -124,11 +124,25 @@ HdaControllerResponsePollTimerHandler(
     IN VOID *Context) {
     HDA_CONTROLLER_DEV *HdaDev = (HDA_CONTROLLER_DEV*)Context;
     
-    UINT16 HdaCorbRp;
-    HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbRp);
-    UINT16 HdaRirbWp;
-    HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWp);
-    //DEBUG((DEBUG_INFO, "CORB: 0x%X RIRB: 0x%X 0x%X\n", HdaCorbRp, HdaRirbWp, HdaDev->RirbBuffer[1]));
+   // UINT16 HdaCorbRp;
+    //HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &HdaCorbRp);
+    //UINT16 HdaRirbWp;
+   // HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RIRBWP, 1, &HdaRirbWp);
+
+    EFI_STATUS Status;
+    // Get value of control register.
+    HDA_STREAMCTL HdaStreamCtl;
+    Status = HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
+    DEBUG((DEBUG_INFO, "run %u\n", HdaStreamCtl.Run));
+
+    UINT32 lvi = 1;
+    Status = HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDLPIB(1+4), 1, &lvi);
+    ASSERT_EFI_ERROR(Status);
+
+    UINT8 sts = 1;
+    Status = HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDSTS(1+4), 1, &sts);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "pos in buffer %u status 0x%X\n", lvi, sts));
 }
 
 EFI_STATUS
@@ -614,8 +628,8 @@ HdaControllerDriverBindingStart(
         goto CLEANUP_CORB_RIRB;
 
     // needed for QEMU.
-    UINT16 dd = 0xFF;
-    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RINTCNT, 1, &dd);
+   // UINT16 dd = 0xFF;
+   // PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_RINTCNT, 1, &dd);
 
     // Start CORB and RIRB
     Status = HdaControllerEnableCorb(HdaDev);
@@ -629,6 +643,123 @@ HdaControllerDriverBindingStart(
     Status = HdaControllerInitStreams(HdaDev);
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
+
+    EFI_HANDLE* handles = NULL;   
+    UINTN handleCount = 0;
+
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
+    ASSERT_EFI_ERROR(Status);
+    
+    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
+    DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
+
+    Status = gBS->HandleProtocol(handles[0], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
+    ASSERT_EFI_ERROR(Status);
+
+    EFI_FILE_PROTOCOL* root = NULL;
+    Status = fs->OpenVolume(fs, &root);
+    ASSERT_EFI_ERROR(Status);
+
+    // opewn file.
+    EFI_FILE_PROTOCOL* token = NULL;
+    Status = root->Open(root, &token, L"audio.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+    ASSERT_EFI_ERROR(Status);
+
+    // Allocate buffer descriptor list.
+    VOID *buffer1;
+    EFI_PHYSICAL_ADDRESS buffer1Addr;
+    VOID *buffer1Mapping;
+    UINTN bufferLengthActual;
+    Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(4096),
+        &buffer1, 0);
+    if (EFI_ERROR(Status))
+        ASSERT_EFI_ERROR(Status);
+    ZeroMem(buffer1, 4096);
+    
+    // Map buffer descriptor list.
+    bufferLengthActual = 4096;
+    Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, buffer1, &bufferLengthActual,
+        &buffer1Addr, &buffer1Mapping);
+    if (EFI_ERROR(Status))
+        ASSERT_EFI_ERROR(Status);
+    if (bufferLengthActual != 4096) {
+        Status = EFI_OUT_OF_RESOURCES;
+        ASSERT_EFI_ERROR(Status);
+    }
+
+    // Allocate buffer descriptor list.
+    VOID *buffer2;
+    EFI_PHYSICAL_ADDRESS buffer2Addr;
+    VOID *buffer2Mapping;
+    Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(4096),
+        &buffer2, 0);
+    if (EFI_ERROR(Status))
+        ASSERT_EFI_ERROR(Status);
+    ZeroMem(buffer2, 4096);
+    
+    // Map buffer descriptor list.
+    bufferLengthActual = 4096;
+    Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, buffer2, &bufferLengthActual,
+        &buffer2Addr, &buffer2Mapping);
+    if (EFI_ERROR(Status))
+        ASSERT_EFI_ERROR(Status);
+    if (bufferLengthActual != 4096) {
+        Status = EFI_OUT_OF_RESOURCES;
+        ASSERT_EFI_ERROR(Status);
+    }
+
+    // copy le data.
+    bufferLengthActual = 4096;
+    Status = token->Read(token, &bufferLengthActual, buffer1);
+    ASSERT_EFI_ERROR(Status);
+    Status = token->SetPosition(token, 4096);
+    ASSERT_EFI_ERROR(Status);
+    bufferLengthActual = 4096;
+    Status = token->Read(token, &bufferLengthActual, buffer2);
+    ASSERT_EFI_ERROR(Status);
+
+    HdaDev->OutputStreams[0].BufferList[0].Address = buffer1Addr;
+    HdaDev->OutputStreams[0].BufferList[0].Length = 4096;
+    HdaDev->OutputStreams[0].BufferList[1].Address = buffer1Addr;
+    HdaDev->OutputStreams[0].BufferList[1].Length = 4096;
+    HdaDev->OutputStreams[0].BufferList[1].Reserved = 1;
+
+    HDA_STREAMCTL HdaStreamCtl;
+
+    // Get value of control register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
+    ASSERT_EFI_ERROR(Status);
+
+
+    HdaStreamCtl.Number = 1;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
+    ASSERT_EFI_ERROR(Status);
+
+    UINT16 lvi = 1;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDLVI(1+4), 1, &lvi);
+    ASSERT_EFI_ERROR(Status);
+
+    UINT32 cbllength = 8192;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDCBL(1+4), 1, &cbllength);
+    ASSERT_EFI_ERROR(Status);
+
+    UINT16 stmFormat = 0x4010;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDFMT(1+4), 1, &stmFormat);
+    ASSERT_EFI_ERROR(Status);
+
+    // Get value of control register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
+    ASSERT_EFI_ERROR(Status);
+
+    // fire up stream.
+    HdaStreamCtl.Run = TRUE;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
+    ASSERT_EFI_ERROR(Status);
+
+    UINT32 ssss;
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x38, 1, &ssss);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "sss reg 0x%X\n", ssss));
 
     // Scan for codecs.
     Status = HdaControllerScanCodecs(HdaDev, This, ControllerHandle);

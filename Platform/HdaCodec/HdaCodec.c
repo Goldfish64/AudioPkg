@@ -248,6 +248,24 @@ HdaCodecDriverBindingStart(
    // if (EFI_ERROR(Status))
   //      goto FREE_DEVICE;
 
+    // Get address of codec.
+    UINT8 CodecAddress;
+    Status = HdaCodecProto->GetAddress(HdaCodecProto, &CodecAddress);
+    
+    if (CodecAddress > 0)
+        return EFI_SUCCESS;
+
+  // stream
+  DEBUG((DEBUG_INFO, "Set data\n"));
+    UINT32 Tmp;
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4010), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x10), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x4), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+
+
     // Success.
     return EFI_SUCCESS;
 
