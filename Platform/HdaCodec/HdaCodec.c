@@ -244,9 +244,9 @@ HdaCodecDriverBindingStart(
     Status = HdaCodecGetDefaultData(HdaCodecDev);
     if (EFI_ERROR(Status))
         goto FREE_DEVICE;
-    Status = HdaCodecPrintDefaults(HdaCodecDev);
-    if (EFI_ERROR(Status))
-        goto FREE_DEVICE;
+   // Status = HdaCodecPrintDefaults(HdaCodecDev);
+   // if (EFI_ERROR(Status))
+  //      goto FREE_DEVICE;
 
     // Success.
     return EFI_SUCCESS;

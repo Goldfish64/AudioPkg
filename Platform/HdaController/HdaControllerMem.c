@@ -506,9 +506,14 @@ HdaControllerInitStreams(
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
 
-        // Reset stream.
+        // Reset stream and wait for bit to be set.
         HdaStreamCtl.Reset = TRUE;
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i), 3, (UINT8*)&HdaStreamCtl);
+        ASSERT_EFI_ERROR(Status);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+        Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i),
+            HDA_REG_SDCTL_SRST, HDA_REG_SDCTL_SRST, MS_TO_NANOSECOND(100), &Tmp);
         ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
@@ -526,7 +531,7 @@ HdaControllerInitStreams(
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
         Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i),
-            HDA_REG_SDCTL_SRST, 0, MS_TO_NANOSECOND(5), &Tmp);
+            HDA_REG_SDCTL_SRST, 0, MS_TO_NANOSECOND(100), &Tmp);
         ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
