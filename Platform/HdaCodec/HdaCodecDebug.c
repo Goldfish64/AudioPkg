@@ -161,131 +161,40 @@ HdaCodecPrintDefaults(
             DEBUG((DEBUG_INFO, "  Pincap 0x%8X\n", *((UINT32*)&HdaPinWidget->PinCapabilities)));
 
             // Determine port connectivity.
-            CHAR16 *wPortConnectivity;
-            switch (HdaPinWidget->ConfigurationDefault.PortConnectivity) {
-                case HDA_CONFIG_DEFAULT_PORT_CONN_JACK:
-                    wPortConnectivity = L"Jack";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_PORT_CONN_FIXED_DEVICE:
-                    wPortConnectivity = L"Fixed";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_PORT_CONN_INT_JACK:
-                    wPortConnectivity = L"Int Jack";
-                    break;
-
-                default:
-                    wPortConnectivity = L"None";
-            }
+            CHAR16 *wPortConnectivities[] = { L"Jack", L"None", L"Fixed", L"Int Jack" };
+            CHAR16 *wPortConnectivity = wPortConnectivities[HdaPinWidget->ConfigurationDefault.PortConnectivity];
 
             // Determine default device.
-            CHAR16 *wDefaultDevice;
-            switch (HdaPinWidget->ConfigurationDefault.DefaultDevice) {
-                case HDA_CONFIG_DEFAULT_DEVICE_LINE_OUT:
-                    wDefaultDevice = L"Line Out";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_SPEAKER:
-                    wDefaultDevice = L"Speaker";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_HEADPHONE_OUT:
-                    wDefaultDevice = L"HP Out";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_CD:
-                    wDefaultDevice = L"CD";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_SPDIF_OUT:
-                    wDefaultDevice = L"SPDIF Out";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_OUT:
-                    wDefaultDevice = L"Digital Out";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_LINE_IN:
-                    wDefaultDevice = L"Line In";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_AUX:
-                    wDefaultDevice = L"Aux";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_MIC_IN:
-                    wDefaultDevice = L"Mic";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_SPDIF_IN:
-                    wDefaultDevice = L"SPDIF In";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_IN:
-                    wDefaultDevice = L"Digital In";
-                    break;
-
-                default:
-                    wDefaultDevice = L"Other";
-            }
+            CHAR16 *wDefaultDevices[] = {
+                L"Line Out", L"Speaker", L"HP Out", L"CD", L"SPDIF Out", L"Digital Out", L"Modem Line",
+                L"Modem Handset", L"Line In", L"Aux", L"Mic", L"Telephone", L"SPDIF In", L"Digital In", L"Other", L"Other" };
+            CHAR16 *wDefaultDevice = wDefaultDevices[HdaPinWidget->ConfigurationDefault.DefaultDevice];
 
             // Determine surface.
-            CHAR16 *wSurface;
-            switch (HdaPinWidget->ConfigurationDefault.LocationSurface) {
-                case HDA_CONFIG_DEFAULT_LOC_SURF_EXTERNAL:
-                    wSurface = L"Ext";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_LOC_SURF_INTERNAL:
-                    wSurface = L"Int";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_LOC_SURF_SEPARATE:
-                    wSurface = L"Ext";
-                    break;
-
-                default:
-                    wSurface = L"Other";
-            }
+            CHAR16 *wSurfaces[] = { L"Ext", L"Int", L"Ext", L"Other" };
+            CHAR16 *wSurface = wSurfaces[HdaPinWidget->ConfigurationDefault.LocationSurface];
 
             // Determine location.
-            CHAR16 *wLocation;
-            switch (HdaPinWidget->ConfigurationDefault.LocationSpecific) {
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_NA:
-                    wLocation = L"N/A";
-                    break;
+            CHAR16 *wLocations[] = { L"N/A", L"Rear", L"Front", L"Left", L"Right", L"Top", L"Bottom" };
+            CHAR16 *wLocation = L"Other";
+            if (HdaPinWidget->ConfigurationDefault.LocationSpecific <= HDA_CONFIG_DEFAULT_LOC_SPEC_BOTTOM) 
+                wLocation = wLocations[HdaPinWidget->ConfigurationDefault.LocationSpecific];
 
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_REAR:
-                    wLocation = L"Rear";
-                    break;
+            // Determine connection type.
+            CHAR16 *wConnTypes[] = {
+                L"Unknown", L"1/8", L"1/4", L"ATAPI", L"RCA", L"Optical", L"Digital",
+                L"Analog", L"Multi", L"XLR", L"RJ11", L"Combo", L"Other", L"Other", L"Other", L"Other" };
+            CHAR16 *wConnType = wConnTypes[HdaPinWidget->ConfigurationDefault.ConnectionType];
 
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_FRONT:
-                    wLocation = L"Front";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_LEFT:
-                    wLocation = L"Left";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_RIGHT:
-                    wLocation = L"Right";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_TOP:
-                    wLocation = L"Top";
-                    break;
-
-                case HDA_CONFIG_DEFAULT_LOC_SPEC_BOTTOM:
-                    wLocation = L"Bottom";
-                    break;
-
-                default:
-                    wLocation = L"Other";
-            }
+            // Determine color.
+            CHAR16 *wColors[] = {
+                L"Unknown", L"Black", L"Grey", L"Blue", L"Green", L"Red", L"Orange",
+                L"Yellow", L"Purple", L"Pink", L"Other", L"Other", L"Other", L"Other", L"White", L"Other" };
+            CHAR16 *wColor = wColors[HdaPinWidget->ConfigurationDefault.Color];
             
             DEBUG((DEBUG_INFO, "  Pin Default 0x%8X: [%s] %s at %s %s\n",
                 *((UINT32*)&HdaPinWidget->ConfigurationDefault), wPortConnectivity, wDefaultDevice, wSurface, wLocation));
+            DEBUG((DEBUG_INFO, "    Conn = %s, Color = %s\n", wConnType, wColor));
             DEBUG((DEBUG_INFO, "    DefAssociation = 0x%X, Sequence = 0x%X\n",
                 HdaPinWidget->ConfigurationDefault.DefaultAssociaton, HdaPinWidget->ConfigurationDefault.Sequence));
             DEBUG((DEBUG_INFO, "  Pin-ctls: 0x%X\n", *((UINT32*)&HdaPinWidget->PinControl)));
