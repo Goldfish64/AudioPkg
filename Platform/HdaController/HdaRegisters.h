@@ -103,6 +103,22 @@
 #define HDA_REG_RIRBSIZE_RIRBSZCAP_16   (1 << 5) // 128 B = 16 entries.
 #define HDA_REG_RIRBSIZE_RIRBSZCAP_256  (1 << 6) // 2 KB = 256 entries.
 
+// Direct command interface.
+#define HDA_REG_ICOI        0x60 // Immediate Command Output Interface; 4 bytes.
+#define HDA_REG_ICII        0x64 // Immediate Command Input Interface; 4 bytes.
+#define HDA_REG_ICIS        0x68 // Immediate Command Status; 2 bytes.
+
+// Stream descriptors. Streams start at 0 with input streams, then output, and then bidir.
+#define HDA_REG_SDCTL(s)    (0x80 + (s * 0x20)) // Stream Control; 4 bytes.
+#define HDA_REG_SDSTS(s)    (0x83 + (s * 0x20)) // Stream Status; 2 bytes.
+#define HDA_REG_SDLPIB(s)   (0x84 + (s * 0x20)) // Stream Link Position in Current Buffer; 4 bytes.
+#define HDA_REG_SDCBL(s)    (0x88 + (s * 0x20)) // Stream Cyclic Buffer Length; 4 bytes.
+#define HDA_REG_SDLVI(s)    (0x8C + (s * 0x20)) // Stream Last Valid Index; 2 bytes.
+#define HDA_REG_SDFIFOD(s)  (0x90 + (s * 0x20)) // Stream FIFO Size; 2 bytes.
+#define HDA_REG_SDFMT(s)    (0x90 + (s * 0x20)) // Stream Format; 2 bytes.
+#define HDA_REG_SDBDPL(s)   (0x98 + (s * 0x20)) // Stream Buffer Descriptor List Pointer - Lower; 4 bytes.
+#define HDA_REG_SDBDPU(s)   (0x9C + (s * 0x20)) // Stream Buffer Descriptor List Pointer - Upper; 4 bytes.
+
 #pragma pack(1)
 
 // GCAP register.
