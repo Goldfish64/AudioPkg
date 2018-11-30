@@ -625,6 +625,11 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
 
+    // Init streams.
+    Status = HdaControllerInitStreams(HdaDev);
+    if (EFI_ERROR(Status))
+        goto CLEANUP_CORB_RIRB;
+
     // Scan for codecs.
     Status = HdaControllerScanCodecs(HdaDev, This, ControllerHandle);
     ASSERT_EFI_ERROR(Status);

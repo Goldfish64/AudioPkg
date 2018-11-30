@@ -75,4 +75,21 @@ EFIAPI
 HdaControllerDisableRirb(
     IN HDA_CONTROLLER_DEV *HdaDev);
 
+EFI_STATUS
+EFIAPI
+HdaControllerInitStreams(
+    IN HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerEnableStream(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN UINT32 StreamIndex);
+
+EFI_STATUS
+EFIAPI
+HdaControllerDisableStream(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN UINT32 StreamIndex);
+
 #endif

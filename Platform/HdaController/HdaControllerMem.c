@@ -454,3 +454,157 @@ HdaControllerDisableRirb(
     // Success.
     return EFI_SUCCESS;
 }
+
+EFI_STATUS
+EFIAPI
+HdaControllerInitStreams(
+    IN HDA_CONTROLLER_DEV *HdaDev) {
+    DEBUG((DEBUG_INFO, "HdaControllerInitStreams(): start\n"));
+
+    // Status and PCI I/O protocol.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+    HDA_STREAMCTL HdaStreamCtl;
+    UINT64 Tmp;
+    UINT32 BdlLowerBaseAddr;
+    UINT32 BdlUpperBaseAddr;
+
+    // Buffer.
+    UINTN BdlLengthActual;
+
+    // Initialize stream array.
+    HdaDev->OutputStreams = AllocateZeroPool(sizeof(HDA_STREAM) * HdaDev->Capabilities.NumOutputStreams);
+
+    // Initialize streams.
+    for (UINT32 i = 0; i < HdaDev->Capabilities.NumOutputStreams; i++) {
+        // Allocate buffer descriptor list.
+        Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(HDA_BDL_SIZE),
+            (VOID**)&HdaDev->OutputStreams[i].BufferList, 0);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+        ZeroMem(HdaDev->OutputStreams[i].BufferList, HDA_BDL_SIZE);
+        
+        // Map buffer descriptor list.
+        BdlLengthActual = HDA_BDL_SIZE;
+        Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, HdaDev->OutputStreams[i].BufferList, &BdlLengthActual,
+            &HdaDev->OutputStreams[i].BufferListPhysAddr, &HdaDev->OutputStreams[i].BufferListMapping);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+        if (BdlLengthActual != HDA_BDL_SIZE) {
+            Status = EFI_OUT_OF_RESOURCES;
+            goto FREE_BUFFER;
+        }
+
+        // Disable stream.
+        Status = HdaControllerDisableStream(HdaDev, i);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+
+        // Get value of control register.
+        Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i), 3, (UINT8*)&HdaStreamCtl);
+        ASSERT_EFI_ERROR(Status);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+
+        // Reset stream.
+        HdaStreamCtl.Reset = TRUE;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i), 3, (UINT8*)&HdaStreamCtl);
+        ASSERT_EFI_ERROR(Status);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+
+        // Get value of control register.
+        Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i), 3, (UINT8*)&HdaStreamCtl);
+        ASSERT_EFI_ERROR(Status);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+
+        // Docs state we need to clear the bit and wait for it to clear.
+        HdaStreamCtl.Reset = FALSE;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i), 3, (UINT8*)&HdaStreamCtl);
+        ASSERT_EFI_ERROR(Status);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+        Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(i),
+            HDA_REG_SDCTL_SRST, 0, MS_TO_NANOSECOND(5), &Tmp);
+        ASSERT_EFI_ERROR(Status);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+
+        // Set buffer lower base address.
+        BdlLowerBaseAddr = (UINT32)HdaDev->OutputStreams[i].BufferListPhysAddr;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDBDPL(i), 1, &BdlLowerBaseAddr);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+
+        // If 64-bit supported, set upper base address.
+        if (HdaDev->Capabilities.Addressing64Bit) {
+            BdlUpperBaseAddr = (UINT32)(HdaDev->OutputStreams[i].BufferListPhysAddr >> 32);
+            Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDBDPU(i), 1, &BdlUpperBaseAddr);
+            if (EFI_ERROR(Status))
+                goto FREE_BUFFER;
+        }
+    }
+
+    // Success.
+    return EFI_SUCCESS;
+
+FREE_BUFFER:
+    // Free stream array.
+    FreePool(HdaDev->OutputStreams);
+    return Status;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerEnableStream(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN UINT32 StreamIndex) {
+    DEBUG((DEBUG_INFO, "HdaControllerEnableStream(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+    HDA_STREAMCTL HdaStreamCtl;
+
+    // Get current value of register. 3 bytes so read 3 bytes.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(StreamIndex), 3, (UINT8*)&HdaStreamCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+    
+    // Enable stream operation.
+    HdaStreamCtl.Run = TRUE;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(StreamIndex), 3, (UINT8*)&HdaStreamCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Success.
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerDisableStream(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN UINT32 StreamIndex) {
+    DEBUG((DEBUG_INFO, "HdaControllerDisableStream(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
+    HDA_STREAMCTL HdaStreamCtl;
+
+    // Get current value of register. 3 bytes so read 3 bytes.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(StreamIndex), 3, (UINT8*)&HdaStreamCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+    
+    // Disable stream operation.
+    HdaStreamCtl.Run = FALSE;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(StreamIndex), 3, (UINT8*)&HdaStreamCtl);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Success.
+    return EFI_SUCCESS;
+}

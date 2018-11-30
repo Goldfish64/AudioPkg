@@ -59,6 +59,28 @@ typedef struct {
 #define HDA_RIRB_CAD(Response)      ((Response >> 32) & 0xF)
 #define HDA_RIRB_UNSOL(Response)    ((Response >> 36) & 0x1)
 
+//
+// Streams.
+//
+// Buffer Descriptor List Entry.
+#pragma pack(1)
+typedef struct {
+    UINT64 Address;
+    UINT32 Length;
+    UINT32 Reserved;
+} HDA_BDL_ENTRY;
+#pragma pack()
+#define HDA_NUM_OF_BDL_ENTRIES  256
+#define HDA_BDL_SIZE            (sizeof(HDA_BDL_ENTRY) * HDA_NUM_OF_BDL_ENTRIES)
+
+// Stream.
+typedef struct {
+    UINT8 Type;
+    HDA_BDL_ENTRY *BufferList;
+    VOID *BufferListMapping;
+    EFI_PHYSICAL_ADDRESS BufferListPhysAddr;
+} HDA_STREAM;
+
 typedef struct _HDA_CONTROLLER_PRIVATE_DATA HDA_CONTROLLER_PRIVATE_DATA;
 typedef struct {
     // PCI protocol.
@@ -86,6 +108,9 @@ typedef struct {
     VOID *RirbMapping;
     EFI_PHYSICAL_ADDRESS RirbPhysAddr;
     UINT16 RirbReadPointer;
+
+    // Streams.
+    HDA_STREAM *OutputStreams;
 
     // Events.
     EFI_EVENT ResponsePollTimer;

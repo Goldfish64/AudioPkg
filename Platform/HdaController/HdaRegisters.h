@@ -109,7 +109,7 @@
 #define HDA_REG_ICIS        0x68 // Immediate Command Status; 2 bytes.
 
 // Stream descriptors. Streams start at 0 with input streams, then output, and then bidir.
-#define HDA_REG_SDCTL(s)    (0x80 + (s * 0x20)) // Stream Control; 4 bytes.
+#define HDA_REG_SDCTL(s)    (0x80 + (s * 0x20)) // Stream Control; 3 bytes.
 #define HDA_REG_SDSTS(s)    (0x83 + (s * 0x20)) // Stream Status; 2 bytes.
 #define HDA_REG_SDLPIB(s)   (0x84 + (s * 0x20)) // Stream Link Position in Current Buffer; 4 bytes.
 #define HDA_REG_SDCBL(s)    (0x88 + (s * 0x20)) // Stream Cyclic Buffer Length; 4 bytes.
@@ -139,6 +139,21 @@ typedef struct {
     UINT8 Reserved2 : 7;
     UINT8 Reserved3 : 8;
 } HDA_GCTL;
+
+typedef struct {
+    BOOLEAN Reset : 1;
+    BOOLEAN Run : 1;
+    BOOLEAN InterruptCompletion : 1;
+    BOOLEAN InterruptFifoError : 1;
+    BOOLEAN InterruptDescError : 1;
+    UINT8 Reserved1 : 3;
+    UINT8 Reserved2 : 8;
+    UINT8 StripeControl : 2;
+    BOOLEAN PriorityTraffic : 1;
+    BOOLEAN BidirOutput : 1;
+    UINT8 Number : 4;
+} HDA_STREAMCTL;
+#define HDA_REG_SDCTL_SRST (1 << 0)
 
 #pragma pack()
 
