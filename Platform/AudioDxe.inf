@@ -52,6 +52,7 @@
 
 [Sources]
   HdaCodec/HdaVerbs.h
+  HdaCodec/HdaCodecDebug.c
   HdaCodec/HdaCodecComponentName.h
   HdaCodec/HdaCodecComponentName.c
   HdaCodec/HdaCodecProtocol.h

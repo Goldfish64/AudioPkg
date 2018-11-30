@@ -1,5 +1,5 @@
 /*
- * File: HdaCodecProtocol.h
+ * File: HdaCodec.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -26,6 +26,22 @@
 #define _EFI_HDA_CODEC_H_
 
 #include "AudioDxe.h"
+#include "HdaVerbs.h"
+#include "HdaCodecProtocol.h"
+
+typedef struct {
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecProto;
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+
+    HDA_FUNC_GROUP **FuncGroups;
+    UINTN FuncGroupsLength;
+    UINT8 AudioFuncGroup;
+} HDA_CODEC_DEV;
+
+EFI_STATUS
+EFIAPI
+HdaCodecPrintDefaults(
+    HDA_CODEC_DEV *HdaCodecDev);
 
 EFI_STATUS
 EFIAPI

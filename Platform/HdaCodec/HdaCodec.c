@@ -1,5 +1,5 @@
 /*
- * File: HdaController.c
+ * File: HdaCodec.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -26,6 +26,156 @@
 #include "HdaCodecProtocol.h"
 #include "HdaCodecComponentName.h"
 #include "HdaVerbs.h"
+
+EFI_STATUS
+EFIAPI
+HdaCodecGetDefaultData(
+    HDA_CODEC_DEV *HdaCodecDev) {
+
+    EFI_HDA_CODEC_PROTOCOL *HdaCodec = HdaCodecDev->HdaCodecProto;
+    EFI_STATUS Status;
+
+    // Get function group count.
+    HDA_SUBNODE_COUNT FuncGroupCount;
+    Status = HdaCodec->SendCommand(HdaCodec, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&FuncGroupCount);
+    ASSERT_EFI_ERROR(Status);
+
+    DEBUG((DEBUG_INFO, "%u function groups. Starting node: 0x%X\n", FuncGroupCount.NodeCount, FuncGroupCount.StartNode));
+    
+    // Allocate function groups array.
+    HdaCodecDev->FuncGroupsLength = FuncGroupCount.NodeCount;
+    HdaCodecDev->FuncGroups = AllocateZeroPool(sizeof(HDA_FUNC_GROUP*) * HdaCodecDev->FuncGroupsLength);
+
+    // Go through function groups.
+    for (UINT8 funcIndex = 0; funcIndex < HdaCodecDev->FuncGroupsLength; funcIndex++) {
+        UINT8 fNid = FuncGroupCount.StartNode + funcIndex;
+        DEBUG((DEBUG_INFO, "Probing function group 0x%X\n", fNid));
+
+        // Get type.
+        HDA_FUNC_GROUP_TYPE fType;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), (UINT32*)&fType);
+        ASSERT_EFI_ERROR(Status);
+
+        // Get caps.
+        UINT32 fCaps;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &fCaps);
+        ASSERT_EFI_ERROR(Status);
+
+        // Get node count.
+        HDA_SUBNODE_COUNT fNodes;
+        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&fNodes);
+        ASSERT_EFI_ERROR(Status);
+
+        DEBUG((DEBUG_INFO, "Function Type: 0x%X Caps: 0x%X Nodes: %u (0x%X)\n", fType.NodeType, fCaps, fNodes.NodeCount, fNodes.StartNode));
+
+        // Allocate function group.
+        HdaCodecDev->FuncGroups[funcIndex] = AllocateZeroPool(sizeof(HDA_FUNC_GROUP));
+        HdaCodecDev->FuncGroups[funcIndex]->NodeId = fNid;
+        HdaCodecDev->FuncGroups[funcIndex]->Type = fType;
+        HdaCodecDev->FuncGroups[funcIndex]->WidgetsLength = fNodes.NodeCount;
+        HdaCodecDev->FuncGroups[funcIndex]->Widgets = AllocateZeroPool(sizeof(HDA_WIDGET*) * HdaCodecDev->FuncGroups[funcIndex]->WidgetsLength);
+        if (HdaCodecDev->FuncGroups[funcIndex]->Type.NodeType == HDA_FUNC_GROUP_TYPE_AUDIO)
+            HdaCodecDev->AudioFuncGroup = funcIndex;
+
+        // Go through each widget.
+        for (UINT8 wIndex = 0; wIndex < HdaCodecDev->FuncGroups[funcIndex]->WidgetsLength; wIndex++) {
+            UINT8 wNid = wIndex + fNodes.StartNode;
+
+            // Get caps.
+            HDA_WIDGET_CAPS wCaps;
+            Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), (UINT32*)&wCaps);
+            ASSERT_EFI_ERROR(Status);
+
+            // Determine type.
+            UINTN HdaWidgetSize;
+            switch (wCaps.Type) {
+                case HDA_WIDGET_TYPE_OUTPUT:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_INPUT_OUTPUT);
+                    break;
+
+                case HDA_WIDGET_TYPE_INPUT:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_INPUT_OUTPUT);
+                    break;
+
+                case HDA_WIDGET_TYPE_MIXER:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_MIXER);
+                    break;
+
+                case HDA_WIDGET_TYPE_SELECTOR:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_SELECTOR);
+                    break;
+
+                case HDA_WIDGET_TYPE_PIN_COMPLEX:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_PIN_COMPLEX);
+                    break;
+
+                case HDA_WIDGET_TYPE_POWER:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_POWER);
+                    break;
+
+                case HDA_WIDGET_TYPE_VOLUME_KNOB:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_VOLUME_KNOB);
+                    break;
+
+                case HDA_WIDGET_TYPE_BEEP_GEN:
+                    HdaWidgetSize = sizeof(HDA_WIDGET_BEEP_GEN);
+                    break;
+
+                default:
+                    HdaWidgetSize = sizeof(HDA_WIDGET);
+            }
+
+            // Allocate widget.
+            HdaCodecDev->FuncGroups[funcIndex]->Widgets[wIndex] = AllocateZeroPool(HdaWidgetSize);
+            HDA_WIDGET *HdaWidget = HdaCodecDev->FuncGroups[funcIndex]->Widgets[wIndex];
+            HdaWidget->NodeId = wNid;
+            HdaWidget->Capabilities = wCaps;
+            HdaWidget->Length = HdaWidgetSize;
+
+            // Get PCM sizes/rates and stream format.
+            if (HdaWidget->Capabilities.Type == HDA_WIDGET_TYPE_OUTPUT
+                || HdaWidget->Capabilities.Type == HDA_WIDGET_TYPE_INPUT) {
+                HDA_WIDGET_INPUT_OUTPUT *wInOutWidget = (HDA_WIDGET_INPUT_OUTPUT*)HdaWidget;
+
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), (UINT32*)&wInOutWidget->SizesRates);
+                ASSERT_EFI_ERROR(Status);
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), (UINT32*)&wInOutWidget->StreamFormats);
+                ASSERT_EFI_ERROR(Status);
+
+                // Get Amp caps.
+                if (HdaWidget->Capabilities.Type == HDA_WIDGET_TYPE_OUTPUT)
+                    Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), (UINT32*)&wInOutWidget->AmpCapabilities);
+                else
+                    Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), (UINT32*)&wInOutWidget->AmpCapabilities);
+                ASSERT_EFI_ERROR(Status);
+            } else if (HdaWidget->Capabilities.Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {
+                HDA_WIDGET_PIN_COMPLEX *wPinWidget = (HDA_WIDGET_PIN_COMPLEX*)HdaWidget;
+
+                // Get Amp caps.
+                if (HdaWidget->Capabilities.InAmpPresent) {
+                    Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), (UINT32*)&wPinWidget->InAmpCapabilities);
+                    ASSERT_EFI_ERROR(Status);
+                }
+                if (HdaWidget->Capabilities.OutAmpPresent) {
+                    Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), (UINT32*)&wPinWidget->OutAmpCapabilities);
+                    ASSERT_EFI_ERROR(Status);
+                }
+
+                // Get pin caps and config.
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_PIN_CAPS), (UINT32*)&wPinWidget->PinCapabilities);
+                ASSERT_EFI_ERROR(Status);
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), (UINT32*)&wPinWidget->PinControl);
+                ASSERT_EFI_ERROR(Status);
+                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONFIGURATION_DEFAULT, 0), (UINT32*)&wPinWidget->ConfigurationDefault);
+                ASSERT_EFI_ERROR(Status);
+            }
+
+
+        }
+    }
+
+    return EFI_SUCCESS;
+}
 
 EFI_STATUS
 EFIAPI
@@ -70,221 +220,44 @@ HdaCodecDriverBindingStart(
 
     // Create variables.
     EFI_STATUS Status;
-    EFI_HDA_CODEC_PROTOCOL *HdaCodec;
-    EFI_DEVICE_PATH_PROTOCOL *HdaDevicePath;
-    UINT8 CodecAddress;
-    UINT32 VendorId;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecProto;
+    EFI_DEVICE_PATH_PROTOCOL *HdaCodecDevicePath;
+    HDA_CODEC_DEV *HdaCodecDev;
 
-    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodecProto,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
 
-    // Get address.
-    HdaCodec->GetAddress(HdaCodec, &CodecAddress);
-
-    // Get vendor/device IDs.
-    Status = HdaCodec->SendCommand(HdaCodec, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &VendorId);
-    if (EFI_ERROR(Status))
+    // Get Device Path protocol.
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaCodecDevicePath,
+        This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+    if (EFI_ERROR (Status))
         goto CLOSE_HDA;
 
-    DEBUG((DEBUG_INFO, "HdaCodecDriverBindingStart(): attached to codec %4X:%4X @ 0x%X\n",
-        (VendorId >> 16) & 0xFFFF, VendorId & 0xFFFF, CodecAddress));
+    // Create codec device.
+    HdaCodecDev = AllocateZeroPool(sizeof(HDA_CODEC_DEV));
+    HdaCodecDev->HdaCodecProto = HdaCodecProto;
+    HdaCodecDev->DevicePath = HdaCodecDevicePath;
+    
+    // Get default values for codec nodes.
+    Status = HdaCodecGetDefaultData(HdaCodecDev);
+    if (EFI_ERROR(Status))
+        goto FREE_DEVICE;
+    Status = HdaCodecPrintDefaults(HdaCodecDev);
+    if (EFI_ERROR(Status))
+        goto FREE_DEVICE;
 
-    // Open Device Path protocol.
-    Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaDevicePath,
-        This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
-    //ASSERT_EFI_ERROR(Status);
-    if (EFI_ERROR (Status))
-        return Status;
-
-    // Get function group count.
-    HDA_SUBNODE_COUNT FuncGroupCount;
-    Status = HdaCodec->SendCommand(HdaCodec, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&FuncGroupCount);
-    ASSERT_EFI_ERROR(Status);
-
-    DEBUG((DEBUG_INFO, "%u function groups. Starting node: 0x%X\n", FuncGroupCount.NodeCount, FuncGroupCount.StartNode));
-
-    // Go through function groups.
-    for (UINT8 fNid = FuncGroupCount.StartNode; fNid < FuncGroupCount.StartNode + FuncGroupCount.NodeCount; fNid++) {
-        DEBUG((DEBUG_INFO, "Probing function group 0x%X\n", fNid));
-
-        // Get type.
-        HDA_FUNC_GROUP_TYPE fType;
-        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), (UINT32*)&fType);
-        ASSERT_EFI_ERROR(Status);
-
-        // Get caps.
-        UINT32 fCaps;
-        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &fCaps);
-        ASSERT_EFI_ERROR(Status);
-
-        // Get node count.
-        HDA_SUBNODE_COUNT fNodes;
-        Status = HdaCodec->SendCommand(HdaCodec, fNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), (UINT32*)&fNodes);
-        ASSERT_EFI_ERROR(Status);
-
-        DEBUG((DEBUG_INFO, "Function Type: 0x%X Caps: 0x%X Nodes: %u (0x%X)\n", fType.NodeType, fCaps, fNodes.NodeCount, fNodes.StartNode));
-
-        // Go through each widget.
-        for (UINT8 wNid = fNodes.StartNode; wNid < fNodes.StartNode + fNodes.NodeCount; wNid++) {
-            // Get caps.
-            HDA_WIDGET_CAPS wCaps;
-            Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), (UINT32*)&wCaps);
-            ASSERT_EFI_ERROR(Status);
-
-            CHAR16 *wType;
-            switch (wCaps.Type) {
-                case HDA_WIDGET_TYPE_OUTPUT:
-                    wType = L"Output";
-                    break;
-
-                case HDA_WIDGET_TYPE_INPUT:
-                    wType = L"Input";
-                    break;
-
-                case HDA_WIDGET_TYPE_MIXER:
-                    wType = L"Mixer";
-                    break;
-
-                case HDA_WIDGET_TYPE_SELECTOR:
-                    wType = L"Selector";
-                    break;
-
-                case HDA_WIDGET_TYPE_PIN_COMPLEX:
-                    wType = L"Pin Complex";
-                    break;
-
-                case HDA_WIDGET_TYPE_POWER:
-                    wType = L"Power";
-                    break;
-
-                case HDA_WIDGET_TYPE_VOLUME_KNOB:
-                    wType = L"Volume Knob";
-                    break;
-
-                case HDA_WIDGET_TYPE_BEEP_GEN:
-                    wType = L"Beep Generator";
-                    break;
-
-                case HDA_WIDGET_TYPE_VENDOR:
-                    wType = L"Vendor-defined";
-                    break;
-
-                default:
-                    wType = L"Unknown";
-            }
-
-            CHAR16 *wChannels = L"Mono";
-            if (wCaps.ChannelCountLsb)
-                wChannels = L"Stereo";
-
-            CHAR16 *wDigital = L"";
-            if (wCaps.Digital)
-                wDigital = L" Digital";
-
-            CHAR16 *wAmpOut = L"";
-            if (wCaps.OutAmpPresent)
-                wAmpOut = L" Amp-Out";
-
-            CHAR16 *wAmpIn = L"";
-            if (wCaps.InAmpPresent)
-                wAmpIn = L" Amp-In";
-
-            CHAR16 *wRlSwapped = L"";
-            if (wCaps.LeftRightSwapped)
-                wRlSwapped = L" R/L";
-
-            DEBUG((DEBUG_INFO, "Node 0x%X [%s] wcaps 0x%X: %s%s%s%s%s\n",
-                wNid, wType, *((UINT32*)&wCaps), wChannels, wDigital, wAmpOut, wAmpIn, wRlSwapped));
-
-            // If in amp is present, show caps.
-            if (wCaps.InAmpPresent) {
-                HDA_AMP_CAPS wInAmpCaps;
-                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), (UINT32*)&wInAmpCaps);
-                ASSERT_EFI_ERROR(Status);
-                DEBUG((DEBUG_INFO, "  Amp-In caps: ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2X, mute=%u\n",
-                    wInAmpCaps.Offset, wInAmpCaps.NumSteps, wInAmpCaps.StepSize, wInAmpCaps.MuteCapable));
-            }
-
-            // If out amp is present, show caps.
-            if (wCaps.OutAmpPresent) {
-                HDA_AMP_CAPS wOutAmpCaps;
-                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), (UINT32*)&wOutAmpCaps);
-                ASSERT_EFI_ERROR(Status);
-                DEBUG((DEBUG_INFO, "  Amp-Out caps: ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2X, mute=%u\n",
-                    wOutAmpCaps.Offset, wOutAmpCaps.NumSteps, wOutAmpCaps.StepSize, wOutAmpCaps.MuteCapable));
-            }
-
-            // If this is an input or output node, show stream data.
-            if (wCaps.Type == HDA_WIDGET_TYPE_INPUT || wCaps.Type == HDA_WIDGET_TYPE_OUTPUT) {
-                // Get supported PCM bits and rates.
-                HDA_SUPPORTED_PCM_SIZE_RATES wPcmRates;
-                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), (UINT32*)&wPcmRates);
-                ASSERT_EFI_ERROR(Status);
-
-                // Get supported stream formats.
-                HDA_SUPPORTED_STREAM_FORMATS wStreamFormats;
-                Status = HdaCodec->SendCommand(HdaCodec, wNid, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), (UINT32*)&wStreamFormats);
-                ASSERT_EFI_ERROR(Status);
-
-                DEBUG((DEBUG_INFO, "  PCM:\n"));
-                DEBUG((DEBUG_INFO, "    rates [0x%X]:", ((UINT16*)&wPcmRates)[0]));
-                if (wPcmRates.Hz8000)
-                    DEBUG((DEBUG_INFO, " 8000"));
-                if (wPcmRates.Hz11025)
-                    DEBUG((DEBUG_INFO, " 11025"));
-                if (wPcmRates.Hz16000)
-                    DEBUG((DEBUG_INFO, " 16000"));
-                if (wPcmRates.Hz22050)
-                    DEBUG((DEBUG_INFO, " 22050"));
-                if (wPcmRates.Hz32000)
-                    DEBUG((DEBUG_INFO, " 32000"));
-                if (wPcmRates.Hz44100)
-                    DEBUG((DEBUG_INFO, " 44100"));
-                if (wPcmRates.Hz48000)
-                    DEBUG((DEBUG_INFO, " 48000"));
-                if (wPcmRates.Hz88200)
-                    DEBUG((DEBUG_INFO, " 88200"));
-                if (wPcmRates.Hz96000)
-                    DEBUG((DEBUG_INFO, " 96000"));
-                if (wPcmRates.Hz176400)
-                    DEBUG((DEBUG_INFO, " 176400"));
-                if (wPcmRates.Hz192000)
-                    DEBUG((DEBUG_INFO, " 192000"));
-                if (wPcmRates.Hz384000)
-                    DEBUG((DEBUG_INFO, " 384000"));
-                DEBUG((DEBUG_INFO, "\n"));
-
-                DEBUG((DEBUG_INFO, "    bits [0x%X]:", ((UINT16*)&wPcmRates)[1]));
-                if (wPcmRates.Bits8)
-                    DEBUG((DEBUG_INFO, " 8"));
-                if (wPcmRates.Bits16)
-                    DEBUG((DEBUG_INFO, " 16"));
-                if (wPcmRates.Bits20)
-                    DEBUG((DEBUG_INFO, " 20"));
-                if (wPcmRates.Bits24)
-                    DEBUG((DEBUG_INFO, " 24"));
-                if (wPcmRates.Bits32)
-                    DEBUG((DEBUG_INFO, " 32"));
-                DEBUG((DEBUG_INFO, "\n"));
-
-                DEBUG((DEBUG_INFO, "    formats [0x%X]:", *((UINT32*)&wStreamFormats)));
-                if (wStreamFormats.PcmSupported)
-                    DEBUG((DEBUG_INFO, " PCM"));
-                if (wStreamFormats.Float32Supported)
-                    DEBUG((DEBUG_INFO, " FLOAT32"));
-                if (wStreamFormats.Ac3Supported)
-                    DEBUG((DEBUG_INFO, " AC3"));
-                DEBUG((DEBUG_INFO, "\n"));
-            }
-        }
-    }
-
-
+    // Success.
     return EFI_SUCCESS;
+
+FREE_DEVICE:
+    // Free device.
+    FreePool(HdaCodecDev);
+
 CLOSE_HDA:
-    // Close protocol.
+    // Close protocols.
+    gBS->CloseProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     gBS->CloseProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     return Status;
 }

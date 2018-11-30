@@ -505,4 +505,78 @@ typedef struct {
 
 #pragma pack()
 
+//
+// Widget structures.
+//
+// Generic widget.
+typedef struct {
+    UINT8 NodeId;
+    HDA_WIDGET_CAPS Capabilities;
+    UINTN Length;
+
+    UINT8 *ConnectionList;
+    UINT8 ConnectionListLength;
+    UINT8 ConnectionDefault;
+} HDA_WIDGET;
+
+// Input/Output widget.
+typedef struct {
+    HDA_WIDGET Header;
+
+    HDA_SUPPORTED_PCM_SIZE_RATES SizesRates;
+    HDA_SUPPORTED_STREAM_FORMATS StreamFormats;
+    HDA_AMP_CAPS AmpCapabilities;
+} HDA_WIDGET_INPUT_OUTPUT;
+
+// Pin Complex widget.
+typedef struct {
+    HDA_WIDGET Header;
+
+    HDA_PIN_CAPS PinCapabilities;
+    HDA_AMP_CAPS InAmpCapabilities;
+    HDA_AMP_CAPS OutAmpCapabilities;
+
+    HDA_VERB_PIN_WIDGET_CONTROL_FORMAT PinControl;
+    HDA_VERB_CONFIGURATION_DEFAULT_FORMAT ConfigurationDefault;
+} HDA_WIDGET_PIN_COMPLEX;
+
+// Mixer widget.
+typedef struct {
+    HDA_WIDGET Header;
+
+    HDA_AMP_CAPS InAmpCapabilities;
+    HDA_AMP_CAPS OutAmpCapabilities;
+} HDA_WIDGET_MIXER;
+
+// Selector widget.
+typedef struct {
+    HDA_WIDGET Header;
+
+    HDA_AMP_CAPS InAmpCapabilities;
+    HDA_AMP_CAPS OutAmpCapabilities;
+} HDA_WIDGET_SELECTOR;
+
+// Power widget.
+typedef struct {
+    HDA_WIDGET Header;
+} HDA_WIDGET_POWER;
+
+// Volume Knob widget.
+typedef struct {
+    HDA_WIDGET Header;
+} HDA_WIDGET_VOLUME_KNOB;
+
+// Beep Generator widget.
+typedef struct {
+    HDA_WIDGET Header;
+} HDA_WIDGET_BEEP_GEN;
+
+typedef struct {
+    UINT8 NodeId;
+    HDA_FUNC_GROUP_TYPE Type;
+
+    HDA_WIDGET **Widgets;
+    UINTN WidgetsLength;
+} HDA_FUNC_GROUP;
+
 #endif
