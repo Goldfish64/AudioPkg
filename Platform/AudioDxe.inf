@@ -43,6 +43,7 @@
   PcdLib
   UefiBootServicesTableLib
   UefiDriverEntryPoint
+  UefiFileHandleLib
   UefiLib
   UefiRuntimeServicesTableLib
 

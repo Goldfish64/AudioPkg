@@ -49,9 +49,9 @@ typedef struct {
 #define HDA_MAX_CODECS 15
 
 #define PCI_HDA_TCSEL_OFFSET    0x44
-#define PCI_HDA_TCSEL_TC0_MASK  0xF8
+#define PCI_HDA_TCSEL_TC0_MASK  ~(BIT0 | BIT1 | BIT2)
 #define PCI_HDA_DEVC_OFFSET     0x78
-#define PCI_HDA_DEVC_NOSNOOPEN  (1 < 11)
+#define PCI_HDA_DEVC_NOSNOOPEN  BIT11
 
 #define HDA_CORB_VERB(Cad, Nid, Verb) ((((UINT32)Cad) << 28) | (((UINT32)Nid) << 20) | (Verb & 0xFFFFF))
 
@@ -66,6 +66,7 @@ typedef struct {
 #pragma pack(1)
 typedef struct {
     UINT64 Address;
+  //  UINT32 AddressHigh;
     UINT32 Length;
     UINT32 Reserved;
 } HDA_BDL_ENTRY;
@@ -117,6 +118,8 @@ typedef struct {
     EFI_EVENT ExitBootServiceEvent;
     SPIN_LOCK SpinLock;
     HDA_CONTROLLER_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
+
+    UINT32 *dmaList;
 } HDA_CONTROLLER_DEV;
 
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')

@@ -45,6 +45,7 @@
 //
 #include <Protocol/DevicePath.h>
 #include <Protocol/DriverBinding.h>
+#include <Protocol/SimpleFileSystem.h>
 
 // Driver version
 #define AUDIODXE_VERSION    0xA
