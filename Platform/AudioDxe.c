@@ -48,6 +48,128 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding = {
     NULL
 };
 
+// Outputs a byte to the specified port.
+void outb(UINT16 port, UINT8 data)
+{
+    asm volatile("outb %0, %1" : : "a"(data), "Nd"(port));
+}
+
+// Gets a byte from the specified port.
+UINT8 inb(UINT16 port)
+{
+    UINT8 data;
+    asm volatile("inb %1, %0" : "=a"(data) : "Nd"(port));
+    return data;
+}
+
+// Outputs a short (word) to the specified port.
+void outw(UINT16 port, UINT16 data)
+{
+    asm volatile("outw %0, %1" : : "a"(data), "Nd"(port));
+}
+
+// Gets a short (word) from the specified port.
+UINT16 inw(UINT16 port)
+{
+    UINT16 data;
+    asm volatile("inw %1, %0" : "=a"(data) : "Nd"(port));
+    return data;
+}
+
+// -----------------------------------------------------------------------------
+
+// Outputs 4 bytes to the specified port.
+void outl(UINT16 port, UINT32 data)
+{
+    asm volatile("outl %%eax, %%dx" : : "dN" (port), "a" (data));
+}
+
+// Gets 4 bytes from the specified port.
+UINT32 inl(UINT16 port)
+{
+    UINT32 rv;
+    asm volatile ("inl %%dx, %%eax" : "=a" (rv) : "dN" (port));
+    return rv;
+}
+
+
+
+
+EFI_STATUS
+EFIAPI
+AudioAppInit(
+    IN EFI_HANDLE ImageHandle,
+    IN EFI_SYSTEM_TABLE *SystemTable) {
+    DEBUG((DEBUG_INFO, "Starting Audioapp...\n"));
+
+    EFI_PCI_IO_PROTOCOL *PciIo;
+
+    EFI_HANDLE* handles = NULL;   
+    UINTN handleCount = 0;
+    EFI_STATUS Status;
+
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiPciIoProtocolGuid, NULL, &handleCount, &handles);
+    ASSERT_EFI_ERROR(Status);
+    BOOLEAN gotdevice = FALSE;
+
+    Print(L"handles %u\n", handleCount);
+    UINTN device;
+
+    // Get audio controller.
+    for (int i = 0; i < handleCount; i++) {
+        Status = gBS->HandleProtocol(handles[i], &gEfiPciIoProtocolGuid, (void**)&PciIo);
+        ASSERT_EFI_ERROR(Status);
+
+        UINTN tmp;
+        
+        Status = PciIo->GetLocation(PciIo, &tmp, &tmp, &device, &tmp);
+        ASSERT_EFI_ERROR(Status);
+        Print(L"devic 0x%X\n", device);
+
+        if (device == 0x1B) {
+            gotdevice = TRUE;
+            break;
+        }
+    }
+
+    if (!gotdevice)
+        return EFI_UNSUPPORTED;
+
+    
+
+    
+
+   /* UINTN bytes = 0x150;
+    DEBUG((DEBUG_INFO, "== 8-bit: ==\n"));
+    for (int i = 0; i < bytes; i++) {
+        UINT8 data;
+        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, i, 1, &data);
+        DEBUG((DEBUG_INFO, "0x%X: %2X\n", i, data));
+    }
+
+    DEBUG((DEBUG_INFO, "== 16-bit: ==\n"));
+    for (int i = 0; i < bytes; i+=2) {
+        UINT16 data;
+        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, i, 1, &data);
+        DEBUG((DEBUG_INFO, "0x%X: %4X\n", i, data));
+    }*/
+
+    DEBUG((DEBUG_INFO, "== 32-bit: ==\n"));
+    for (int i = 0; i < 0x50; i+=4) {
+        UINT32 data;
+        //outl(0xCF8, (device << 11) | i | 0x80000000);
+
+        //UINT32 data = inl(0xCFC);
+
+        
+       // UINT32 data = PciRead32(PCI_LIB_ADDRESS(0, device, 0, i));
+        PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, EFI_PCI_IO_PASS_THROUGH_BAR, i, 1, &data);
+        DEBUG((DEBUG_INFO, "0x%X: %8X\n", i, data));
+    }
+
+    return EFI_SUCCESS;
+}
+
 EFI_STATUS
 EFIAPI
 AudioDxeInit(

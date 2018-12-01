@@ -126,9 +126,9 @@ HdaControllerResponsePollTimerHandler(
     
     UINT32 lpib;
     HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDLPIB(0), 1, &lpib);
-    //DEBUG((DEBUG_INFO, "LPIB: 0x%X\n", lpib));
+    DEBUG((DEBUG_INFO, "LPIB: 0x%X\n", lpib));
 
- //  DEBUG((DEBUG_INFO, "pos streams %u %u %u %u %u %u\n", HdaDev->dmaList[0], HdaDev->dmaList[2], HdaDev->dmaList[4], HdaDev->dmaList[6], HdaDev->dmaList[8], HdaDev->dmaList[10]));
+   DEBUG((DEBUG_INFO, "pos streams %u %u %u %u %u %u\n", HdaDev->dmaList[0], HdaDev->dmaList[2], HdaDev->dmaList[4], HdaDev->dmaList[6], HdaDev->dmaList[8], HdaDev->dmaList[10]));
 }
 
 EFI_STATUS
@@ -531,6 +531,33 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
+  /*  UINT32 tmp = 0x81000022;
+    Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint32, 0x120, 1, &tmp);
+    gBS->Stall(MS_TO_MICROSECOND(1000));
+
+    UINTN bytes = 0x150;
+    DEBUG((DEBUG_INFO, "== 8-bit: ==\n"));
+    for (int i = 0; i < bytes; i++) {
+        UINT8 data;
+        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, i, 1, &data);
+        DEBUG((DEBUG_INFO, "0x%X: %2X\n", i, data));
+    }
+
+DEBUG((DEBUG_INFO, "== 16-bit: ==\n"));
+    for (int i = 0; i < bytes; i+=2) {
+        UINT16 data;
+        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, i, 1, &data);
+        DEBUG((DEBUG_INFO, "0x%X: %4X\n", i, data));
+    }
+
+DEBUG((DEBUG_INFO, "== 32-bit: ==\n"));
+    for (int i = 0; i < bytes; i+=4) {
+        UINT32 data;
+        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, i, 1, &data);
+        DEBUG((DEBUG_INFO, "0x%X: %8X\n", i, data));
+    }
+    return EFI_SUCCESS;*/
+
     // Get vendor and device IDs of PCI device.
     Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, PCI_VENDOR_ID_OFFSET, 1, &HdaVendorDeviceId);
     if (EFI_ERROR (Status))
@@ -541,7 +568,7 @@ HdaControllerDriverBindingStart(
 
     // Is this an Intel controller?
     if (GET_PCI_VENDOR_ID(HdaVendorDeviceId) == VEN_INTEL_ID) {
-        DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
+      /*  DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
         UINT8 HdaTcSel;
         
         // Set TC0 in TCSEL register.
@@ -551,7 +578,7 @@ HdaControllerDriverBindingStart(
         HdaTcSel &= PCI_HDA_TCSEL_TC0_MASK;
         Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_TCSEL_OFFSET, 1, &HdaTcSel);
         if (EFI_ERROR (Status))
-            goto CLOSE_PCIIO;
+            goto CLOSE_PCIIO;*/
     } else {
         return EFI_SUCCESS; //temp.
     }
@@ -568,6 +595,12 @@ HdaControllerDriverBindingStart(
     Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
     if (EFI_ERROR (Status))
         goto CLOSE_PCIIO;
+    DEBUG((DEBUG_INFO, "snoop register: 0x%X 0x%X 0x%X\n", HdaDevC, PCI_HDA_DEVC_NOSNOOPEN, ~PCI_HDA_DEVC_NOSNOOPEN));
+
+    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
+    if (EFI_ERROR (Status))
+        goto CLOSE_PCIIO;
+    DEBUG((DEBUG_INFO, "snoop register: 0x%X\n", HdaDevC));
 
     // Get major/minor version.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &HdaMajorVersion);
@@ -737,11 +770,18 @@ HdaControllerDriverBindingStart(
     ASSERT_EFI_ERROR(Status);
 
 
-    HdaStreamCtl.Number = 1;
+    HdaStreamCtl.Number = 6;
+    HdaStreamCtl.BidirOutput = 1;
+    HdaStreamCtl.StripeControl = 0;
+    HdaStreamCtl.PriorityTraffic = 0;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
     ASSERT_EFI_ERROR(Status);
 
-    UINT16 lvi = 1;
+    UINT16 lvi;
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDLVI(1+4), 1, &lvi);
+    ASSERT_EFI_ERROR(Status);
+    lvi &= 0xFF00;
+    lvi |= 1;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDLVI(1+4), 1, &lvi);
     ASSERT_EFI_ERROR(Status);
 

@@ -51,7 +51,7 @@ typedef struct {
 #define PCI_HDA_TCSEL_OFFSET    0x44
 #define PCI_HDA_TCSEL_TC0_MASK  0xF8
 #define PCI_HDA_DEVC_OFFSET     0x78
-#define PCI_HDA_DEVC_NOSNOOPEN  (1 < 11)
+#define PCI_HDA_DEVC_NOSNOOPEN  (1 << 11)
 
 #define HDA_CORB_VERB(Cad, Nid, Verb) ((((UINT32)Cad) << 28) | (((UINT32)Nid) << 20) | (Verb & 0xFFFFF))
 
@@ -65,8 +65,8 @@ typedef struct {
 // Buffer Descriptor List Entry.
 #pragma pack(1)
 typedef struct {
-    UINT32 Address;
-    UINT32 AddressHigh;
+    UINT64 Address;
+  //  UINT32 AddressHigh;
     UINT32 Length;
     UINT32 Reserved;
 } HDA_BDL_ENTRY;

@@ -103,6 +103,6 @@ if [ "$MODE" = "" ] || [ "$MODE" = "DEBUG" ] || [ "$MODE" = "SANITIZE" ]; then
   build -a X64 -b DEBUG -t XCODE5 -p AudioPkg/AudioPkg.dsc || exit 1
 fi
 
-if [ "$MODE" = "" ] || [ "$MODE" = "RELEASE" ]; then
-  build -a X64 -b RELEASE -t XCODE5 -p AudioPkg/AudioPkg.dsc || exit 1
-fi
+#if [ "$MODE" = "" ] || [ "$MODE" = "RELEASE" ]; then
+#  build -a X64 -b RELEASE -t XCODE5 -p AudioPkg/AudioPkg.dsc || exit 1
+#fi
