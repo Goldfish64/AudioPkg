@@ -94,7 +94,7 @@
 #define HDA_VERB_SET_INPUT_CONV_SDI_SELECT      0x704 // Set Input Converter SDI Select.
 #define HDA_VERB_SET_POWER_STATE                0x705 // Set Power State.
 #define HDA_VERB_SET_CONVERTER_STREAM_CHANNEL   0x706 // Set Converter Stream, Channel.
-#define HDA_VERB_SET_PIN_WIDSET_CONTROL         0x707 // Set Pin Widget Control.
+#define HDA_VERB_SET_PIN_WIDGET_CONTROL         0x707 // Set Pin Widget Control.
 #define HDA_VERB_SET_UNSOL_RESPONSE             0x708 // Set Unsolicited Response.
 #define HDA_VERB_SET_PIN_SENSE                  0x709 // Set Pin Sense.
 #define HDA_VERB_SET_BEEP_GENERATION            0x70A // Set Beep Generation.
