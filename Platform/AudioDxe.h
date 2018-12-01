@@ -40,9 +40,6 @@
 #include <Library/SynchronizationLib.h>
 #include <Protocol/DevicePathUtilities.h>
 
-#include <Library/PciLib.h>
-#include <Protocol/PciRootBridgeIo.h>
-
 //
 // Proctols that are consumed.
 //

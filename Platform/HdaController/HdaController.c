@@ -531,33 +531,6 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
 
-  /*  UINT32 tmp = 0x81000022;
-    Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint32, 0x120, 1, &tmp);
-    gBS->Stall(MS_TO_MICROSECOND(1000));
-
-    UINTN bytes = 0x150;
-    DEBUG((DEBUG_INFO, "== 8-bit: ==\n"));
-    for (int i = 0; i < bytes; i++) {
-        UINT8 data;
-        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint8, i, 1, &data);
-        DEBUG((DEBUG_INFO, "0x%X: %2X\n", i, data));
-    }
-
-DEBUG((DEBUG_INFO, "== 16-bit: ==\n"));
-    for (int i = 0; i < bytes; i+=2) {
-        UINT16 data;
-        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, i, 1, &data);
-        DEBUG((DEBUG_INFO, "0x%X: %4X\n", i, data));
-    }
-
-DEBUG((DEBUG_INFO, "== 32-bit: ==\n"));
-    for (int i = 0; i < bytes; i+=4) {
-        UINT32 data;
-        PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, i, 1, &data);
-        DEBUG((DEBUG_INFO, "0x%X: %8X\n", i, data));
-    }
-    return EFI_SUCCESS;*/
-
     // Get vendor and device IDs of PCI device.
     Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, PCI_VENDOR_ID_OFFSET, 1, &HdaVendorDeviceId);
     if (EFI_ERROR (Status))
@@ -568,7 +541,7 @@ DEBUG((DEBUG_INFO, "== 32-bit: ==\n"));
 
     // Is this an Intel controller?
     if (GET_PCI_VENDOR_ID(HdaVendorDeviceId) == VEN_INTEL_ID) {
-      /*  DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
+        DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
         UINT8 HdaTcSel;
         
         // Set TC0 in TCSEL register.
@@ -578,7 +551,7 @@ DEBUG((DEBUG_INFO, "== 32-bit: ==\n"));
         HdaTcSel &= PCI_HDA_TCSEL_TC0_MASK;
         Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_TCSEL_OFFSET, 1, &HdaTcSel);
         if (EFI_ERROR (Status))
-            goto CLOSE_PCIIO;*/
+            goto CLOSE_PCIIO;
     } else {
         return EFI_SUCCESS; //temp.
     }
@@ -705,7 +678,7 @@ DEBUG((DEBUG_INFO, "== 32-bit: ==\n"));
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
 
-    
+        
 
     EFI_HANDLE* handles = NULL;   
     UINTN handleCount = 0;
