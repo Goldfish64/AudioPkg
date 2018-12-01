@@ -65,7 +65,8 @@ typedef struct {
 // Buffer Descriptor List Entry.
 #pragma pack(1)
 typedef struct {
-    UINT64 Address;
+    UINT32 Address;
+    UINT32 AddressHigh;
     UINT32 Length;
     UINT32 Reserved;
 } HDA_BDL_ENTRY;
@@ -117,6 +118,8 @@ typedef struct {
     EFI_EVENT ExitBootServiceEvent;
     SPIN_LOCK SpinLock;
     HDA_CONTROLLER_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
+
+    UINT32 *dmaList;
 } HDA_CONTROLLER_DEV;
 
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')

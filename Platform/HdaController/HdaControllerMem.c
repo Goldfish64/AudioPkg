@@ -549,6 +549,8 @@ HdaControllerInitStreams(
             if (EFI_ERROR(Status))
                 goto FREE_BUFFER;
         }
+
+        break;
     }
 
     // Success.
