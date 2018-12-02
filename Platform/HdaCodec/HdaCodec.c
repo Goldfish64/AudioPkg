@@ -405,7 +405,7 @@ HdaCodecDriverBindingStart(
     ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "0x02 output channels 0x%X\n", Tmp));*/
 
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
+   /* Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
     ASSERT_EFI_ERROR(Status);
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
     ASSERT_EFI_ERROR(Status);
@@ -421,24 +421,42 @@ HdaCodecDriverBindingStart(
     ASSERT_EFI_ERROR(Status);
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
     ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x17 speaker pin ctls: 0x%X\n", Tmp));
+    DEBUG((DEBUG_INFO, "0x17 speaker pin ctls: 0x%X\n", Tmp));   8300*/
+
+    // dc7700
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "0x16 speaker amp 0x%X\n", Tmp));
+
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "0x16 speaker pin ctls: 0x%X\n", Tmp));
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "0x16 speaker conn list: 0x%X\n", Tmp));
 
 
-    
-   /* Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0f, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB01F), &Tmp);
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
     ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0f, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
+    DEBUG((DEBUG_INFO, "0x0e mixer list: 0x%X\n", Tmp));
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB01F), &Tmp);
     ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0f mixer amp-out 0x%X\n", Tmp));*/
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "0x0e mixer amp-out 0x%X\n", Tmp));
 
-   /* Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0f, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x7000), &Tmp);
+    //Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x7000), &Tmp);
+    //ASSERT_EFI_ERROR(Status);
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2000), &Tmp);
     ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0f, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2000), &Tmp);
+    DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 0 0x%X\n", Tmp));
+    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2001), &Tmp);
     ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0f mixer amp-in index 0 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0f, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2001), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0f mixer amp-in index 1 0x%X\n", Tmp));*/
+    DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 1 0x%X\n", Tmp));
 
   /*  Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB057), &Tmp);
     ASSERT_EFI_ERROR(Status);
