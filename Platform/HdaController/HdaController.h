@@ -65,8 +65,8 @@ typedef struct {
 // Buffer Descriptor List Entry.
 #pragma pack(1)
 typedef struct {
-    UINT64 Address;
-  //  UINT32 AddressHigh;
+    UINT32 Address;
+    UINT32 AddressHigh;
     UINT32 Length;
     UINT32 Reserved;
 } HDA_BDL_ENTRY;
