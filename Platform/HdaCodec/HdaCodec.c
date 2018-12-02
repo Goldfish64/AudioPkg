@@ -27,7 +27,7 @@
 #include "HdaCodecComponentName.h"
 #include "HdaVerbs.h"
 
-EFI_STATUS
+/*EFI_STATUS
 EFIAPI
 HdaCodecGetDefaultData(
     HDA_CODEC_DEV *HdaCodecDev) {
@@ -180,6 +180,85 @@ HdaCodecGetDefaultData(
     }
 
     return EFI_SUCCESS;
+}*/
+
+EFI_STATUS
+EFIAPI
+HdaCodecProbeFuncGroup(
+    HDA_CODEC_DEV *HdaCodecDev,
+    UINT8 FuncIndex) {
+    DEBUG((DEBUG_INFO, "HdaCodecProbeFuncGroup(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo = HdaCodecDev->HdaCodecIo;
+    HDA_FUNC_GROUP *FuncGroup = HdaCodecDev->FuncGroups + FuncIndex;
+    UINT32 Response;
+
+    // Get function group type.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncGroup->Type = HDA_PARAMETER_FUNC_GROUP_TYPE_NODETYPE(Response);
+
+    // Determine if function group is an audio one. If not, we cannot support it.
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X is of type 0x%X\n", FuncGroup->NodeId, FuncGroup->Type));
+    if (FuncGroup->Type != HDA_FUNC_GROUP_TYPE_AUDIO)
+        return EFI_SUCCESS;
+    
+
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaCodecProbeCodec(
+    HDA_CODEC_DEV *HdaCodecDev) {
+    DEBUG((DEBUG_INFO, "HdaCodecProbeCodec(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo = HdaCodecDev->HdaCodecIo;
+    UINT32 Response;
+    UINT8 FuncStart;
+    UINT8 FuncEnd;
+    UINT8 FuncCount;
+
+    // Get vendor and device ID.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    HdaCodecDev->VendorId = HDA_PARAMETER_VENDOR_ID_VEN(Response);
+    HdaCodecDev->DeviceId = HDA_PARAMETER_VENDOR_ID_DEV(Response);
+    DEBUG((DEBUG_INFO, "Codec ID: 0x%X:0x%X\n", HdaCodecDev->VendorId, HdaCodecDev->DeviceId));
+
+    // Get revision ID.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    HdaCodecDev->RevisionId = HDA_PARAMETER_REVISION_ID_REV_ID(Response);
+    HdaCodecDev->SteppindId = HDA_PARAMETER_REVISION_ID_STEPPING(Response);
+    
+    // Get function group count.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncStart = HDA_PARAMETER_SUBNODE_COUNT_START(Response);
+    FuncCount = HDA_PARAMETER_SUBNODE_COUNT_TOTAL(Response);
+    FuncEnd = FuncStart + FuncCount;
+    DEBUG((DEBUG_INFO, "%u function groups present, starting at 0x%X, ending at 0x%X\n", FuncCount, FuncStart, FuncEnd));
+
+    // Allocate space for function groups.
+    HdaCodecDev->FuncGroups = AllocateZeroPool(sizeof(HDA_FUNC_GROUP) * FuncCount);
+    HdaCodecDev->FuncGroupsCount = FuncCount;
+
+    // Probe functions.
+    for (UINT8 i = 0; i < FuncCount; i++) {
+        HdaCodecDev->FuncGroups[i].NodeId = FuncStart + i;
+        Status = HdaCodecProbeFuncGroup(HdaCodecDev, i);
+    }
+
+    return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -188,28 +267,28 @@ HdaCodecDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
-    //DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported():start \n"));
 
     // Create variables.
     EFI_STATUS Status;
-    EFI_HDA_CODEC_PROTOCOL *HdaCodec;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo;
     UINT8 CodecAddress;
 
     // Attempt to open the HDA codec protocol. If it can be opened, we can support it.
-    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodec,
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodecIo,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
     
     // Get address of codec.
-    Status = HdaCodec->GetAddress(HdaCodec, &CodecAddress);
+    Status = HdaCodecIo->GetAddress(HdaCodecIo, &CodecAddress);
     if (EFI_ERROR(Status))
-        goto CLOSE_HDA;
+        goto CLOSE_CODEC;
 
+    // Codec can be supported.
     DEBUG((DEBUG_INFO, "HdaCodecDriverBindingSupported(): attaching to codec 0x%X\n", CodecAddress));
     Status = EFI_SUCCESS;
 
-CLOSE_HDA:
+CLOSE_CODEC:
     // Close protocol.
     gBS->CloseProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     return Status;
@@ -225,11 +304,11 @@ HdaCodecDriverBindingStart(
 
     // Create variables.
     EFI_STATUS Status;
-    EFI_HDA_CODEC_PROTOCOL *HdaCodecProto;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo;
     EFI_DEVICE_PATH_PROTOCOL *HdaCodecDevicePath;
     HDA_CODEC_DEV *HdaCodecDev;
 
-    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodecProto,
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, (VOID**)&HdaCodecIo,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
@@ -242,27 +321,30 @@ HdaCodecDriverBindingStart(
 
     // Create codec device.
     HdaCodecDev = AllocateZeroPool(sizeof(HDA_CODEC_DEV));
-    HdaCodecDev->HdaCodecProto = HdaCodecProto;
+    HdaCodecDev->HdaCodecIo = HdaCodecIo;
     HdaCodecDev->DevicePath = HdaCodecDevicePath;
     
     // Get default values for codec nodes.
-    Status = HdaCodecGetDefaultData(HdaCodecDev);
-    if (EFI_ERROR(Status))
-        goto FREE_DEVICE;
+    //Status = HdaCodecGetDefaultData(HdaCodecDev);
+  //  if (EFI_ERROR(Status))
+   //     goto FREE_DEVICE;
    // Status = HdaCodecPrintDefaults(HdaCodecDev);
    // if (EFI_ERROR(Status))
   //      goto FREE_DEVICE;
 
     // Get address of codec.
     UINT8 CodecAddress;
-    Status = HdaCodecProto->GetAddress(HdaCodecProto, &CodecAddress);
+    Status = HdaCodecIo->GetAddress(HdaCodecIo, &CodecAddress);
     
     if (CodecAddress > 0)
         return EFI_SUCCESS;
 
+    // Probe codec.
+    Status = HdaCodecProbeCodec(HdaCodecDev);
+
   // stream
   DEBUG((DEBUG_INFO, "Set data\n"));
-    UINT32 Tmp;
+  //  UINT32 Tmp;
 
 
     /*Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
@@ -422,7 +504,7 @@ HdaCodecDriverBindingStart(
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
     ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "0x17 speaker pin ctls: 0x%X\n", Tmp));   8300*/
-
+/*
     // dc7700
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
     ASSERT_EFI_ERROR(Status);
@@ -456,7 +538,7 @@ HdaCodecDriverBindingStart(
     DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 0 0x%X\n", Tmp));
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2001), &Tmp);
     ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 1 0x%X\n", Tmp));
+    DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 1 0x%X\n", Tmp));*/
 
   /*  Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB057), &Tmp);
     ASSERT_EFI_ERROR(Status);
@@ -464,7 +546,7 @@ HdaCodecDriverBindingStart(
     ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "0x02 output amp 0x%X\n", Tmp));*/
 
-
+/*
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
     ASSERT_EFI_ERROR(Status);
     Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Tmp);
@@ -487,7 +569,7 @@ HdaCodecDriverBindingStart(
     ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "0x01 poewr state 0x%X\n", Tmp));
 
-
+*/
 
   /* Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
     ASSERT_EFI_ERROR(Status);
@@ -602,7 +684,7 @@ HdaCodecDriverBindingStart(
     // Success.
     return EFI_SUCCESS;
 
-FREE_DEVICE:
+//FREE_DEVICE:
     // Free device.
     FreePool(HdaCodecDev);
 

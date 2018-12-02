@@ -30,11 +30,26 @@
 #include "HdaCodecProtocol.h"
 
 typedef struct {
-    EFI_HDA_CODEC_PROTOCOL *HdaCodecProto;
+    UINT8 NodeId;
+    UINT8 Type;
+
+    //HDA_WIDGET **Widgets;
+   // UINTN WidgetsLength;
+} HDA_FUNC_GROUP;
+
+typedef struct {
+    // Protocols.
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
 
-    HDA_FUNC_GROUP **FuncGroups;
-    UINTN FuncGroupsLength;
+    // Codec information.
+    UINT16 VendorId;
+    UINT16 DeviceId;
+    UINT8 RevisionId;
+    UINT8 SteppindId;
+
+    HDA_FUNC_GROUP *FuncGroups;
+    UINTN FuncGroupsCount;
     UINT8 AudioFuncGroup;
 } HDA_CODEC_DEV;
 

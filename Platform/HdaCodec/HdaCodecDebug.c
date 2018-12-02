@@ -25,7 +25,7 @@
 #include "HdaCodec.h"
 #include "HdaVerbs.h"
 
-EFI_STATUS
+/*EFI_STATUS
 EFIAPI
 HdaCodecPrintDefaults(
     HDA_CODEC_DEV *HdaCodecDev) {
@@ -202,4 +202,4 @@ HdaCodecPrintDefaults(
     }
 
     return EFI_SUCCESS;
-}
+}*/
