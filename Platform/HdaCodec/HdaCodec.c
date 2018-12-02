@@ -184,19 +184,44 @@ HdaCodecGetDefaultData(
 
 EFI_STATUS
 EFIAPI
+HdaCodecProbeWidget(
+    HDA_WIDGET *HdaWidget) {
+    DEBUG((DEBUG_INFO, "HdaCodecProbeWidget(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo = HdaWidget->FuncGroup->HdaCodecDev->HdaCodecIo;
+    UINT32 Response;
+
+    // Get widget capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    HdaWidget->Capabilities = Response;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->Capabilities));
+
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
 HdaCodecProbeFuncGroup(
-    HDA_CODEC_DEV *HdaCodecDev,
-    UINT8 FuncIndex) {
+    HDA_FUNC_GROUP *FuncGroup) {
     DEBUG((DEBUG_INFO, "HdaCodecProbeFuncGroup(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
-    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo = HdaCodecDev->HdaCodecIo;
-    HDA_FUNC_GROUP *FuncGroup = HdaCodecDev->FuncGroups + FuncIndex;
+    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo = FuncGroup->HdaCodecDev->HdaCodecIo;
     UINT32 Response;
 
+    UINT8 WidgetStart;
+    UINT8 WidgetEnd;
+    UINT8 WidgetCount;
+
     // Get function group type.
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &Response);
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &Response);
     if (EFI_ERROR(Status))
         return Status;
     FuncGroup->Type = HDA_PARAMETER_FUNC_GROUP_TYPE_NODETYPE(Response);
@@ -204,8 +229,49 @@ HdaCodecProbeFuncGroup(
     // Determine if function group is an audio one. If not, we cannot support it.
     DEBUG((DEBUG_INFO, "Function group @ 0x%X is of type 0x%X\n", FuncGroup->NodeId, FuncGroup->Type));
     if (FuncGroup->Type != HDA_FUNC_GROUP_TYPE_AUDIO)
-        return EFI_SUCCESS;
-    
+        return EFI_UNSUPPORTED;
+
+    // Get function group capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncGroup->Capabilities = Response;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->Capabilities));
+
+    // Get default supported PCM sizes/rates.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncGroup->SupportedPcmRates = Response;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X supported PCM sizes/rates: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedPcmRates));
+
+    // Get number of widgets in function group.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    WidgetStart = HDA_PARAMETER_SUBNODE_COUNT_START(Response);
+    WidgetCount = HDA_PARAMETER_SUBNODE_COUNT_TOTAL(Response);
+    WidgetEnd = WidgetStart + WidgetCount - 1;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X contains %u widgets, start @ 0x%X, end @ 0x%X\n",
+        FuncGroup->NodeId, WidgetCount, WidgetStart, WidgetEnd));
+
+    // Ensure there are widgets.
+    if (WidgetCount == 0)
+        return EFI_UNSUPPORTED;
+
+    // Allocate space for widgets.
+    FuncGroup->Widgets = AllocateZeroPool(sizeof(HDA_WIDGET) * WidgetCount);
+    FuncGroup->WidgetsCount = WidgetCount;
+
+    // Probe widgets.
+    for (UINT8 i = 0; i < WidgetCount; i++) {
+        FuncGroup->Widgets[i].FuncGroup = FuncGroup;
+        FuncGroup->Widgets[i].NodeId = WidgetStart + i;
+        Status = HdaCodecProbeWidget(FuncGroup->Widgets + i);
+    }
 
     return EFI_SUCCESS;
 }
@@ -225,7 +291,8 @@ HdaCodecProbeCodec(
     UINT8 FuncCount;
 
     // Get vendor and device ID.
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &Response);
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &Response);
     if (EFI_ERROR(Status))
         return Status;
     HdaCodecDev->VendorId = HDA_PARAMETER_VENDOR_ID_VEN(Response);
@@ -233,20 +300,26 @@ HdaCodecProbeCodec(
     DEBUG((DEBUG_INFO, "Codec ID: 0x%X:0x%X\n", HdaCodecDev->VendorId, HdaCodecDev->DeviceId));
 
     // Get revision ID.
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &Response);
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &Response);
     if (EFI_ERROR(Status))
         return Status;
     HdaCodecDev->RevisionId = HDA_PARAMETER_REVISION_ID_REV_ID(Response);
     HdaCodecDev->SteppindId = HDA_PARAMETER_REVISION_ID_STEPPING(Response);
     
     // Get function group count.
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HDA_NID_ROOT,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
     if (EFI_ERROR(Status))
         return Status;
     FuncStart = HDA_PARAMETER_SUBNODE_COUNT_START(Response);
     FuncCount = HDA_PARAMETER_SUBNODE_COUNT_TOTAL(Response);
-    FuncEnd = FuncStart + FuncCount;
-    DEBUG((DEBUG_INFO, "%u function groups present, starting at 0x%X, ending at 0x%X\n", FuncCount, FuncStart, FuncEnd));
+    FuncEnd = FuncStart + FuncCount - 1;
+    DEBUG((DEBUG_INFO, "Codec contains %u function groups, start @ 0x%X, end @ 0x%X\n", FuncCount, FuncStart, FuncEnd));
+
+    // Ensure there are functions.
+    if (FuncCount == 0)
+        return EFI_UNSUPPORTED;
 
     // Allocate space for function groups.
     HdaCodecDev->FuncGroups = AllocateZeroPool(sizeof(HDA_FUNC_GROUP) * FuncCount);
@@ -254,8 +327,9 @@ HdaCodecProbeCodec(
 
     // Probe functions.
     for (UINT8 i = 0; i < FuncCount; i++) {
+        HdaCodecDev->FuncGroups[i].HdaCodecDev = HdaCodecDev;
         HdaCodecDev->FuncGroups[i].NodeId = FuncStart + i;
-        Status = HdaCodecProbeFuncGroup(HdaCodecDev, i);
+        Status = HdaCodecProbeFuncGroup(HdaCodecDev->FuncGroups + i);
     }
 
     return EFI_SUCCESS;

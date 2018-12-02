@@ -29,15 +29,29 @@
 #include "HdaVerbs.h"
 #include "HdaCodecProtocol.h"
 
+typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
+typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
+
 typedef struct {
+    HDA_FUNC_GROUP *FuncGroup;
     UINT8 NodeId;
     UINT8 Type;
 
-    //HDA_WIDGET **Widgets;
-   // UINTN WidgetsLength;
-} HDA_FUNC_GROUP;
+    UINT32 Capabilities;
+} HDA_WIDGET;
 
-typedef struct {
+struct _HDA_FUNC_GROUP {
+    HDA_CODEC_DEV *HdaCodecDev;
+    UINT8 NodeId;
+    UINT8 Type;
+    UINT32 Capabilities;
+    UINT32 SupportedPcmRates;
+
+    HDA_WIDGET *Widgets;
+    UINT8 WidgetsCount;
+};
+
+struct _HDA_CODEC_DEV {
     // Protocols.
     EFI_HDA_CODEC_PROTOCOL *HdaCodecIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
@@ -51,7 +65,7 @@ typedef struct {
     HDA_FUNC_GROUP *FuncGroups;
     UINTN FuncGroupsCount;
     UINT8 AudioFuncGroup;
-} HDA_CODEC_DEV;
+};
 
 EFI_STATUS
 EFIAPI

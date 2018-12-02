@@ -437,7 +437,7 @@ typedef struct {
 // Widget structures.
 //
 // Generic widget.
-typedef struct {
+/*typedef struct {
     UINT8 NodeId;
     //HDA_WIDGET_CAPS Capabilities;
     UINTN Length;
@@ -497,7 +497,7 @@ typedef struct {
 // Beep Generator widget.
 typedef struct {
     HDA_WIDGET Header;
-} HDA_WIDGET_BEEP_GEN;
+} HDA_WIDGET_BEEP_GEN;*/
 
 
 
