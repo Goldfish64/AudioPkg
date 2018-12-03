@@ -45,7 +45,12 @@ struct _HDA_FUNC_GROUP {
     UINT8 NodeId;
     UINT8 Type;
     UINT32 Capabilities;
+
+    // Defaults for widgets.
     UINT32 SupportedPcmRates;
+    UINT32 SupportedFormats;
+    UINT32 AmpInCapabilities;
+    UINT32 AmpOutCapabilities;
 
     HDA_WIDGET *Widgets;
     UINT8 WidgetsCount;

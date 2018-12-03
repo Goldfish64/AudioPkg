@@ -247,6 +247,30 @@ HdaCodecProbeFuncGroup(
     FuncGroup->SupportedPcmRates = Response;
     DEBUG((DEBUG_INFO, "Function group @ 0x%X supported PCM sizes/rates: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedPcmRates));
 
+    // Get default supported stream formats.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncGroup->SupportedFormats = Response;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X supported formats: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedFormats));
+
+    // Get default input amp capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncGroup->AmpInCapabilities = Response;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X input amp capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->AmpInCapabilities));
+
+    // Get default output amp capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &Response);
+    if (EFI_ERROR(Status))
+        return Status;
+    FuncGroup->AmpOutCapabilities = Response;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X output amp capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->AmpOutCapabilities));
+
     // Get number of widgets in function group.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
         HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
