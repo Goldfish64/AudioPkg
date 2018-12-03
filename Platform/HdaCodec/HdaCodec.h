@@ -37,20 +37,31 @@ typedef struct {
     UINT8 NodeId;
     UINT8 Type;
 
+    // Capabilities.
     UINT32 Capabilities;
+    UINT32 SupportedPcmRates;
+    UINT32 SupportedFormats;
+    UINT32 AmpInCapabilities;
+    UINT32 AmpOutCapabilities;
+    UINT32 PinCapabilities;
+    UINT32 ConnectionListLength;
+    UINT32 SupportedPowerStates;
+
 } HDA_WIDGET;
 
 struct _HDA_FUNC_GROUP {
     HDA_CODEC_DEV *HdaCodecDev;
     UINT8 NodeId;
     UINT8 Type;
+    
+    // Capabilities.
     UINT32 Capabilities;
-
-    // Defaults for widgets.
     UINT32 SupportedPcmRates;
     UINT32 SupportedFormats;
     UINT32 AmpInCapabilities;
     UINT32 AmpOutCapabilities;
+    UINT32 SupportedPowerStates;
+    UINT32 GpioCapabilities;
 
     HDA_WIDGET *Widgets;
     UINT8 WidgetsCount;

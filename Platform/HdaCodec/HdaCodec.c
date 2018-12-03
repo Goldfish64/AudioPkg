@@ -191,15 +191,65 @@ HdaCodecProbeWidget(
     // Create variables.
     EFI_STATUS Status;
     EFI_HDA_CODEC_PROTOCOL *HdaCodecIo = HdaWidget->FuncGroup->HdaCodecDev->HdaCodecIo;
-    UINT32 Response;
+    //UINT32 Response;
 
     // Get widget capabilities.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &HdaWidget->Capabilities);
     if (EFI_ERROR(Status))
         return Status;
-    HdaWidget->Capabilities = Response;
+    HdaWidget->Type = HDA_PARAMETER_WIDGET_CAPS_TYPE(HdaWidget->Capabilities);
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X type: 0x%X\n", HdaWidget->NodeId, HdaWidget->Type));
     DEBUG((DEBUG_INFO, "Widget @ 0x%X capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->Capabilities));
+
+    // Get supported PCM sizes/rates.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &HdaWidget->SupportedPcmRates);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X supported PCM sizes/rates: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPcmRates));
+
+    // Get supported stream formats.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &HdaWidget->SupportedFormats);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X supported formats: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedFormats));
+
+    // Get input amp capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &HdaWidget->AmpInCapabilities);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X input amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpInCapabilities));
+
+    // Get output amp capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &HdaWidget->AmpOutCapabilities);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X output amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpOutCapabilities));
+
+    // Get pin capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_PIN_CAPS), &HdaWidget->PinCapabilities);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X pin capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->PinCapabilities));
+
+    // Get connection list length.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_CONN_LIST_LENGTH), &HdaWidget->ConnectionListLength);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X connection list length: 0x%X\n", HdaWidget->NodeId, HdaWidget->ConnectionListLength));
+
+    // Get supported power states.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &HdaWidget->SupportedPowerStates);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Widget @ 0x%X supported power states: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPowerStates));
 
     return EFI_SUCCESS;
 }
@@ -233,43 +283,52 @@ HdaCodecProbeFuncGroup(
 
     // Get function group capabilities.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &FuncGroup->Capabilities);
     if (EFI_ERROR(Status))
         return Status;
-    FuncGroup->Capabilities = Response;
     DEBUG((DEBUG_INFO, "Function group @ 0x%X capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->Capabilities));
 
     // Get default supported PCM sizes/rates.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &FuncGroup->SupportedPcmRates);
     if (EFI_ERROR(Status))
         return Status;
-    FuncGroup->SupportedPcmRates = Response;
     DEBUG((DEBUG_INFO, "Function group @ 0x%X supported PCM sizes/rates: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedPcmRates));
 
     // Get default supported stream formats.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &FuncGroup->SupportedFormats);
     if (EFI_ERROR(Status))
         return Status;
-    FuncGroup->SupportedFormats = Response;
     DEBUG((DEBUG_INFO, "Function group @ 0x%X supported formats: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedFormats));
 
     // Get default input amp capabilities.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &FuncGroup->AmpInCapabilities);
     if (EFI_ERROR(Status))
         return Status;
-    FuncGroup->AmpInCapabilities = Response;
     DEBUG((DEBUG_INFO, "Function group @ 0x%X input amp capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->AmpInCapabilities));
 
     // Get default output amp capabilities.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &FuncGroup->AmpOutCapabilities);
     if (EFI_ERROR(Status))
         return Status;
-    FuncGroup->AmpOutCapabilities = Response;
     DEBUG((DEBUG_INFO, "Function group @ 0x%X output amp capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->AmpOutCapabilities));
+
+    // Get supported power states.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &FuncGroup->SupportedPowerStates);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X supported power states: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedPowerStates));
+
+    // Get GPIO capabilities.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_GPIO_COUNT), &FuncGroup->GpioCapabilities);
+    if (EFI_ERROR(Status))
+        return Status;
+    DEBUG((DEBUG_INFO, "Function group @ 0x%X GPIO capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->GpioCapabilities));
 
     // Get number of widgets in function group.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
