@@ -282,7 +282,7 @@
 #define HDA_CONFIG_DEFAULT_LOC_SPEC_BOTTOM  0x6
 
 #define HDA_VERB_GET_CONFIGURATION_DEFAULT_SURF(a) \
-    ((UINT8)((a > 28) & 0x3))
+    ((UINT8)((a >> 28) & 0x3))
 #define HDA_CONFIG_DEFAULT_LOC_SURF_EXTERNAL    0x0
 #define HDA_CONFIG_DEFAULT_LOC_SURF_INTERNAL    0x1
 #define HDA_CONFIG_DEFAULT_LOC_SURF_SEPARATE    0x2
@@ -290,7 +290,7 @@
 
 // Configuration Default port connectivity.
 #define HDA_VERB_GET_CONFIGURATION_DEFAULT_PORT_CONN(a) \
-    ((UINT8)((a > 30) & 0x3))
+    ((UINT8)((a >> 30) & 0x3))
 #define HDA_CONFIG_DEFAULT_PORT_CONN_JACK           0x0
 #define HDA_CONFIG_DEFAULT_PORT_CONN_NONE           0x1
 #define HDA_CONFIG_DEFAULT_PORT_CONN_FIXED_DEVICE   0x2
