@@ -37,16 +37,43 @@ typedef struct {
     UINT8 NodeId;
     UINT8 Type;
 
-    // Capabilities.
+    // General widgets.
     UINT32 Capabilities;
-    UINT32 SupportedPcmRates;
-    UINT32 SupportedFormats;
+    UINT8 DefaultUnSol;
+    UINT8 DefaultEapd;
+
+    // Connections.
+    UINT32 ConnectionListLength;
+    UINT16 *Connections;
+    UINT8 ConnectionCount;
+
+    // Power.
+    UINT32 SupportedPowerStates;
+    UINT32 DefaultPowerState;
+
+    // Amps.
     UINT32 AmpInCapabilities;
     UINT32 AmpOutCapabilities;
-    UINT32 PinCapabilities;
-    UINT32 ConnectionListLength;
-    UINT32 SupportedPowerStates;
+    UINT8 *AmpInLeftDefaultGainMute;
+    UINT8 *AmpInRightDefaultGainMute;
+    UINT8 AmpOutLeftDefaultGainMute;
+    UINT8 AmpOutRightDefaultGainMute;
 
+    // Input/Output.
+    UINT32 SupportedPcmRates;
+    UINT32 SupportedFormats;
+    UINT16 DefaultConvFormat;
+    UINT8 DefaultConvStreamChannel;
+    UINT8 DefaultConvChannelCount;
+
+    // Pin Complex.
+    UINT32 PinCapabilities;
+    UINT8 DefaultPinControl;
+    UINT32 DefaultConfiguration;
+
+    // Volume Knob.
+    UINT32 VolumeCapabilities;
+    UINT8 DefaultVolume;
 } HDA_WIDGET;
 
 struct _HDA_FUNC_GROUP {

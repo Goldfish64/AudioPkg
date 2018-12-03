@@ -678,9 +678,13 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
 
+    // Scan for codecs.
+    Status = HdaControllerScanCodecs(HdaDev, This, ControllerHandle);
+    ASSERT_EFI_ERROR(Status);
+
         
 
-    EFI_HANDLE* handles = NULL;   
+   /* EFI_HANDLE* handles = NULL;   
     UINTN handleCount = 0;
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
@@ -781,11 +785,7 @@ HdaControllerDriverBindingStart(
     UINT32 stes;
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 1, &stes);
     ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "stream cntl 0x%X\n", stes));
-
-    // Scan for codecs.
-    Status = HdaControllerScanCodecs(HdaDev, This, ControllerHandle);
-    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "stream cntl 0x%X\n", stes));*/
     
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));
     return EFI_SUCCESS;
