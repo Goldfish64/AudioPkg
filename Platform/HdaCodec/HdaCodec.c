@@ -274,6 +274,8 @@ HdaCodecProbeFuncGroup(
     UINT8 WidgetStart;
     UINT8 WidgetEnd;
     UINT8 WidgetCount;
+    HDA_WIDGET *HdaWidget;
+    HDA_WIDGET *HdaConnectedWidget;
 
     // Get function group type.
     Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId,
@@ -356,10 +358,45 @@ HdaCodecProbeFuncGroup(
     FuncGroup->WidgetsCount = WidgetCount;
 
     // Probe widgets.
-    for (UINT8 i = 0; i < WidgetCount; i++) {
-        FuncGroup->Widgets[i].FuncGroup = FuncGroup;
-        FuncGroup->Widgets[i].NodeId = WidgetStart + i;
-        Status = HdaCodecProbeWidget(FuncGroup->Widgets + i);
+    DEBUG((DEBUG_INFO, "HdaCodecProbeFuncGroup(): probing widgets\n"));
+    for (UINT8 w = 0; w < WidgetCount; w++) {
+        // Get widget.
+        HdaWidget = FuncGroup->Widgets + w;
+
+        // Probe widget.
+        HdaWidget->FuncGroup = FuncGroup;
+        HdaWidget->NodeId = WidgetStart + w;
+        Status = HdaCodecProbeWidget(HdaWidget);
+    }
+
+    // Probe widget connections.
+    DEBUG((DEBUG_INFO, "HdaCodecProbeFuncGroup(): probing widget connections\n"));
+    for (UINT8 w = 0; w < WidgetCount; w++) {
+        // Get widget.
+        HdaWidget = FuncGroup->Widgets + w;
+
+        // Get connections.
+        if (HdaWidget->ConnectionCount > 0) {
+            // Allocate array of widget pointers.
+            HdaWidget->WidgetConnections = AllocateZeroPool(sizeof(HDA_WIDGET*) * HdaWidget->ConnectionCount);
+
+            // Populate array.
+            for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++) {
+                // Get widget index.
+                // This can be gotten using the node ID of the connection minus our starting node ID.
+                UINT16 WidgetIndex = HdaWidget->Connections[c] - WidgetStart;
+                if (WidgetIndex < 0) {
+                    DEBUG((DEBUG_INFO, "Widget @ 0x%X error connection to index %u (0x%X) is invalid\n", WidgetIndex, HdaWidget->Connections[c]));
+                    continue;
+                }
+
+                // Save pointer to widget.
+                HdaConnectedWidget = FuncGroup->Widgets + WidgetIndex;
+                DEBUG((DEBUG_INFO, "Widget @ 0x%X found connection to index %u (0x%X, type 0x%X)\n",
+                    HdaWidget->NodeId, WidgetIndex, HdaConnectedWidget->NodeId, HdaConnectedWidget->Type));
+                HdaWidget->WidgetConnections[c] = HdaConnectedWidget;
+            }
+        }
     }
 
     return EFI_SUCCESS;
@@ -419,6 +456,103 @@ HdaCodecProbeCodec(
         HdaCodecDev->FuncGroups[i].HdaCodecDev = HdaCodecDev;
         HdaCodecDev->FuncGroups[i].NodeId = FuncStart + i;
         Status = HdaCodecProbeFuncGroup(HdaCodecDev->FuncGroups + i);
+    }
+
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaCodecFindUpstreamOutput(
+    HDA_WIDGET *HdaWidget,
+    UINT8 Level) {
+    //DEBUG((DEBUG_INFO, "HdaCodecFindUpstreamOutput(): start\n"));
+
+    // If level is above 15, we may have entered an infinite loop so just give up.
+    if (Level > 15)
+        return EFI_ABORTED;
+
+    // Create variables.
+    EFI_STATUS Status;
+    HDA_WIDGET *HdaConnectedWidget;
+
+    // Go through connections and check for Output widgets.
+    for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++) {
+        // Get connected widget.
+        HdaConnectedWidget = HdaWidget->WidgetConnections[c];
+        for (UINT8 i = 0; i <= Level; i++)
+            DEBUG((DEBUG_INFO, "  "));
+        DEBUG((DEBUG_INFO, "Widget @ 0x%X (type 0x%X)\n", HdaConnectedWidget->NodeId, HdaConnectedWidget->Type));
+
+        // If this is an Output, we are done.
+        if (HdaConnectedWidget->Type == HDA_WIDGET_TYPE_OUTPUT) {
+            HdaWidget->UpstreamWidget = HdaConnectedWidget;
+            return EFI_SUCCESS;
+        }
+
+        // Check connections of connected widget.
+        // If a success status is returned, that means an Output widget was found and we are done.
+        Status = HdaCodecFindUpstreamOutput(HdaConnectedWidget, Level + 1);
+        if (Status == EFI_SUCCESS)
+            return EFI_SUCCESS;
+    }
+
+    // We didn't find an Output if we got here (probably zero connections).
+    return EFI_NOT_FOUND;
+}
+
+EFI_STATUS
+EFIAPI
+HdaCodecParsePorts(
+    HDA_CODEC_DEV *HdaCodecDev) {
+    DEBUG((DEBUG_INFO, "HdaCodecParsePorts(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    HDA_FUNC_GROUP *HdaFuncGroup;
+    HDA_WIDGET *HdaWidget;
+    UINT8 DefaultDeviceType;
+
+    // Loop through each function group.
+    for (UINT8 f = 0; f < HdaCodecDev->FuncGroupsCount; f++) {
+        // Get function group.
+        HdaFuncGroup = HdaCodecDev->FuncGroups + f;
+
+        // Loop through each widget.
+        for (UINT8 w = 0; w < HdaFuncGroup->WidgetsCount; w++) {
+            // Get widget.
+            HdaWidget = HdaFuncGroup->Widgets + w;
+
+            // Is the widget a pin complex? If not, ignore it.
+            // If this is a pin complex but it has no connection to a port, also ignore it.
+            // If the default association for the pin complex is zero, also ignore it.
+            if ((HdaWidget->Type != HDA_WIDGET_TYPE_PIN_COMPLEX) ||
+                (HDA_VERB_GET_CONFIGURATION_DEFAULT_PORT_CONN(HdaWidget->DefaultConfiguration) == HDA_CONFIG_DEFAULT_PORT_CONN_NONE) ||
+                (HDA_VERB_GET_CONFIGURATION_DEFAULT_ASSOCIATION(HdaWidget->DefaultConfiguration) == 0))
+                continue;
+
+            // Determine if port is an output based on the device type.
+            DefaultDeviceType = HDA_VERB_GET_CONFIGURATION_DEFAULT_DEVICE(HdaWidget->DefaultConfiguration);
+            if ((DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_LINE_OUT) || (DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_SPEAKER) ||
+                (DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_HEADPHONE_OUT) || (DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_SPDIF_OUT) ||
+                (DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_OUT)) {
+
+                // Try to get upstream output.
+                Status = HdaCodecFindUpstreamOutput(HdaWidget, 0);
+                if (EFI_ERROR(Status))
+                    continue;
+
+                // Reallocate output array.
+                HdaCodecDev->OutputPorts = ReallocatePool(sizeof(HDA_WIDGET*) * HdaCodecDev->OutputPortsCount, sizeof(HDA_WIDGET*) * (HdaCodecDev->OutputPortsCount + 1), HdaCodecDev->OutputPorts);
+                if (HdaCodecDev->OutputPorts == NULL)
+                    return EFI_OUT_OF_RESOURCES;
+                HdaCodecDev->OutputPortsCount++;
+
+                // Add widget to output array.
+                HdaCodecDev->OutputPorts[HdaCodecDev->OutputPortsCount - 1] = HdaWidget;
+                DEBUG((DEBUG_INFO, "Port widget @ 0x%X is an output\n", HdaWidget->NodeId));
+            }
+        }
     }
 
     return EFI_SUCCESS;
@@ -498,6 +632,9 @@ HdaCodecDriverBindingStart(
     Status = HdaCodecProbeCodec(HdaCodecDev);
     if (EFI_ERROR (Status))
         goto CLOSE_HDA;
+
+    // Get ports.
+    Status = HdaCodecParsePorts(HdaCodecDev);
 
   // stream
   DEBUG((DEBUG_INFO, "Set data\n"));

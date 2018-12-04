@@ -31,8 +31,9 @@
 
 typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
+typedef struct _HDA_WIDGET HDA_WIDGET;
 
-typedef struct {
+struct _HDA_WIDGET {
     HDA_FUNC_GROUP *FuncGroup;
     UINT8 NodeId;
     UINT8 Type;
@@ -45,7 +46,9 @@ typedef struct {
     // Connections.
     UINT32 ConnectionListLength;
     UINT16 *Connections;
+    HDA_WIDGET **WidgetConnections;
     UINT8 ConnectionCount;
+    HDA_WIDGET *UpstreamWidget;
 
     // Power.
     UINT32 SupportedPowerStates;
@@ -74,7 +77,7 @@ typedef struct {
     // Volume Knob.
     UINT32 VolumeCapabilities;
     UINT8 DefaultVolume;
-} HDA_WIDGET;
+};
 
 struct _HDA_FUNC_GROUP {
     HDA_CODEC_DEV *HdaCodecDev;
@@ -108,6 +111,12 @@ struct _HDA_CODEC_DEV {
     HDA_FUNC_GROUP *FuncGroups;
     UINTN FuncGroupsCount;
     UINT8 AudioFuncGroup;
+
+    // Output and input ports.
+    HDA_WIDGET **OutputPorts;
+    HDA_WIDGET **InputPorts;
+    UINTN OutputPortsCount;
+    UINTN InputPortsCount;
 };
 
 EFI_STATUS
