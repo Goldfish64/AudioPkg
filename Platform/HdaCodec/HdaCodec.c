@@ -349,6 +349,10 @@ HdaCodecProbeFuncGroup(
     DEBUG((DEBUG_INFO, "Function group @ 0x%X contains %u widgets, start @ 0x%X, end @ 0x%X\n",
         FuncGroup->NodeId, WidgetCount, WidgetStart, WidgetEnd));
 
+    // Power up.
+    Status = HdaCodecIo->SendCommand(HdaCodecIo, FuncGroup->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_POWER_STATE, 0), &Response);
+    ASSERT_EFI_ERROR(Status);
+
     // Ensure there are widgets.
     if (WidgetCount == 0)
         return EFI_UNSUPPORTED;
@@ -367,6 +371,10 @@ HdaCodecProbeFuncGroup(
         HdaWidget->FuncGroup = FuncGroup;
         HdaWidget->NodeId = WidgetStart + w;
         Status = HdaCodecProbeWidget(HdaWidget);
+
+        // Power up.
+        Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_POWER_STATE, 0), &Response);
+        ASSERT_EFI_ERROR(Status);
     }
 
     // Probe widget connections.
@@ -487,14 +495,18 @@ HdaCodecFindUpstreamOutput(
         // If this is an Output, we are done.
         if (HdaConnectedWidget->Type == HDA_WIDGET_TYPE_OUTPUT) {
             HdaWidget->UpstreamWidget = HdaConnectedWidget;
+            HdaWidget->UpstreamIndex = c;
             return EFI_SUCCESS;
         }
 
         // Check connections of connected widget.
         // If a success status is returned, that means an Output widget was found and we are done.
         Status = HdaCodecFindUpstreamOutput(HdaConnectedWidget, Level + 1);
-        if (Status == EFI_SUCCESS)
+        if (Status == EFI_SUCCESS) {
+            HdaWidget->UpstreamWidget = HdaConnectedWidget;
+            HdaWidget->UpstreamIndex = c;
             return EFI_SUCCESS;
+        }
     }
 
     // We didn't find an Output if we got here (probably zero connections).
@@ -538,6 +550,7 @@ HdaCodecParsePorts(
                 (DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_OUT)) {
 
                 // Try to get upstream output.
+                DEBUG((DEBUG_INFO, "Port widget @ 0x%X is an output\n", HdaWidget->NodeId));
                 Status = HdaCodecFindUpstreamOutput(HdaWidget, 0);
                 if (EFI_ERROR(Status))
                     continue;
@@ -550,7 +563,6 @@ HdaCodecParsePorts(
 
                 // Add widget to output array.
                 HdaCodecDev->OutputPorts[HdaCodecDev->OutputPortsCount - 1] = HdaWidget;
-                DEBUG((DEBUG_INFO, "Port widget @ 0x%X is an output\n", HdaWidget->NodeId));
             }
         }
     }
@@ -635,18 +647,112 @@ HdaCodecDriverBindingStart(
 
     // Get ports.
     Status = HdaCodecParsePorts(HdaCodecDev);
+    if (EFI_ERROR (Status))
+        goto CLOSE_HDA;
+
+    // Demo.
+    HDA_WIDGET *HdaWidgetOutPort = HdaCodecDev->OutputPorts[0];
+    DEBUG((DEBUG_INFO, "Ensure widget 0x%X is hooked up!\n", HdaWidgetOutPort->NodeId));
+
+    HDA_WIDGET *HdaWidget = HdaWidgetOutPort;
 
   // stream
   DEBUG((DEBUG_INFO, "Set data\n"));
     UINT32 Tmp;
 
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
-        HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, 0, FALSE, TRUE, TRUE, FALSE, TRUE)), &Tmp);
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT,
-        0x4011), &Tmp);
-    Status = HdaCodecIo->SendCommand(HdaCodecIo, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL,
-        HDA_VERB_SET_CONVERTER_STREAM_PAYLOAD(0, 6)), &Tmp);
-    ASSERT_EFI_ERROR(Status);
+    // Prepare path.
+    while (HdaWidget != NULL) {
+        DEBUG((DEBUG_INFO, "Widget @ 0x%X setting up\n", HdaWidget->NodeId));
+
+        // If pin complex, set as output.
+        if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {  
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL,
+                HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, TRUE, FALSE)), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            DEBUG((DEBUG_INFO, "Widget @ 0x%X pin control (new 0x%X)\n", HdaWidget->NodeId, Tmp));
+
+            // If EAPD, enable.
+            if (HdaWidget->PinCapabilities & HDA_PARAMETER_PIN_CAPS_EAPD) {
+                Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Tmp);
+                ASSERT_EFI_ERROR(Status);
+                Tmp |= HDA_EAPD_BTL_ENABLE_EAPD;
+                Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_EAPD_BTL_ENABLE,
+                    (UINT8)Tmp), &Tmp);
+                ASSERT_EFI_ERROR(Status);
+                Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Tmp);
+                ASSERT_EFI_ERROR(Status);
+                DEBUG((DEBUG_INFO, "Widget @ 0x%X eapd (new 0x%X)\n", HdaWidget->NodeId, Tmp));
+            }
+        }
+
+        // If there is an output amp, unmute.
+        if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP) {
+            UINT8 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->AmpOutCapabilities);
+            
+            // If caps are zero, check function group.
+            if (HdaWidget->AmpOutCapabilities == 0)
+                offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpOutCapabilities);
+
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+                HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, offset, FALSE, TRUE, TRUE, FALSE, TRUE)), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE,
+                HDA_VERB_GET_AMP_GAIN_MUTE_PAYLOAD(0, TRUE, TRUE)), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            DEBUG((DEBUG_INFO, "Widget @ 0x%X out amp (new 0x%X)\n", HdaWidget->NodeId, Tmp));
+        }
+
+        // If there are input amps, mute all but the upstream.
+        if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_IN_AMP) {
+            DEBUG((DEBUG_INFO, "Widget @ 0x%X in amp\n", HdaWidget->NodeId));
+            for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++) {
+                if (HdaWidget->UpstreamIndex == c) {
+                    UINT8 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->AmpInCapabilities);
+                    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+                        HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, offset, FALSE, TRUE, TRUE, TRUE, FALSE)), &Tmp);
+                    ASSERT_EFI_ERROR(Status);
+                } else {
+                    Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+                        HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, 0, TRUE, TRUE, TRUE, TRUE, FALSE)), &Tmp);
+                    ASSERT_EFI_ERROR(Status);
+                }
+            }
+        }
+
+        // If there is more than one connection, select our upstream.
+        if (HdaWidget->ConnectionCount > 1) {
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONN_SELECT_CONTROL,
+                HdaWidget->UpstreamIndex), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_SELECT_CONTROL, 0), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            DEBUG((DEBUG_INFO, "Widget @ 0x%X select (new %u)\n", HdaWidget->NodeId, Tmp));
+        }
+
+        // If Output, set up stream.
+        if (HdaWidget->Type == HDA_WIDGET_TYPE_OUTPUT) {
+            DEBUG((DEBUG_INFO, "Widget @ 0x%X output\n", HdaWidget->NodeId));
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT,
+                0x4011), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+            Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL,
+                HDA_VERB_SET_CONVERTER_STREAM_PAYLOAD(0, 6)), &Tmp);
+            ASSERT_EFI_ERROR(Status);
+        }
+
+        // Move to upstream widget.
+        HdaWidget = HdaWidget->UpstreamWidget;
+    }
+
+
+
+    //Status = HdaCodecIo->SendCommand(HdaCodecIo, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+       // HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, 0, FALSE, TRUE, TRUE, FALSE, TRUE)), &Tmp);
+    
+    
+    
 
 
 

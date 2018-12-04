@@ -49,6 +49,7 @@ struct _HDA_WIDGET {
     HDA_WIDGET **WidgetConnections;
     UINT8 ConnectionCount;
     HDA_WIDGET *UpstreamWidget;
+    UINT8 UpstreamIndex;
 
     // Power.
     UINT32 SupportedPowerStates;
