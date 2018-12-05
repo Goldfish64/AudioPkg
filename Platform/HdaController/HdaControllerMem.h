@@ -82,14 +82,9 @@ HdaControllerInitStreams(
 
 EFI_STATUS
 EFIAPI
-HdaControllerEnableStream(
-    IN HDA_CONTROLLER_DEV *HdaDev,
-    IN UINT32 StreamIndex);
-
-EFI_STATUS
-EFIAPI
-HdaControllerDisableStream(
-    IN HDA_CONTROLLER_DEV *HdaDev,
-    IN UINT32 StreamIndex);
+HdaControllerSetStream(
+    IN HDA_STREAM *HdaStream,
+    IN BOOLEAN Run,
+    IN UINT8 Index);
 
 #endif

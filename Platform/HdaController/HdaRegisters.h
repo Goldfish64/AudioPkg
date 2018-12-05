@@ -27,144 +27,213 @@
 
 #include "AudioDxe.h"
 
-// HDA controller is accessed via MMIO on BAR #0.
-#define PCI_HDA_BAR 0
-
-// Min supported version.
-#define HDA_VERSION_MIN_MAJOR   0x1
-#define HDA_VERSION_MIN_MINOR   0x0
-
 //
-// HDA registers.
+// Global Capabilities, Status, and Control.
 //
-#define HDA_REG_GCAP    0x00 // Global Capabilities; 2 bytes.
-#define HDA_REG_VMIN    0x02 // Minor Version; 1 byte.
-#define HDA_REG_VMAJ    0x03 // Major Version; 1 byte.
-#define HDA_REG_OUTPAY  0x04 // Output Payload Capability; 2 bytes.
-#define HDA_REG_INPAY   0x06 // Input Payload Capability; 2 bytes.
-#define HDA_REG_GCTL    0x08 // Global Control; 4 bytes.
-#define HDA_REG_GCTL_CRST   (1 << 0)
+// Global Capabilities; 2 bytes.
+#define HDA_REG_GCAP            0x00
+#define HDA_REG_GCAP_64OK       BIT0
+#define HDA_REG_GCAP_NSDO(a)    ((UINT8)((a >> 1) & 0x3))
+#define HDA_REG_GCAP_BSS(a)     ((UINT8)((a >> 3) & 0x1F))
+#define HDA_REG_GCAP_ISS(a)     ((UINT8)((a >> 8) & 0xF))
+#define HDA_REG_GCAP_OSS(a)     ((UINT8)((a >> 12) & 0xF))
 
+// Minor Version; 1 byte.
+#define HDA_REG_VMIN        0x02
+
+// Major Version; 1 byte.
+#define HDA_REG_VMAJ        0x03
+
+// Output Payload Capability; 2 bytes.
+#define HDA_REG_OUTPAY      0x04
+
+// Input Payload Capability; 2 bytes.
+#define HDA_REG_INPAY       0x06
+
+// Global Control; 4 bytes.
+#define HDA_REG_GCTL        0x08
+#define HDA_REG_GCTL_CRST   BIT0
+#define HDA_REG_GCTL_FCNTRL BIT1
+#define HDA_REG_GCTL_UNSOL  BIT8
+
+// Wake Enable; 2 bytes.
 #define HDA_REG_WAKEEN  0x0C
-#define HDA_REG_STATESTS 0x0E
 
+// State Change Status; 2 bytes.
+#define HDA_REG_STATESTS            0x0E
+#define HDA_REG_STATESTS_INDEX(i)   ((UINT16)(1 << (i)))
+
+// Global Status; 2 bytes
+#define HDA_REG_GSTS        0x10
+#define HDA_REG_GSTS_FSTS   BIT1
+
+// Output Stream Payload Capability; 2 bytes.
+#define HDA_REG_OUTSTRMPAY  0x18
+
+// Input Stream Payload Capability; 2 bytes.
+#define HDA_REG_INSTRMPAY   0x1A
+
+//
+// Interrupt Status and Control.
+//
+// Interrupt Control; 4 bytes.
 #define HDA_REG_INTCTL      0x20
+
+// Interrupt Status; 4 bytes.
 #define HDA_REG_INTSTS      0x24
 
-// Command Output Ring Buffer.
-#define HDA_REG_CORBLBASE   0x40 // CORB Lower Base Address; 4 bytes.
-#define HDA_REG_CORBUBASE   0x44 // CORB Upper Base Address; 4 bytes.
-#define HDA_REG_CORBWP      0x48 // CORB Write Pointer; 2 bytes.
-#define HDA_REG_CORBRP      0x4A // CORB Read Pointer; 2 bytes.
-#define HDA_REG_CORBCTL     0x4C // CORB Control; 1 byte.
-#define HDA_REG_CORBSTS     0x4D // CORB Status; 1 byte.
-#define HDA_REG_CORBSIZE    0x4E // CORB Size; 1 byte.
+// Wall Clock Counter; 4 bytes.
+#define HDA_REG_WALLCLOCK   0x30
 
-#define HDA_REG_CORBWP_MASK         0xFF // CORB Write Pointer; 1 byte.
-#define HDA_REG_CORBRP_MASK         0xFF // CORB Read Pointer; 1 byte.
-#define HDA_REG_CORBRP_RST          (1 << 15) // CORB Read Pointer Reset bit.
-#define HDA_REG_CORBCTL_CMEIE       (1 << 0) // CORB Memory Error Interrupt Enable bit.
-#define HDA_REG_CORBCTL_CORBRUN     (1 << 1) // Enable CORB DMA Engine bit.
-#define HDA_REG_CORBSTS_CMEI        (1 << 0) // CORB Memory Error Indication bit.
+// Stream Synchronization; 4 bytes.
+#define HDA_REG_SSYNC       0x38
 
-// CORB Size.
-#define HDA_REG_CORBSIZE_MASK           ((1 << 0) | (1 << 1))
-#define HDA_REG_CORBSIZE_ENT2           0        // 8 B = 2 entries.
-#define HDA_REG_CORBSIZE_ENT16          (1 << 0) // 64 B = 16 entries.
-#define HDA_REG_CORBSIZE_ENT256         (1 << 1) // 1 KB = 256 entries.
-#define HDA_REG_CORBSIZE_CORBSZCAP_2    (1 << 4) // 8 B = 2 entries.
-#define HDA_REG_CORBSIZE_CORBSZCAP_16   (1 << 5) // 64 B = 16 entries.
-#define HDA_REG_CORBSIZE_CORBSZCAP_256  (1 << 6) // 1 KB = 256 entries.
+// CORB Lower Base Address; 4 bytes.
+#define HDA_REG_CORBLBASE   0x40
 
-// Response Input Ring Buffer.
-#define HDA_REG_RIRBLBASE   0x50 // RIRB Lower Base Address; 4 bytes.
-#define HDA_REG_RIRBUBASE   0x54 // RIRB Upper Base Address; 4 bytes.
-#define HDA_REG_RIRBWP      0x58 // RIRB Write Pointer; 2 bytes.
-#define HDA_REG_RINTCNT     0x5A // Response Interrupt Count; 2 bytes.
-#define HDA_REG_RIRBCTL     0x5C // RIRB Control; 1 byte.
-#define HDA_REG_RIRBSTS     0x5D // RIRB Status; 1 byte.
-#define HDA_REG_RIRBSIZE    0x5E // RIRB Size; 1 byte.
+// CORB Upper Base Address; 4 bytes.
+#define HDA_REG_CORBUBASE   0x44
 
-#define HDA_REG_RIRBWP_MASK         0xFF // RIRB Write Pointer; 1 byte.
-#define HDA_REG_RIRBWP_RST          (1 << 15) // RIRB Write Pointer Reset bit.
-#define HDA_REG_RINTCNT_MASK        0xFF // N Response Interrupt Count; 0 = 256.
-#define HDA_REG_RIRBCTL_RINTCTL     (1 << 0) // Response Interrupt Control bit.
-#define HDA_REG_RIRBCTL_RIRBDMAEN   (1 << 1) // RIRB DMA Enable bit.
-#define HDA_REG_RIRBCTL_RIRBOIC     (1 << 2) // Response Overrun Interrupt Control bit.
-#define HDA_REG_RIRBSTS_RINTFL      (1 << 0) // Response Interrupt bit.
-#define HDA_REG_RIRBSTS_RIRBOIS     (1 << 2) // Response Overrun Interrupt Status bit.
+// CORB Write Pointer; 2 bytes.
+#define HDA_REG_CORBWP      0x48
 
-// RIRB Size.
-#define HDA_REG_RIRBSIZE_MASK           ((1 << 0) | (1 << 1))
-#define HDA_REG_RIRBSIZE_ENT2           0        // 16 B = 2 entries.
-#define HDA_REG_RIRBSIZE_ENT16          (1 << 0) // 128 B = 16 entries.
-#define HDA_REG_RIRBSIZE_ENT256         (1 << 1) // 2 KB = 256 entries.
-#define HDA_REG_RIRBSIZE_RIRBSZCAP_2    (1 << 4) // 16 B = 2 entries.
-#define HDA_REG_RIRBSIZE_RIRBSZCAP_16   (1 << 5) // 128 B = 16 entries.
-#define HDA_REG_RIRBSIZE_RIRBSZCAP_256  (1 << 6) // 2 KB = 256 entries.
+// CORB Read Pointer; 2 bytes.
+#define HDA_REG_CORBRP          0x4A
+#define HDA_REG_CORBRP_RP(a)    ((UINT8)a)
+#define HDA_REG_CORBRP_RST      BIT15
 
-// Direct command interface.
-#define HDA_REG_ICOI        0x60 // Immediate Command Output Interface; 4 bytes.
-#define HDA_REG_ICII        0x64 // Immediate Command Input Interface; 4 bytes.
-#define HDA_REG_ICIS        0x68 // Immediate Command Status; 2 bytes.
+// CORB Control; 1 byte.
+#define HDA_REG_CORBCTL         0x4C
+#define HDA_REG_CORBCTL_CMEIE   BIT0
+#define HDA_REG_CORBCTL_CORBRUN BIT1
 
-// Stream descriptors. Streams start at 0 with input streams, then output, and then bidir.
-/*#define HDA_REG_SDCTL(s)    (0x80 + (s * 0x20)) // Stream Control; 3 bytes.
-#define HDA_REG_SDSTS(s)    (0x83 + (s * 0x20)) // Stream Status; 2 bytes.
-#define HDA_REG_SDLPIB(s)   (0x84 + (s * 0x20)) // Stream Link Position in Current Buffer; 4 bytes.
-#define HDA_REG_SDCBL(s)    (0x88 + (s * 0x20)) // Stream Cyclic Buffer Length; 4 bytes.
-#define HDA_REG_SDLVI(s)    (0x8C + (s * 0x20)) // Stream Last Valid Index; 2 bytes.
-#define HDA_REG_SDFIFOD(s)  (0x90 + (s * 0x20)) // Stream FIFO Size; 2 bytes.
-#define HDA_REG_SDFMT(s)    (0x90 + (s * 0x20)) // Stream Format; 2 bytes.
-#define HDA_REG_SDBDPL(s)   (0x98 + (s * 0x20)) // Stream Buffer Descriptor List Pointer - Lower; 4 bytes.
-#define HDA_REG_SDBDPU(s)   (0x9C + (s * 0x20)) // Stream Buffer Descriptor List Pointer - Upper; 4 bytes.*/
+// CORB Status; 1 byte.
+#define HDA_REG_CORBSTS         0x4D
+#define HDA_REG_CORBSTS_CMEI    BIT0
 
-#define HDA_REG_SDCTL(s)    0x100 // Stream Control; 3 bytes.
-#define HDA_REG_SDSTS(s)    0x103 // Stream Status; 2 bytes.
-#define HDA_REG_SDLPIB(s)   0x104 // Stream Link Position in Current Buffer; 4 bytes.
-#define HDA_REG_SDCBL(s)    0x108 // Stream Cyclic Buffer Length; 4 bytes.
-#define HDA_REG_SDLVI(s)    0x10C // Stream Last Valid Index; 2 bytes.
-#define HDA_REG_SDFIFOD(s)  0x110 // Stream FIFO Size; 2 bytes.
-#define HDA_REG_SDFMT(s)    0x112 // Stream Format; 2 bytes.
-#define HDA_REG_SDBDPL(s)   0x118 // Stream Buffer Descriptor List Pointer - Lower; 4 bytes.
-#define HDA_REG_SDBDPU(s)   0x11C // Stream Buffer Descriptor List Pointer - Upper; 4 bytes.
+// CORB Size; 1 byte.
+#define HDA_REG_CORBSIZE                0x4E
+#define HDA_REG_CORBSIZE_MASK           (BIT0 | BIT1)
+#define HDA_REG_CORBSIZE_ENT2           0    // 8 B = 2 entries.
+#define HDA_REG_CORBSIZE_ENT16          BIT0 // 64 B = 16 entries.
+#define HDA_REG_CORBSIZE_ENT256         BIT1 // 1 KB = 256 entries.
+#define HDA_REG_CORBSIZE_CORBSZCAP_2    BIT4 // 8 B = 2 entries.
+#define HDA_REG_CORBSIZE_CORBSZCAP_16   BIT5 // 64 B = 16 entries.
+#define HDA_REG_CORBSIZE_CORBSZCAP_256  BIT6 // 1 KB = 256 entries.
 
-#pragma pack(1)
+// RIRB Lower Base Address; 4 bytes.
+#define HDA_REG_RIRBLBASE   0x50
 
-// GCAP register.
-typedef struct {
-    BOOLEAN Addressing64Bit : 1;
-    UINT8 NumSerialDataOutSignals : 2;
-    UINT8 NumBidirStreams : 5;
-    UINT8 NumInputStreams : 4;
-    UINT8 NumOutputStreams : 4;
-} HDA_GCAP;
+// RIRB Upper Base Address; 4 bytes.
+#define HDA_REG_RIRBUBASE   0x54
 
-// GCTL register.
-typedef struct {
-    BOOLEAN Reset : 1;
-    BOOLEAN Flush : 1;
-    UINT8 Reserved1 : 6;
-    BOOLEAN AcceptUnsolResponses : 1;
-    UINT8 Reserved2 : 7;
-    UINT8 Reserved3 : 8;
-} HDA_GCTL;
+// RIRB Write Pointer; 2 bytes.
+#define HDA_REG_RIRBWP          0x58
+#define HDA_REG_RIRBWP_WP(a)    ((UINT8)a)
+#define HDA_REG_RIRBWP_RST      BIT15
 
-typedef struct {
-    BOOLEAN Reset : 1;
-    BOOLEAN Run : 1;
-    BOOLEAN InterruptCompletion : 1;
-    BOOLEAN InterruptFifoError : 1;
-    BOOLEAN InterruptDescError : 1;
-    UINT8 Reserved1 : 3;
-    UINT8 Reserved2 : 8;
-    UINT8 StripeControl : 2;
-    BOOLEAN PriorityTraffic : 1;
-    BOOLEAN BidirOutput : 1;
-    UINT8 Number : 4;
-} HDA_STREAMCTL;
-#define HDA_REG_SDCTL_SRST (1 << 0)
+// Response Interrupt Count; 2 bytes.
+#define HDA_REG_RINTCNT     0x5A
 
-#pragma pack()
+// RIRB Control; 1 byte.
+#define HDA_REG_RIRBCTL             0x5C
+#define HDA_REG_RIRBCTL_RINTCTL     BIT0
+#define HDA_REG_RIRBCTL_RIRBDMAEN   BIT1
+#define HDA_REG_RIRBCTL_RIRBOIC     BIT2
+
+// RIRB Status; 1 byte.
+#define HDA_REG_RIRBSTS         0x5D
+#define HDA_REG_RIRBSTS_RINTFL  BIT0
+#define HDA_REG_RIRBSTS_RIRBOIS BIT2
+
+// RIRB Size; 1 byte.
+#define HDA_REG_RIRBSIZE                0x5E
+#define HDA_REG_RIRBSIZE_MASK           (BIT0 | BIT1)
+#define HDA_REG_RIRBSIZE_ENT2           0    // 16 B = 2 entries.
+#define HDA_REG_RIRBSIZE_ENT16          BIT0 // 128 B = 16 entries.
+#define HDA_REG_RIRBSIZE_ENT256         BIT1 // 2 KB = 256 entries.
+#define HDA_REG_RIRBSIZE_RIRBSZCAP_2    BIT4 // 16 B = 2 entries.
+#define HDA_REG_RIRBSIZE_RIRBSZCAP_16   BIT5 // 128 B = 16 entries.
+#define HDA_REG_RIRBSIZE_RIRBSZCAP_256  BIT6 // 2 KB = 256 entries.
+
+// DMA Position Lower Base Address; 4 bytes.
+#define HDA_REG_DPLBASE         0x70
+#define HDA_REG_DPLBASE_EN      BIT0
+
+// DMA Position Upper Base Address; 4 bytes.
+#define HDA_REG_DPUBASE         0x74
+
+//
+// Immediate Command Input and Output Registers.
+//
+// Immediate Command Output Interface; 4 bytes.
+#define HDA_REG_ICOI        0x60
+
+// Immediate Command Input Interface; 4 bytes.
+#define HDA_REG_ICII        0x64
+
+// Immediate Command Status; 2 bytes.
+#define HDA_REG_ICIS            0x68
+#define HDA_REG_ICIS_ICB        BIT0
+#define HDA_REG_ICIS_IRV        BIT1
+#define HDA_REG_ICIS_ICV        BIT2
+#define HDA_REG_ICIS_IRRUNSOL   BIT3
+#define HDA_REG_ICIS_IRRADD(a)  ((UINT8)((a >> 4) & 0xF))
+
+//
+// Stream Descriptors.
+//
+// Input/Output/Bidirectional Stream Descriptor n Control; 3 bytes.
+// Byte 1.
+#define HDA_REG_SDNCTL1(n)      (0x80 + (0x20 * (n)))
+#define HDA_REG_SDNCTL1_SRST    BIT0
+#define HDA_REG_SDNCTL1_RUN     BIT1
+#define HDA_REG_SDNCTL1_IOCE    BIT2
+#define HDA_REG_SDNCTL1_FEIE    BIT3
+#define HDA_REG_SDNCTL1_DEIE    BIT4
+
+// Byte 2.
+#define HDA_REG_SDNCTL2(n)      (0x81 + (0x20 * (n)))
+
+// Byte 3.
+#define HDA_REG_SDNCTL3(n)              (0x82 + (0x20 * (n)))
+#define HDA_REG_SDNCTL3_TP              BIT2
+#define HDA_REG_SDNCTL3_DIR             BIT3
+#define HDA_REG_SDNCTL3_STRM_GET(a)     ((UINT8)((a >> 4) & 0xF))
+#define HDA_REG_SDNCTL3_STRM_SET(a, s) ((UINT8)(((a) & 0x0F) | (((s) & 0xF)) << 4))
+
+// Input/Output/Bidirectional Stream Descriptor n Status; 1 byte.
+#define HDA_REG_SDNSTS(n)       (0x83 + (0x20 * (n)))
+#define HDA_REG_SDNSTS_BCIS     BIT2
+#define HDA_REG_SDNSTS_FIFOE    BIT3
+#define HDA_REG_SDNSTS_DESE     BIT4
+#define HDA_REG_SDNSTS_FIFORDY  BIT5
+
+// Input/Output/Bidirectional Stream Descriptor n Link Position in Buffer; 4 bytes.
+#define HDA_REG_SDNLPIB(n)      (0x84 + (0x20 * (n)))
+
+// Input/Output/Bidirectional Stream Descriptor n Cyclic Buffer Length; 4 bytes.
+#define HDA_REG_SDNCBL(n)       (0x88 + (0x20 * (n)))
+
+// Input/Output/Bidirectional Stream Descriptor n Last Valid Index; 2 bytes.
+#define HDA_REG_SDNLVI(n)       (0x8C + (0x20 * (n)))
+
+// Input/Output/Bidirectional Stream Descriptor n FIFO Size; 2 bytes.
+#define HDA_REG_SDNFIFOS(n)     (0x90 + (0x20 * (n)))
+
+// Input/Output/Bidirectional Stream Descriptor n Format; 2 bytes.
+#define HDA_REG_SDNFMT(n)       (0x92 + (0x20 * (n)))
+
+// Input/Output/Bidirectional Stream Descriptor n BDL Pointer Lower Base Address; 4 bytes.
+#define HDA_REG_SDNBDPL(n)      (0x98 + (0x20 * (n)))
+
+// Input/Output/Bidirectional Stream Descriptor n BDL Pointer Upper Base Address; 4 bytes.
+#define HDA_REG_SDNBDPU(n)      (0x9C + (0x20 * (n)))
+
+// Wall Clock Counter Alias; 4 bytes.
+#define HDA_REG_WALCLKA         0x2030
+
+// Input/Output/Bidirectional Stream Descriptor n Link Position in Buffer Alias; 4 bytes.
+#define HDA_REG_SDNLPIBA(n)     (0x2084 + (0x20 * (n)))
 
 #endif

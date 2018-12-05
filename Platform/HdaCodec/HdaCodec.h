@@ -56,6 +56,7 @@ struct _HDA_WIDGET {
     UINT32 DefaultPowerState;
 
     // Amps.
+    BOOLEAN AmpOverride;
     UINT32 AmpInCapabilities;
     UINT32 AmpOutCapabilities;
     UINT8 *AmpInLeftDefaultGainMute;

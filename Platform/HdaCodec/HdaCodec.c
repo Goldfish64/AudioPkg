@@ -46,6 +46,7 @@ HdaCodecProbeWidget(
     if (EFI_ERROR(Status))
         return Status;
     HdaWidget->Type = HDA_PARAMETER_WIDGET_CAPS_TYPE(HdaWidget->Capabilities);
+    HdaWidget->AmpOverride = HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_AMP_OVERRIDE;
     DEBUG((DEBUG_INFO, "Widget @ 0x%X type: 0x%X\n", HdaWidget->NodeId, HdaWidget->Type));
     DEBUG((DEBUG_INFO, "Widget @ 0x%X capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->Capabilities));
 
@@ -691,8 +692,8 @@ HdaCodecDriverBindingStart(
         if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP) {
             UINT8 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->AmpOutCapabilities);
             
-            // If caps are zero, check function group.
-            if (HdaWidget->AmpOutCapabilities == 0)
+            // If there are no overriden amp capabilities, check function group.
+            if (!(HdaWidget->AmpOverride))
                 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpOutCapabilities);
 
             Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
@@ -710,6 +711,10 @@ HdaCodecDriverBindingStart(
             for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++) {
                 if (HdaWidget->UpstreamIndex == c) {
                     UINT8 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->AmpInCapabilities);
+                    // If there are no overriden amp capabilities, check function group.
+                    if (!(HdaWidget->AmpOverride))
+                        offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpInCapabilities);
+
                     Status = HdaCodecIo->SendCommand(HdaCodecIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
                         HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, offset, FALSE, TRUE, TRUE, TRUE, FALSE)), &Tmp);
                     ASSERT_EFI_ERROR(Status);

@@ -122,10 +122,10 @@ VOID
 HdaControllerResponsePollTimerHandler(
     IN EFI_EVENT Event,
     IN VOID *Context) {
-    HDA_CONTROLLER_DEV *HdaDev = (HDA_CONTROLLER_DEV*)Context;
+   // HDA_CONTROLLER_DEV *HdaDev = (HDA_CONTROLLER_DEV*)Context;
     
-    UINT32 lpib;
-    HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDLPIB(0), 1, &lpib);
+    //UINT32 lpib;
+    //HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDLPIB(0), 1, &lpib);
    // DEBUG((DEBUG_INFO, "LPIB: 0x%X\n", lpib));
 
   // DEBUG((DEBUG_INFO, "pos streams %u %u %u %u %u %u\n", HdaDev->dmaList[0], HdaDev->dmaList[2], HdaDev->dmaList[4], HdaDev->dmaList[6], HdaDev->dmaList[8], HdaDev->dmaList[10]));
@@ -139,39 +139,40 @@ HdaControllerReset(
 
     // Create variables.
     EFI_STATUS Status;
-    HDA_GCTL HdaGCtl;
-    UINT64 hdaGCtlPoll;
+    UINT32 HdaGCtl;
+    UINT64 Tmp;
 
     // Get value of CRST bit.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, (UINT32*)&HdaGCtl);
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &HdaGCtl);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
-    // Check if the controller is already in reset. If not, set bit to zero.
-    if (!HdaGCtl.Reset) {
-        HdaGCtl.Reset = FALSE;
-        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, (UINT32*)&HdaGCtl);
+    // Check if the controller is already in reset. If not, clear bit.
+    if (!(HdaGCtl & HDA_REG_GCTL_CRST)) {
+        HdaGCtl &= ~HDA_REG_GCTL_CRST;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &HdaGCtl);
         ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             return Status;
     }
 
-    // Write a one to the CRST bit to begin the process of coming out of reset.
-    HdaGCtl.Reset = TRUE;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, (UINT32*)&HdaGCtl);
+    // Set CRST bit to begin the process of coming out of reset.
+    HdaGCtl |= HDA_REG_GCTL_CRST;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, 1, &HdaGCtl);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
     // Wait for bit to be set. Once bit is set, the controller is ready.
-    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL, HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, 1000, &hdaGCtlPoll);
+    Status = PciIo->PollMem(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_GCTL,
+        HDA_REG_GCTL_CRST, HDA_REG_GCTL_CRST, MS_TO_NANOSECOND(100), &Tmp);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
         return Status;
 
     // Wait 50ms to ensure all codecs have also reset.
-    gBS->Stall(50000);
+    gBS->Stall(MS_TO_MICROSECOND(50));
 
     // Controller is reset.
     DEBUG((DEBUG_INFO, "HDA controller is reset!\n"));
@@ -598,13 +599,13 @@ HdaControllerDriverBindingStart(
     HdaDev->MinorVersion = HdaMinorVersion;
 
     // Get capabilities.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, (UINT16*)&HdaDev->Capabilities);
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &HdaDev->Capabilities);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
     DEBUG((DEBUG_INFO, "HDA controller capabilities:\n  64-bit: %s  Serial Data Out Signals: %u\n",
-        HdaDev->Capabilities.Addressing64Bit ? L"Yes" : L"No", HdaDev->Capabilities.NumSerialDataOutSignals));    
-    DEBUG((DEBUG_INFO, "  Bidir streams: %u  Input streams: %u  Output streams: %u\n", HdaDev->Capabilities.NumBidirStreams,
-        HdaDev->Capabilities.NumInputStreams, HdaDev->Capabilities.NumOutputStreams));
+        HdaDev->Capabilities & HDA_REG_GCAP_64OK ? L"Yes" : L"No", HDA_REG_GCAP_NSDO(HdaDev->Capabilities)));    
+    DEBUG((DEBUG_INFO, "  Bidir streams: %u  Input streams: %u  Output streams: %u\n", HDA_REG_GCAP_BSS(HdaDev->Capabilities),
+        HDA_REG_GCAP_ISS(HdaDev->Capabilities), HDA_REG_GCAP_OSS(HdaDev->Capabilities)));
 
     // Reset controller.
     Status = HdaControllerReset(PciIo);
@@ -641,7 +642,7 @@ HdaControllerDriverBindingStart(
        ASSERT_EFI_ERROR(Status);
 
     // If 64-bit supported, set upper base address.
-    if (HdaDev->Capabilities.Addressing64Bit) {
+    if (HdaDev->Capabilities & HDA_REG_GCAP_64OK) {
         UINT32 dmaListUpperBaseAddr = (UINT32)(dmaListAddr >> 32);
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x74, 1, &dmaListUpperBaseAddr);
         if (EFI_ERROR(Status))
@@ -692,18 +693,25 @@ HdaControllerDriverBindingStart(
     
     EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
     DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
-
-    Status = gBS->HandleProtocol(handles[0], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
-    ASSERT_EFI_ERROR(Status);
-
     EFI_FILE_PROTOCOL* root = NULL;
-    Status = fs->OpenVolume(fs, &root);
-    ASSERT_EFI_ERROR(Status);
+
+    
+
+
 
     // opewn file.
     EFI_FILE_PROTOCOL* token = NULL;
-    Status = root->Open(root, &token, L"win.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
-    ASSERT_EFI_ERROR(Status);
+    for (UINTN handle = 0; handle < handleCount; handle++) {
+        Status = gBS->HandleProtocol(handles[handle], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
+        ASSERT_EFI_ERROR(Status);
+
+        Status = fs->OpenVolume(fs, &root);
+        ASSERT_EFI_ERROR(Status);
+
+        Status = root->Open(root, &token, L"quadra.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        if (!(EFI_ERROR(Status)))
+            break;
+    }
 
     UINTN blocklength = 2000000;
      VOID *buffer1;
@@ -746,46 +754,28 @@ HdaControllerDriverBindingStart(
         buffer1Addr += blocksize;
     }
 
-    HDA_STREAMCTL HdaStreamCtl;
-
-    // Get value of control register.
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
-    ASSERT_EFI_ERROR(Status);
-
-
-    HdaStreamCtl.Number = 6;
-    HdaStreamCtl.BidirOutput = 1;
-    HdaStreamCtl.StripeControl = 0;
-    HdaStreamCtl.PriorityTraffic = 0;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 3, (UINT8*)&HdaStreamCtl);
-    ASSERT_EFI_ERROR(Status);
+    // Get stream.
+    HDA_STREAM *HdaOutStream = HdaDev->OutputStreams + 0;
 
     UINT16 lvi = blockcount - 1;
    // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDLVI(1+4), 1, &lvi);
     //ASSERT_EFI_ERROR(Status);
    // lvi &= 0xFF00;
   // lvi |= 63;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDLVI(1+4), 1, &lvi);
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDNLVI(HdaOutStream->Index), 1, &lvi);
     ASSERT_EFI_ERROR(Status);
 
     UINT32 cbllength = blockcount * blocksize;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDCBL(1+4), 1, &cbllength);
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDNCBL(HdaOutStream->Index), 1, &cbllength);
     ASSERT_EFI_ERROR(Status);
 
     UINT16 stmFormat = 0x4011;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDFMT(1+4), 1, &stmFormat);
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDNFMT(HdaOutStream->Index), 1, &stmFormat);
     ASSERT_EFI_ERROR(Status);
 
-    Status = HdaControllerEnableStream(HdaDev, 0);
+    // Update stream.
+    Status = HdaControllerSetStream(HdaOutStream, TRUE, 6);
     ASSERT_EFI_ERROR(Status);
-
-    gBS->Stall(MS_TO_MICROSECOND(1000));
-
-    // Get value of control register.
-    UINT32 stes;
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDCTL(1+4), 1, &stes);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "stream cntl 0x%X\n", stes));
     
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));
     return EFI_SUCCESS;
