@@ -43,6 +43,7 @@
 //
 // Proctols that are consumed.
 //
+#include <Protocol/UsbIo.h>
 #include <Protocol/DevicePath.h>
 #include <Protocol/DriverBinding.h>
 #include <Protocol/SimpleFileSystem.h>
