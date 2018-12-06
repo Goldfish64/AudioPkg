@@ -1,5 +1,5 @@
 /*
- * File: UsbAudioController.c
+ * File: UsbAudioController.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -26,12 +26,8 @@
 #define _EFI_USB_AUDIO_CONTROLLER_H_
 
 #include "AudioDxe.h"
+#include "UsbAudioDesc.h"
 
-// USB interface class codes.
-#define USB_AUDIO_CLASS                 0x1
-#define USB_AUDIO_SUBCLASS_CONTROL      0x1
-#define USB_AUDIO_SUBCLASS_STREAMING    0x2
-#define USB_AUDIO_SUBCLASS_MIDI         0x3
 
 EFI_STATUS
 EFIAPI

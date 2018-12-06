@@ -45,6 +45,7 @@
   UefiDriverEntryPoint
   UefiFileHandleLib
   UefiLib
+  UefiUsbLib
   UefiRuntimeServicesTableLib
 
 [Protocols]
@@ -67,6 +68,7 @@
   HdaController/HdaControllerMem.c
   HdaController/HdaController.h
   HdaController/HdaController.c
+  UsbAudioController/UsbAudioDesc.h
   UsbAudioController/UsbAudioController.h
   UsbAudioController/UsbAudioController.c
   AudioDxe.h
