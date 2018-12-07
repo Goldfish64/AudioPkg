@@ -28,6 +28,22 @@
 #include "AudioDxe.h"
 #include "UsbAudioDesc.h"
 
+typedef struct _USB_AUDIO_DEV USB_AUDIO_DEV;
+
+struct _USB_AUDIO_DEV {
+    // USB I/O.
+    EFI_USB_IO_PROTOCOL *UsbIoControl;
+    EFI_USB_IO_PROTOCOL **UsbIoStreams;
+    UINTN UsbIoStreamsCount;
+
+    // Device path.
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+
+    // USB Audio stuff.
+    UINT8 ProtocolVersion;
+    UINT8 *ControlDescriptors;
+    UINTN ControlDescriptorsLength;
+};
 
 EFI_STATUS
 EFIAPI
