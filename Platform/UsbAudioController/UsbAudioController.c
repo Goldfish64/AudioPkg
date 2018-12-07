@@ -26,6 +26,145 @@
 
 EFI_STATUS
 EFIAPI
+UsbAudioControllerGetAssocInterfaces(
+    IN EFI_DRIVER_BINDING_PROTOCOL *DriverBinding,
+    IN EFI_HANDLE ControllerHandle,
+    IN USB_AUDIO_DEV *UsbAudioDev) {
+    DEBUG((DEBUG_INFO, "UsbAudioControllerGetAssocInterfaces(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_USB_CONFIG_DESCRIPTOR UsbConfigDesc;
+    EFI_HANDLE *UsbHandles;
+    UINTN UsbHandleCount;
+    EFI_HANDLE *UsbSiblingHandles;
+    UINTN UsbSiblingHandleCount;
+
+    // Check if there are sibling interfaces to find.
+    if (UsbAudioDev->AssocInterfacesLength == 0)
+        return EFI_SUCCESS;
+
+    // Get USB configuration descriptor.
+    Status = UsbAudioDev->UsbIoControl->UsbGetConfigDescriptor(UsbAudioDev->UsbIoControl, &UsbConfigDesc);
+    ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Get handles to USB devices in system.
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiUsbIoProtocolGuid, NULL, &UsbHandleCount, &UsbHandles);
+    ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Allocate space for sibling handles.
+    UsbSiblingHandleCount = UsbConfigDesc.NumInterfaces - 1;
+    UsbSiblingHandles = AllocateZeroPool(sizeof(EFI_HANDLE) * UsbSiblingHandleCount);
+    if (UsbSiblingHandles == NULL) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto FREE_HANDLE_POOLS;
+    }
+
+    // Get other handles to other interfaces on our parent device.
+    for (UINTN h = 0, s = 0; (h < UsbHandleCount) && (s < UsbSiblingHandleCount); h++) {
+        // Get device path. If there isn't one, skip the handle.
+        EFI_DEVICE_PATH_PROTOCOL *HandleDevicePath = DevicePathFromHandle(UsbHandles[h]);
+        if (HandleDevicePath == NULL)
+            continue;
+
+        // Compare this handle's path against our own path.
+        EFI_DEVICE_PATH_PROTOCOL *CurrentDevicePathNode = UsbAudioDev->DevicePathControl;
+        EFI_DEVICE_PATH_PROTOCOL *CurrentDevicePathHandleNode = HandleDevicePath;
+        while (CompareMem(CurrentDevicePathNode, CurrentDevicePathHandleNode, DevicePathNodeLength(CurrentDevicePathNode)) == 0) {
+            // Get next nodes.
+            EFI_DEVICE_PATH_PROTOCOL *NextDevNode = NextDevicePathNode(CurrentDevicePathNode);
+            EFI_DEVICE_PATH_PROTOCOL *NextDevHandleNode = NextDevicePathNode(CurrentDevicePathHandleNode);
+
+            // If we are about to hit the end, break out.
+            if (IsDevicePathEnd(NextDevNode) || IsDevicePathEnd(NextDevHandleNode))
+                break;
+
+            // Move to next nodes.
+            CurrentDevicePathNode = NextDevNode;
+            CurrentDevicePathHandleNode = NextDevHandleNode;
+        }
+
+        // Ensure nodes are the last real nodes in the path.
+        if (!(IsDevicePathEnd(NextDevicePathNode(CurrentDevicePathNode)) &&
+            IsDevicePathEnd(NextDevicePathNode(CurrentDevicePathHandleNode))))
+            continue;
+
+        // Ensure nodes are the same type.
+        if (!((CurrentDevicePathNode->Type == CurrentDevicePathHandleNode->Type) &&
+            (CurrentDevicePathNode->SubType == CurrentDevicePathHandleNode->SubType)))
+            continue;
+
+        // Ensure the nodes share the same USB port. A difference means the node belongs to another USB device.
+        // Ensure also that this node is not our own node.
+        USB_DEVICE_PATH *UsbDevicePathNode = (USB_DEVICE_PATH*)CurrentDevicePathNode;
+        USB_DEVICE_PATH *UsbDevicePathHandleNode = (USB_DEVICE_PATH*)CurrentDevicePathHandleNode;
+        if ((UsbDevicePathHandleNode->ParentPortNumber != UsbDevicePathNode->ParentPortNumber) ||
+            (UsbDevicePathHandleNode->InterfaceNumber == UsbDevicePathNode->InterfaceNumber))
+            continue;
+
+        // Add handle to list.
+        UsbSiblingHandles[s] = UsbHandles[h];
+        s++;
+    }
+
+    // Allocate associated interface resource arrays.
+    UsbAudioDev->AssocHandles = AllocateZeroPool(sizeof(EFI_HANDLE) * UsbAudioDev->AssocInterfacesLength);
+    UsbAudioDev->AssocUsbIo = AllocateZeroPool(sizeof(EFI_USB_IO_PROTOCOL*) * UsbAudioDev->AssocInterfacesLength);
+    if ((UsbAudioDev->AssocHandles == NULL) || (UsbAudioDev->AssocUsbIo == NULL)) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto FREE_HANDLE_POOLS;
+    }
+
+    // Get associated interfaces.
+    for (UINT8 i = 0; i < UsbAudioDev->AssocInterfacesLength; i++) {
+        // Get USB I/O protocol belonging to the interface.
+        BOOLEAN UsbFoundSibling = FALSE;
+        for (UINT8 s = 0; s < UsbSiblingHandleCount; s++) {
+            // Create variables.
+            EFI_USB_IO_PROTOCOL *UsbSiblingProtocol;
+            EFI_USB_INTERFACE_DESCRIPTOR UsbSiblingDescriptor;
+
+            // Try to open USB I/O protocol.
+            Status = gBS->OpenProtocol(UsbSiblingHandles[s], &gEfiUsbIoProtocolGuid, (VOID**)&UsbSiblingProtocol,
+                DriverBinding->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+            if (EFI_ERROR(Status))
+                continue;
+
+            // Get interface descriptor and check if it's the same.
+            Status = UsbSiblingProtocol->UsbGetInterfaceDescriptor(UsbSiblingProtocol, &UsbSiblingDescriptor);
+            if ((!(EFI_ERROR(Status)) && (UsbSiblingDescriptor.InterfaceNumber == UsbAudioDev->AssocInterfaces[i]))) {
+                UsbAudioDev->AssocHandles[i] = UsbSiblingHandles[s];
+                UsbAudioDev->AssocUsbIo[i] = UsbSiblingProtocol;
+                UsbFoundSibling = TRUE;
+                DEBUG((DEBUG_INFO, "UsbAudioControllerGetAssocInterfaces(): Opened interface %u\n", UsbAudioDev->AssocInterfaces[i]));
+                break;
+            }
+            
+            // Close protocol.
+            gBS->CloseProtocol(UsbSiblingHandles[s], &gEfiUsbIoProtocolGuid, DriverBinding->DriverBindingHandle, ControllerHandle);
+        }
+
+        // Ensure we found a matching USB I/O protocol. If not, fail.
+        if (!UsbFoundSibling) {
+            Status = EFI_NOT_FOUND;
+            goto FREE_HANDLE_POOLS;
+        }
+    }
+
+FREE_HANDLE_POOLS:
+    // Free handle arrays.
+    FreePool(UsbSiblingHandles);
+    FreePool(UsbHandles);
+
+    return Status;
+}
+
+EFI_STATUS
+EFIAPI
 UsbAudioControllerDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
@@ -95,96 +234,12 @@ UsbAudioControllerDriverBindingStart(
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&DevicePath,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     ASSERT_EFI_ERROR(Status);
-    CHAR16 *tttt = ConvertDevicePathToText(DevicePath, FALSE, FALSE);    
-        DEBUG((DEBUG_INFO, "us: %s\n", tttt));
-        FreePool(tttt);
-    
-
-    // TODO need to open other interfaces too.
-    EFI_HANDLE* handles = NULL;   
-    UINTN handleCount = 0;
-
-    // Get USB devices.
-    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiUsbIoProtocolGuid, NULL, &handleCount, &handles);
-    ASSERT_EFI_ERROR(Status);
-
-    EFI_DEVICE_PATH_PROTOCOL *CurrentDevicePathNode;
-    EFI_DEVICE_PATH_PROTOCOL *CurrentDevicePathHandleNode;
-    for (UINTN i = 0; i < handleCount; i++) {
-       // EFI_USB_IO_PROTOCOL *UsbIoNew;
-
-        // Get device path.
-        EFI_DEVICE_PATH_PROTOCOL *DevPathTmp = DevicePathFromHandle(handles[i]);
-        if (DevPathTmp == NULL)
-            continue;
-
-        CHAR16 *txt;// = ConvertDevicePathToText(DevPathTmp, FALSE, FALSE);
-       // DEBUG((DEBUG_INFO, "%s (0x%X, 0x%X)\n", txt, DevPathTmp->Type, DevPathTmp->SubType));
-        //FreePool(txt);
-
-        // Compare paths.
-        CurrentDevicePathNode = DevicePath;
-        CurrentDevicePathHandleNode = DevPathTmp;
-        while (CompareMem(CurrentDevicePathNode, CurrentDevicePathHandleNode, DevicePathNodeLength(CurrentDevicePathNode)) == 0) {
-
-            EFI_DEVICE_PATH_PROTOCOL *NextDevNode = NextDevicePathNode(CurrentDevicePathNode);
-            EFI_DEVICE_PATH_PROTOCOL *NextDevHandleNode = NextDevicePathNode(CurrentDevicePathHandleNode);
-
-            // If we are about to hit the end, break out.
-            if (IsDevicePathEnd(NextDevNode) || IsDevicePathEnd(NextDevHandleNode))
-                break;
-
-            CurrentDevicePathNode = NextDevNode;
-            CurrentDevicePathHandleNode = NextDevHandleNode;
-        }
-        
-        // Make sure these are the last nodes in the path.
-        if (!(IsDevicePathEnd(NextDevicePathNode(CurrentDevicePathNode)) && IsDevicePathEnd(NextDevicePathNode(CurrentDevicePathHandleNode))))
-            continue;
-
-        // Check to see if nodes are the same type.
-        if (!((CurrentDevicePathNode->Type == CurrentDevicePathHandleNode->Type) &&
-            (CurrentDevicePathNode->SubType == CurrentDevicePathHandleNode->SubType)))
-            continue;
-
-        // Ensure the nodes share the same USB port. A difference means the node belongs to another USB device.
-        USB_DEVICE_PATH *UsbDevicePathNode = (USB_DEVICE_PATH*)CurrentDevicePathNode;
-        USB_DEVICE_PATH *UsbDevicePathHandleNode = (USB_DEVICE_PATH*)CurrentDevicePathHandleNode;
-        if (UsbDevicePathNode->ParentPortNumber != UsbDevicePathHandleNode->ParentPortNumber)
-            continue;
-
-        CHAR16 *txt2 = ConvertDevicePathToText(CurrentDevicePathNode, FALSE, FALSE);
-        txt = ConvertDevicePathToText(CurrentDevicePathHandleNode, FALSE, FALSE);
-        DEBUG((DEBUG_INFO, "%s %s\n", txt, txt2));
-        FreePool(txt);
-        FreePool(txt2);
-
-        // Get end.
-        EFI_DEVICE_PATH_PROTOCOL *DevPathNode = DevPathTmp;
-        while (!IsDevicePathEnd(NextDevicePathNode(DevPathNode)))
-            DevPathNode = NextDevicePathNode(DevPathNode);
-        
-        if ((DevPathNode->Type != MESSAGING_DEVICE_PATH) || (DevPathNode->SubType != MSG_USB_DP))
-            continue;
-
-       // USB_DEVICE_PATH *UsbDevicePath = (USB_DEVICE_PATH*)DevPathNode;
-      //  USB_DEVICE_PATH *UsbControlPath = (USB_DEVICE_PATH*)DevicePath;
-      //  if ( != UsbControlPath->ParentPortNumber)
-         //   continue;
-
-      //  txt = ConvertDevicePathToText(DevPathNode, FALSE, FALSE);
-      //  DEBUG((DEBUG_INFO, "%s (port num 0x%X)\n", txt, UsbDevicePath->ParentPortNumber));
-      //  FreePool(txt);
-    }
-
-
 
     // Create device object.
     USB_AUDIO_DEV *UsbAudioDev = AllocateZeroPool(sizeof(USB_AUDIO_DEV));
     UsbAudioDev->UsbIoControl = UsbIo;
-    UsbAudioDev->DevicePath = DevicePath;
+    UsbAudioDev->DevicePathControl = DevicePath;
     
-
     // Get USB interface descriptor.
     Status = UsbIo->UsbGetInterfaceDescriptor(UsbIo, &UsbInterfaceDesc);
     ASSERT_EFI_ERROR(Status);
@@ -246,6 +301,12 @@ UsbAudioControllerDriverBindingStart(
         DEBUG((DEBUG_INFO, "Device implements spec version 1.0\nTotal length of audio control descriptors: %u bytes\n",
             UsbAudioDev->ControlDescriptorsLength));
 
+        // Allocate array of associated interfaces.
+        UsbAudioDev->AssocInterfacesLength = UsbAudioDesc->InterfaceCollection;
+        UsbAudioDev->AssocInterfaces = AllocateZeroPool(sizeof(UINT8) * UsbAudioDev->AssocInterfacesLength);
+        for (UINT8 i = 0; i < UsbAudioDev->AssocInterfacesLength; i++)
+            UsbAudioDev->AssocInterfaces[i] = UsbAudioDesc->InterfaceNr[i];
+
     } else if (UsbAudioDev->ProtocolVersion == USB_AUDIO_PROTOCOL_VER_02_00) {
         // USB device implements ADC v2.
         DEBUG((DEBUG_INFO, "Device implements spec version 2.0\n"));
@@ -260,6 +321,10 @@ UsbAudioControllerDriverBindingStart(
 
     // Free configuration descriptor.
     FreePool(UsbConfigDescFull);
+
+    // Get associated interfaces.
+    Status = UsbAudioControllerGetAssocInterfaces(This, ControllerHandle, UsbAudioDev);
+    ASSERT_EFI_ERROR(Status);
 
     // Print descriptors.
     DescOffset = 0;

@@ -31,18 +31,20 @@
 typedef struct _USB_AUDIO_DEV USB_AUDIO_DEV;
 
 struct _USB_AUDIO_DEV {
-    // USB I/O.
+    // Consumed protocols.
     EFI_USB_IO_PROTOCOL *UsbIoControl;
-    EFI_USB_IO_PROTOCOL **UsbIoStreams;
-    UINTN UsbIoStreamsCount;
-
-    // Device path.
-    EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+    EFI_DEVICE_PATH_PROTOCOL *DevicePathControl;
 
     // USB Audio stuff.
     UINT8 ProtocolVersion;
     UINT8 *ControlDescriptors;
     UINTN ControlDescriptorsLength;
+
+    // Associated interfaces.
+    UINT8 *AssocInterfaces;
+    EFI_HANDLE *AssocHandles;
+    EFI_USB_IO_PROTOCOL **AssocUsbIo;
+    UINT8 AssocInterfacesLength;
 };
 
 EFI_STATUS
