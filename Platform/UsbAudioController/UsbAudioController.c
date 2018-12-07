@@ -76,11 +76,13 @@ UsbAudioControllerDriverBindingStart(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
     IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL) {
+    DEBUG((DEBUG_INFO, "UsbAudioControllerDriverBindingStart(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
     EFI_USB_IO_PROTOCOL *UsbIo;
     EFI_USB_INTERFACE_DESCRIPTOR UsbInterfaceDesc;
+    EFI_USB_DEVICE_DESCRIPTOR UsbDeviceDesc;
 
      // Open USB I/O protocol. If this fails, its probably not a USB device.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiUsbIoProtocolGuid, (VOID**)&UsbIo,
@@ -88,17 +90,29 @@ UsbAudioControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         return Status;
 
-    Status = UsbIo->UsbPortReset(UsbIo);
-    ASSERT_EFI_ERROR(Status);
-
     // Get USB interface descriptor.
     Status = UsbIo->UsbGetInterfaceDescriptor(UsbIo, &UsbInterfaceDesc);
     ASSERT_EFI_ERROR(Status);
+
+    // Get USB device descriptor.
+    Status = UsbIo->UsbGetDeviceDescriptor(UsbIo, &UsbDeviceDesc);
+    ASSERT_EFI_ERROR(Status);
+
+    // Get USB lang ids.
+    UINT16 *Langs;
+    UINT16 LangLength;
+    Status = UsbIo->UsbGetSupportedLanguages(UsbIo, &Langs, &LangLength);
+
+    CHAR16 *ProductStr;
+    Status = UsbIo->UsbGetStringDescriptor(UsbIo, Langs[0], UsbDeviceDesc.StrProduct, &ProductStr);
+    ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "Device string: %s\n", ProductStr));
 
     // Get USB configuration descriptor.
     EFI_USB_CONFIG_DESCRIPTOR UsbConfigDesc;
     Status = UsbIo->UsbGetConfigDescriptor(UsbIo, &UsbConfigDesc);
     ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "Got config descriptor total length %u %bytes\n", UsbConfigDesc.TotalLength));
 
     // Get complete config descriptor.
     UINT8 *UsbConfigDescFull = AllocateZeroPool(UsbConfigDesc.TotalLength);
@@ -118,12 +132,25 @@ UsbAudioControllerDriverBindingStart(
 
     for (; i < UsbConfigDesc.TotalLength; i++) {
         // Search for class-specific header.
-        USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_HEADER *UsbAudioDescHeader = (USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_HEADER*)(UsbConfigDescFull + i);
-        if ((UsbAudioDescHeader->Length == 0x9) && (UsbAudioDescHeader->DescriptorType == USB_AUDIO_CLASS_DESCRIPTOR_INTERFACE) && (UsbAudioDescHeader->DescriptorSubtype == 0x01)) {
+        USB_AUDIO_DESCRIPTOR_HEADER *UsbAudioDescHeader = (USB_AUDIO_DESCRIPTOR_HEADER*)(UsbConfigDescFull + i);
+        if ((UsbAudioDescHeader->DescriptorType == USB_AUDIO_CLASS_DESCRIPTOR_INTERFACE) && (UsbAudioDescHeader->DescriptorSubtype == 0x01)) {
             break;
         }
     }
     DEBUG((DEBUG_INFO, "Class interface descriptor is at offset 0x%X\n", i));
+
+    // Print descriptors.
+    while (i < UsbConfigDesc.TotalLength) {
+        USB_AUDIO_DESCRIPTOR_HEADER *Header = (USB_AUDIO_DESCRIPTOR_HEADER*)(UsbConfigDescFull + i);
+        
+        // If type is not a class interface descriptor, we are done.
+        if (Header->DescriptorType != USB_AUDIO_CLASS_DESCRIPTOR_INTERFACE)
+            break;
+
+
+        DEBUG((DEBUG_INFO, "Control descriptor length: %u bytes, type: 0x%X; subtype: 0x%X\n", Header->Length, Header->DescriptorType, Header->DescriptorSubtype));
+        i += Header->Length;
+    }
 
     return EFI_SUCCESS;
 }

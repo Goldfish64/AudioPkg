@@ -87,94 +87,121 @@
 // Descriptors need to be packed.
 #pragma pack(1)
 
-// Class-Specific AC Interface Header Descriptor header.
+// Descriptor header.
 typedef struct {
     UINT8   Length;
     UINT8   DescriptorType;
     UINT8   DescriptorSubtype;
-    UINT16  BcdADC;
-} USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_HEADER;
+} USB_AUDIO_DESCRIPTOR_HEADER;
 
-// Class-Specific AC Interface Header Descriptor v1.
+//
+// Class-specific AC Interface Descriptor.
+//
+// Class-specific AC Interface Descriptor v1.
 typedef struct {
-    USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_HEADER Header;
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
+    UINT16  BcdADC;
     UINT16  TotalLength;
     UINT8   InterfaceCollection;
-    UINT8   InterfaceNum;
+    UINT8   InterfaceNr[];
 } USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_V1;
 
-// Class-Specific AC Interface Header Descriptor v2.
+// Class-specific AC Interface Descriptor v2.
 typedef struct {
-    USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_HEADER Header;
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
+    UINT16  BcdADC;
     UINT8   Category;
     UINT16  TotalLength;
-    UINT8   BmControls;
+    UINT8   Controls;
 } USB_AUDIO_CLASS_INTERFACE_DESCRIPTOR_V2;
 
-// Clock Source Descriptor.
-typedef struct {
-    UINT8   Length;
-    UINT8   DescriptorType;
-    UINT8   DescriptorSubtype;
-    UINT8   ClockId;
-    UINT8   BmAttributes;
-    UINT8   BmControls;
-    UINT8   AssocTerminal;
-    UINT8   ClockSourceIndex;
-} USB_AUDIO_CLOCK_SOURCE_INTERFACE_DESCRIPTOR;
-
-// Clock Multiplier Descriptor.
-typedef struct {
-    UINT8   Length;
-    UINT8   DescriptorType;
-    UINT8   DescriptorSubtype;
-    UINT8   ClockId;
-    UINT8   ClockSourceId;
-    UINT8   BmControls;
-    UINT8   ClockMultiplierIndex;
-} USB_AUDIO_CLOCK_MULTIPLIER_INTERFACE_DESCRIPTOR;
-
+//
 // Input Terminal Descriptor.
+//
+// Input Terminal Descriptor v1.
 typedef struct {
-    UINT8   Length;
-    UINT8   DescriptorType;
-    UINT8   DescriptorSubtype;
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
     UINT8   TerminalId;
     UINT16  TerminalType;
     UINT8   AssocTerminal;
-    UINT8   ClockSourceId;
     UINT8   NumChannels;
-    UINT32  BmChannelConfig;
-    UINT8   ChannelNamesStrIndex;
-    UINT16  BmControls;
-    UINT8   StrIndex;
-} USB_AUDIO_INPUT_TERMINAL_INTERFACE_DESCRIPTOR;
+    UINT16  ChannelConfig;
+    UINT8   ChannelNames;
+    UINT8   Terminal;
+} USB_AUDIO_INPUT_TERMINAL_INTERFACE_DESCRIPTOR_V1;
 
-// Output Terminal Descriptor.
+// Input Terminal Descriptor v2.
 typedef struct {
-    UINT8   Length;
-    UINT8   DescriptorType;
-    UINT8   DescriptorSubtype;
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
+    UINT8   TerminalId;
+    UINT16  TerminalType;
+    UINT8   AssocTerminal;
+    UINT8   NumChannels;
+    UINT32  ChannelConfig;
+    UINT8   ChannelNames;
+    UINT16  Controls;
+    UINT8   Terminal;
+} USB_AUDIO_INPUT_TERMINAL_INTERFACE_DESCRIPTOR_V2;
+
+//
+// Output Terminal Descriptor.
+//
+// Output Terminal Descriptor v1.
+typedef struct {
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
+    UINT8   TerminalId;
+    UINT16  TerminalType;
+    UINT8   AssocTerminal;
+    UINT8   SourceId;
+    UINT8   Terminal;
+} USB_AUDIO_OUTPUT_TERMINAL_INTERFACE_DESCRIPTOR_V1;
+
+// Output Terminal Descriptor v2.
+typedef struct {
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
     UINT8   TerminalId;
     UINT16  TerminalType;
     UINT8   AssocTerminal;
     UINT8   SourceId;
     UINT8   ClockSourceId;
-    UINT16  BmControls;
-    UINT8   StrIndex;
-} USB_AUDIO_OUTPUT_TERMINAL_INTERFACE_DESCRIPTOR;
+    UINT16  Controls;
+    UINT8   Terminal;
+} USB_AUDIO_OUTPUT_TERMINAL_INTERFACE_DESCRIPTOR_V2;
 
-// Sampling Rate Converter Descriptor.
+//
+// Mixer Unit Descriptor.
+//
+// Mixer Unit Descriptor v1.
 typedef struct {
-    UINT8   Length;
-    UINT8   DescriptorType;
-    UINT8   DescriptorSubtype;
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
+    UINT8   UnitId;
+    UINT8   NumInPins;
+    UINT8   SourceId[];
+} USB_AUDIO_MIXER_UNIT_INTERFACE_DESCRIPTOR_V1;
+
+// Mixer Unit Descriptor footer v1.
+typedef struct {
+    UINT8   NumChannels;
+    UINT16  ChannelConfig;
+    UINT8   ChannelNames;
+} USB_AUDIO_MIXER_UNIT_INTERFACE_DESCRIPTOR_FOOTER_V1;
+
+//
+// Feature Unit Descriptor.
+//
+// Feature Unit Descriptor v1.
+typedef struct {
+    USB_AUDIO_DESCRIPTOR_HEADER Header;
     UINT8   UnitId;
     UINT8   SourceId;
-    UINT8   ClockSourceInId;
-    UINT8   ClockSourceOutId;
-    UINT8   StrIndex;
-} USB_AUDIO_SAMPLING_RATE_CONVERTER_INTERFACE_DESCRIPTOR;
+    UINT8   ControlSize;
+    UINT8   Controls[];
+} USB_AUDIO_FEATURE_UNIT_INTERFACE_DESCRIPTOR_V1;
+
+// Feature Unit Descriptor footer v1.
+typedef struct {
+    UINT8   Feature;
+} USB_AUDIO_FEATURE_UNIT_INTERFACE_DESCRIPTOR_FOOTER_V1;
 
 #pragma pack()
 
