@@ -27,13 +27,13 @@
 #include "HdaRegisters.h"
 #include "HdaControllerComponentName.h"
 
-#include "HdaCodec/HdaCodecProtocol.h"
+#include <Protocol/HdaIo.h>
 #include "HdaCodec/HdaCodec.h"
 #include "HdaCodec/HdaCodecComponentName.h"
 #include "HdaCodec/HdaVerbs.h"
 
-// HDA Codec Device Path GUID.
-EFI_GUID gEfiHdaCodecDevicePathGuid = EFI_HDA_CODEC_DEVICE_PATH_GUID;
+// HDA I/O Device Path GUID.
+EFI_GUID gEfiHdaIoDevicePathGuid = EFI_HDA_IO_DEVICE_PATH_GUID;
 
 /**                                                                 
   Retrieves this codec's address.
@@ -47,7 +47,7 @@ EFI_GUID gEfiHdaCodecDevicePathGuid = EFI_HDA_CODEC_DEVICE_PATH_GUID;
 EFI_STATUS
 EFIAPI
 HdaControllerCodecProtocolGetAddress(
-    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL *This,
     OUT UINT8 *CodecAddress) {
     HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData;
 
@@ -75,13 +75,13 @@ HdaControllerCodecProtocolGetAddress(
 EFI_STATUS
 EFIAPI
 HdaControllerCodecProtocolSendCommand(
-    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL *This,
     IN UINT8 Node,
     IN UINT32 Verb,
     OUT UINT32 *Response) {
 
     // Create verb list with single item.
-    EFI_HDA_CODEC_VERB_LIST HdaCodecVerbList;
+    EFI_HDA_IO_VERB_LIST HdaCodecVerbList;
     HdaCodecVerbList.Count = 1;
     HdaCodecVerbList.Verbs = &Verb;
     HdaCodecVerbList.Responses = Response;
@@ -103,9 +103,9 @@ HdaControllerCodecProtocolSendCommand(
 EFI_STATUS
 EFIAPI
 HdaControllerCodecProtocolSendCommands(
-    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL *This,
     IN UINT8 Node,
-    IN EFI_HDA_CODEC_VERB_LIST *Verbs) {
+    IN EFI_HDA_IO_VERB_LIST *Verbs) {
     // Create variables.
     HDA_CONTROLLER_PRIVATE_DATA *HdaPrivateData;
 
@@ -256,7 +256,7 @@ HDA_CODEC_CLEANUP:
         // Do we have a codec at this address?
         if (HdaDev->PrivateDatas[i] != NULL) {
             // Create Device Path for codec.
-            EFI_HDA_CODEC_DEVICE_PATH HdaCodecDevicePathNode = EFI_HDA_CODEC_DEVICE_PATH_TEMPLATE;
+            EFI_HDA_IO_DEVICE_PATH HdaCodecDevicePathNode = EFI_HDA_IO_DEVICE_PATH_TEMPLATE;
             HdaCodecDevicePathNode.Address = i;
             HdaCodecDevicePath = AppendDevicePathNode(HdaDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)&HdaCodecDevicePathNode);
             if (HdaCodecDevicePath == NULL) {
@@ -267,7 +267,7 @@ HDA_CODEC_CLEANUP:
             // Install protocols for the codec. The codec driver will later bind to this.
             ProtocolHandle = NULL;
             Status = gBS->InstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
-                &gEfiHdaCodecProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
+                &gEfiHdaIoProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
             if (EFI_ERROR(Status))
                 goto HDA_CODEC_CLEANUP_POST;
 
@@ -286,7 +286,7 @@ HDA_CODEC_CLEANUP_POST:
 
             // Remove protocol interfaces.
             gBS->UninstallMultipleProtocolInterfaces(&ProtocolHandle, &gEfiDevicePathProtocolGuid, HdaCodecDevicePath,
-                &gEfiHdaCodecProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
+                &gEfiHdaIoProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
 
             // Free objects.
             FreeUnicodeStringTable(HdaDev->PrivateDatas[i]->HdaCodecNameTable);
@@ -305,7 +305,7 @@ HdaControllerSendCommands(
     IN HDA_CONTROLLER_DEV *HdaDev,
     IN UINT8 CodecAddress,
     IN UINT8 Node,
-    IN EFI_HDA_CODEC_VERB_LIST *Verbs) {
+    IN EFI_HDA_IO_VERB_LIST *Verbs) {
     //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): start\n"));
 
     // Create variables.

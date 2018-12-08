@@ -27,7 +27,6 @@
 
 #include "AudioDxe.h"
 #include "HdaRegisters.h"
-#include "HdaCodecProtocol.h"
 
 //
 // Consumed protocols.
@@ -153,7 +152,7 @@ struct _HDA_CONTROLLER_PRIVATE_DATA {
     UINTN Signature;
 
     // HDA Codec protocol and address.
-    EFI_HDA_CODEC_PROTOCOL HdaCodec;
+    EFI_HDA_IO_PROTOCOL HdaCodec;
     UINT8 HdaCodecAddress;
     UINT16 VendorId;
     UINT16 DeviceId;
@@ -168,7 +167,7 @@ struct _HDA_CONTROLLER_PRIVATE_DATA {
 EFI_STATUS
 EFIAPI
 HdaControllerCodecProtocolSendCommand(
-    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL *This,
     IN UINT8 Node,
     IN UINT32 Verb,
     OUT UINT32 *Response);
@@ -176,9 +175,9 @@ HdaControllerCodecProtocolSendCommand(
 EFI_STATUS
 EFIAPI
 HdaControllerCodecProtocolSendCommands(
-    IN EFI_HDA_CODEC_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL *This,
     IN UINT8 Node,
-    IN EFI_HDA_CODEC_VERB_LIST *Verbs);
+    IN EFI_HDA_IO_VERB_LIST *Verbs);
 
 EFI_STATUS
 EFIAPI
@@ -186,7 +185,7 @@ HdaControllerSendCommands(
     IN HDA_CONTROLLER_DEV *HdaDev,
     IN UINT8 CodecAddress,
     IN UINT8 Node,
-    IN EFI_HDA_CODEC_VERB_LIST *Verbs);
+    IN EFI_HDA_IO_VERB_LIST *Verbs);
 
 VOID
 HdaControllerResponsePollTimerHandler(

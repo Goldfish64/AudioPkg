@@ -27,7 +27,6 @@
 
 #include "AudioDxe.h"
 #include "HdaVerbs.h"
-#include "HdaCodecProtocol.h"
 
 typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
@@ -101,7 +100,7 @@ struct _HDA_FUNC_GROUP {
 
 struct _HDA_CODEC_DEV {
     // Protocols.
-    EFI_HDA_CODEC_PROTOCOL *HdaCodecIo;
+    EFI_HDA_IO_PROTOCOL *HdaIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
 
     // Codec information.
