@@ -303,6 +303,8 @@ UsbAudioControllerGetHostController(
                     continue;
 
                 // Check if full config descriptors match.
+                // TODO: it is possible for two devices to be identical, we need to figure this out.
+                // probably could set the alternate interface of a stream to some weird number, and verify with that.
                 if (CompareMem(UsbConfigDescFullNew, UsbConfigDescFull, UsbConfigDesc.TotalLength) == 0) {
                     UsbAudioDev->UsbDeviceAddress = addr;
                     UsbAudioDev->UsbDeviceSpeed = speed;
@@ -561,26 +563,14 @@ UsbAudioControllerDriverBindingStart(
 
     DEBUG((DEBUG_INFO, "selected 0x%X for interface 0x%X\n", altNum, UsbStreamDesc.InterfaceNumber));
 
-    Status = UsbIoStream->UsbGetInterfaceDescriptor(UsbIoStream, &UsbStreamDesc);
-    ASSERT_EFI_ERROR(Status);
-
-    EFI_USB_ENDPOINT_DESCRIPTOR endDesc;
-    ZeroMem(&endDesc, sizeof(EFI_USB_ENDPOINT_DESCRIPTOR));
-    Status = UsbIoStream->UsbGetEndpointDescriptor(UsbIoStream, 0, &endDesc);
-
-    DEBUG((DEBUG_INFO, "usb class 0x%X subclass 0x%X endpoints %u\n", UsbStreamDesc.InterfaceClass, UsbStreamDesc.InterfaceSubClass, UsbStreamDesc.NumEndpoints));
-    DEBUG((DEBUG_INFO, "endpoint 0x%X size %u bytes\n", endDesc.EndpointAddress, endDesc.MaxPacketSize));
-
     Status = token->Read(token, &bytes, buffer);
     ASSERT_EFI_ERROR(Status);
-    
-    for (UINTN i = 0; i < 2000000; i += 192) {
-        // Send to usb.
-       // Status = UsbIoStream->UsbIsochronousTransfer(UsbIoStream, 0x01, buffer + i, 192, &UsbStatus);
-       // Status = UsbHcIo->IsochronousTransfer(UsbHcIo, )
-      //  ASSERT_EFI_ERROR(Status);
-       // DEBUG((DEBUG_INFO, "Sent\n"));
-    }
+
+    UsbStatus = 0;
+    Status = UsbAudioDev->UsbHcIo->IsochronousTransfer(UsbAudioDev->UsbHcIo, UsbAudioDev->UsbDeviceAddress, 1,
+        UsbAudioDev->UsbDeviceSpeed, 192, 1, (VOID**)&buffer, 40, NULL, &UsbStatus);
+    DEBUG((DEBUG_INFO, "0x%X\n", UsbStatus));
+        ASSERT_EFI_ERROR(Status);
 
     // Get feature unit.
    /* INT16 volume = 0;
