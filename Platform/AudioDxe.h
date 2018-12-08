@@ -39,7 +39,6 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
-#include <Library/UefiUsbLib.h>
 
 //
 // Proctols that are consumed.
@@ -48,8 +47,6 @@
 #include <Protocol/DevicePathUtilities.h>
 #include <Protocol/DriverBinding.h>
 #include <Protocol/SimpleFileSystem.h>
-#include <Protocol/Usb2HostController.h>
-#include <Protocol/UsbIo.h>
 
 // Driver version
 #define AUDIODXE_VERSION    0xA

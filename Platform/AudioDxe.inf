@@ -45,17 +45,11 @@
   UefiDriverEntryPoint
   UefiFileHandleLib
   UefiLib
-  UefiUsbLib
   UefiRuntimeServicesTableLib
 
 [Protocols]
   gEfiPciIoProtocolGuid # CONSUMES
-  gEfiUsbIoProtocolGuid # CONSUMES
-  gEfiUsb2HcProtocolGuid
   gEfiHdaCodecProtocolGuid # PRODUCES
-
-[Pcd]
-  gEfiMdePkgTokenSpaceGuid.PcdUsbTransferTimeoutValue  ## CONSUMES
 
 [Sources]
   HdaCodec/HdaVerbs.h
@@ -72,8 +66,5 @@
   HdaController/HdaControllerMem.c
   HdaController/HdaController.h
   HdaController/HdaController.c
-  UsbAudioController/UsbAudioDesc.h
-  UsbAudioController/UsbAudioController.h
-  UsbAudioController/UsbAudioController.c
   AudioDxe.h
   AudioDxe.c

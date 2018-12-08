@@ -27,7 +27,6 @@
 #include "HdaController/HdaControllerComponentName.h"
 #include "HdaCodec/HdaCodec.h"
 #include "HdaCodec/HdaCodecComponentName.h"
-#include "UsbAudioController/UsbAudioController.h"
 
 // HdaController Driver Binding.
 EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding = {
@@ -49,16 +48,6 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding = {
     NULL
 };
 
-// UsbAudioController Driver Binding.
-EFI_DRIVER_BINDING_PROTOCOL gUsbAudioControllerDriverBinding = {
-    UsbAudioControllerDriverBindingSupported,
-    UsbAudioControllerDriverBindingStart,
-    UsbAudioControllerDriverBindingStop,
-    AUDIODXE_VERSION,
-    NULL,
-    NULL
-};
-
 EFI_STATUS
 EFIAPI
 AudioDxeInit(
@@ -70,7 +59,7 @@ AudioDxeInit(
     EFI_STATUS Status;
     
     // Register HdaController Driver Binding.
-    /*Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDriverBinding,
+    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDriverBinding,
         ImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
@@ -81,14 +70,8 @@ AudioDxeInit(
         NULL, &gHdaCodecComponentName, &gHdaCodecComponentName2);
     ASSERT_EFI_ERROR(Status);
     if (EFI_ERROR(Status))
-        return Status;*/
-
-    // Register UsbAudioController Driver Binding.
-    Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gUsbAudioControllerDriverBinding,
-        NULL, &gHdaCodecComponentName, &gHdaCodecComponentName2);
-    ASSERT_EFI_ERROR(Status);
-    if (EFI_ERROR(Status))
         return Status;
+
     return Status;
 }
 
