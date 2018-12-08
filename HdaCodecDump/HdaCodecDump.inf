@@ -1,5 +1,5 @@
 ##
- # File: AudioPkg.dec
+ # File: AudioDxe.inf
  #
  # Copyright (c) 2018 John Davis
  #
@@ -23,14 +23,30 @@
 ##
 
 [Defines]
-    DEC_SPECIFICATION = 0x00010005
-    PACKAGE_NAME      = AudioPkg
-    PACKAGE_GUID      = 96833C30-8B53-42A5-B3B8-E62D2D9B3981
-    PACKAGE_VERSION   = 1.0
-  
-[Includes]
-    Include
+    INF_VERSION    = 0x00010005
+    BASE_NAME      = HdaCodecDump
+    ENTRY_POINT    = HdaCodecDumpMain
+    FILE_GUID      = 73271011-9220-40C5-8A77-537BB247B616
+    MODULE_TYPE    = UEFI_APPLICATION
+    VERSION_STRING = 1.0
+
+[Packages]
+    MdePkg/MdePkg.dec
+    AudioPkg/AudioPkg.dec
+
+[LibraryClasses]
+    BaseMemoryLib
+    DebugLib
+    MemoryAllocationLib
+    PcdLib
+    UefiApplicationEntryPoint
+    UefiBootServicesTableLib
+    UefiFileHandleLib
+    UefiLib
 
 [Protocols]
-    gEfiHdaIoProtocolGuid = { 0xA090D7F9, 0xB50A, 0x4EA1, { 0xBD, 0xE9, 0x1A, 0xA5, 0xE9, 0x81, 0x2F, 0x45 }}
-    gEfiHdaCodecInfoProtocolGuid = { 0x6C9CDDE1, 0xE8A5, 0x43E5, { 0xBE, 0x88, 0xDA, 0x15, 0xBC, 0x1C, 0x02, 0x50 }}
+    gEfiHdaCodecInfoProtocolGuid # CONSUMES
+
+[Sources]
+    HdaCodecDump.h
+    HdaCodecDump.c

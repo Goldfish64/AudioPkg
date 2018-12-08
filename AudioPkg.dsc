@@ -43,6 +43,7 @@
     MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
     PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
     TimerLib|MdePkg/Library/SecPeiDxeTimerLibCpu/SecPeiDxeTimerLibCpu.inf
+    UefiApplicationEntryPoint|MdePkg/Library/UefiApplicationEntryPoint/UefiApplicationEntryPoint.inf
     UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
     UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
     UefiFileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
@@ -51,6 +52,7 @@
 
 [Components]
     AudioPkg/AudioDxe/AudioDxe.inf
+    AudioPkg/HdaCodecDump/HdaCodecDump.inf
 
 [PcdsFixedAtBuild]
     gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
