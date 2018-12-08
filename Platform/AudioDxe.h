@@ -34,20 +34,22 @@
 #include <Library/DebugLib.h>
 #include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
+#include <Library/PcdLib.h>
+#include <Library/SynchronizationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
 #include <Library/UefiUsbLib.h>
-#include <Library/SynchronizationLib.h>
-#include <Protocol/DevicePathUtilities.h>
 
 //
 // Proctols that are consumed.
 //
-#include <Protocol/UsbIo.h>
 #include <Protocol/DevicePath.h>
+#include <Protocol/DevicePathUtilities.h>
 #include <Protocol/DriverBinding.h>
 #include <Protocol/SimpleFileSystem.h>
+#include <Protocol/Usb2HostController.h>
+#include <Protocol/UsbIo.h>
 
 // Driver version
 #define AUDIODXE_VERSION    0xA

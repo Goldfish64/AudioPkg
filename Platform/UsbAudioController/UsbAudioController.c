@@ -27,8 +27,6 @@
 EFI_STATUS
 EFIAPI
 UsbAudioControllerGetAssocInterfaces(
-    IN EFI_DRIVER_BINDING_PROTOCOL *DriverBinding,
-    IN EFI_HANDLE ControllerHandle,
     IN USB_AUDIO_DEV *UsbAudioDev) {
     DEBUG((DEBUG_INFO, "UsbAudioControllerGetAssocInterfaces(): start\n"));
 
@@ -111,14 +109,6 @@ UsbAudioControllerGetAssocInterfaces(
         s++;
     }
 
-    // Allocate associated interface resource arrays.
-    UsbAudioDev->AssocHandles = AllocateZeroPool(sizeof(EFI_HANDLE) * UsbAudioDev->AssocInterfacesLength);
-    UsbAudioDev->AssocUsbIo = AllocateZeroPool(sizeof(EFI_USB_IO_PROTOCOL*) * UsbAudioDev->AssocInterfacesLength);
-    if ((UsbAudioDev->AssocHandles == NULL) || (UsbAudioDev->AssocUsbIo == NULL)) {
-        Status = EFI_OUT_OF_RESOURCES;
-        goto FREE_HANDLE_POOLS;
-    }
-
     // Get associated interfaces.
     for (UINT8 i = 0; i < UsbAudioDev->AssocInterfacesLength; i++) {
         // Get USB I/O protocol belonging to the interface.
@@ -130,22 +120,24 @@ UsbAudioControllerGetAssocInterfaces(
 
             // Try to open USB I/O protocol.
             Status = gBS->OpenProtocol(UsbSiblingHandles[s], &gEfiUsbIoProtocolGuid, (VOID**)&UsbSiblingProtocol,
-                DriverBinding->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
+                UsbAudioDev->DriverBinding->DriverBindingHandle, UsbAudioDev->ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
             if (EFI_ERROR(Status))
                 continue;
 
             // Get interface descriptor and check if it's the same.
             Status = UsbSiblingProtocol->UsbGetInterfaceDescriptor(UsbSiblingProtocol, &UsbSiblingDescriptor);
-            if ((!(EFI_ERROR(Status)) && (UsbSiblingDescriptor.InterfaceNumber == UsbAudioDev->AssocInterfaces[i]))) {
-                UsbAudioDev->AssocHandles[i] = UsbSiblingHandles[s];
-                UsbAudioDev->AssocUsbIo[i] = UsbSiblingProtocol;
+            if ((!(EFI_ERROR(Status)) && (UsbSiblingDescriptor.InterfaceNumber == UsbAudioDev->AssocInterfaces[i].InterfaceNumber))) {
+                UsbAudioDev->AssocInterfaces[i].DeviceHandle = UsbSiblingHandles[s];
+                UsbAudioDev->AssocInterfaces[i].UsbIo = UsbSiblingProtocol;
                 UsbFoundSibling = TRUE;
-                DEBUG((DEBUG_INFO, "UsbAudioControllerGetAssocInterfaces(): Opened interface %u\n", UsbAudioDev->AssocInterfaces[i]));
+                DEBUG((DEBUG_INFO, "UsbAudioControllerGetAssocInterfaces(): Opened interface %u\n",
+                    UsbAudioDev->AssocInterfaces[i].InterfaceNumber));
                 break;
             }
             
             // Close protocol.
-            gBS->CloseProtocol(UsbSiblingHandles[s], &gEfiUsbIoProtocolGuid, DriverBinding->DriverBindingHandle, ControllerHandle);
+            gBS->CloseProtocol(UsbSiblingHandles[s], &gEfiUsbIoProtocolGuid,
+                UsbAudioDev->DriverBinding->DriverBindingHandle, UsbAudioDev->ControllerHandle);
         }
 
         // Ensure we found a matching USB I/O protocol. If not, fail.
@@ -160,6 +152,179 @@ FREE_HANDLE_POOLS:
     FreePool(UsbSiblingHandles);
     FreePool(UsbHandles);
 
+    return Status;
+}
+
+EFI_STATUS
+EFIAPI
+UsbAudioControllerGetHostController(
+    IN USB_AUDIO_DEV *UsbAudioDev) {
+    DEBUG((DEBUG_INFO, "UsbAudioControllerGetHostController(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_HANDLE *UsbHcHandles;
+    UINTN UsbHcHandleCount;
+
+    EFI_USB_DEVICE_DESCRIPTOR UsbDeviceDesc;
+    EFI_USB_CONFIG_DESCRIPTOR UsbConfigDesc;
+    UINT8 *UsbConfigDescFull;
+
+    EFI_USB_DEVICE_REQUEST UsbDescReq;
+    EFI_USB_DEVICE_DESCRIPTOR UsbDeviceDescNew;
+    UINTN UsbDeviceDescNewLength;
+    UINT8 *UsbConfigDescFullNew;
+    UINTN UsbConfigDescFullNewLength;
+    UINT32 UsbStatus;
+
+    // Get USB host controller handles.
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiUsb2HcProtocolGuid, NULL, &UsbHcHandleCount, &UsbHcHandles);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    for (UINTN h = 0; h < UsbHcHandleCount; h++) {
+        // Get device path. If there isn't one, skip the handle.
+        EFI_DEVICE_PATH_PROTOCOL *HandleDevicePath = DevicePathFromHandle(UsbHcHandles[h]);
+        if (HandleDevicePath == NULL)
+            continue;
+
+        // Compare this handle's path against our own path.
+        EFI_DEVICE_PATH_PROTOCOL *CurrentDevicePathNode = UsbAudioDev->DevicePathControl;
+        EFI_DEVICE_PATH_PROTOCOL *CurrentDevicePathHandleNode = HandleDevicePath;
+        while (CompareMem(CurrentDevicePathNode, CurrentDevicePathHandleNode, DevicePathNodeLength(CurrentDevicePathNode)) == 0) {
+            // Get next nodes.
+            EFI_DEVICE_PATH_PROTOCOL *NextDevNode = NextDevicePathNode(CurrentDevicePathNode);
+            EFI_DEVICE_PATH_PROTOCOL *NextDevHandleNode = NextDevicePathNode(CurrentDevicePathHandleNode);
+
+            // If we are about to hit the end, break out.
+            if (IsDevicePathEnd(NextDevicePathNode(NextDevNode)) || IsDevicePathEnd(NextDevHandleNode))
+                break;
+
+            // Move to next nodes.
+            CurrentDevicePathNode = NextDevNode;
+            CurrentDevicePathHandleNode = NextDevHandleNode;
+        }
+
+        // Ensure nodes are the last real nodes in the path.
+        if (!(IsDevicePathEnd(NextDevicePathNode(CurrentDevicePathHandleNode))))
+            continue;
+
+        // Ensure nodes are the same type.
+        if (!((CurrentDevicePathNode->Type == CurrentDevicePathHandleNode->Type) &&
+            (CurrentDevicePathNode->SubType == CurrentDevicePathHandleNode->SubType)))
+            continue;
+
+        // Check if nodes are the same host controller.
+        PCI_DEVICE_PATH *UsbDevicePathNode = (PCI_DEVICE_PATH*)CurrentDevicePathNode;
+        PCI_DEVICE_PATH *UsbDevicePathHandleNode = (PCI_DEVICE_PATH*)CurrentDevicePathHandleNode;
+        if (CompareMem(UsbDevicePathHandleNode, UsbDevicePathNode, sizeof(PCI_DEVICE_PATH)) == 0) {
+            // We got the controller.
+            UsbAudioDev->UsbHcHandle = UsbHcHandles[h];
+            break;
+        }
+    }
+
+    // If host controller handle is still null, we failed to
+    // find the host controller.
+    if (UsbAudioDev->UsbHcHandle == NULL) {
+        Status = EFI_NOT_FOUND;
+        goto FREE_HANDLE_POOL;
+    }
+
+    // Get USB host controller protocol.
+    Status = gBS->OpenProtocol(UsbAudioDev->UsbHcHandle, &gEfiUsb2HcProtocolGuid, (VOID**)&UsbAudioDev->UsbHcIo,
+        UsbAudioDev->DriverBinding->DriverBindingHandle, UsbAudioDev->ControllerHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR(Status))
+        goto FREE_HANDLE_POOL;
+
+    // Get device descriptor.
+    Status = UsbAudioDev->UsbIoControl->UsbGetDeviceDescriptor(UsbAudioDev->UsbIoControl, &UsbDeviceDesc);
+    if (EFI_ERROR(Status))
+        goto FREE_HANDLE_POOL;
+
+    // Get configuration descriptor.
+    Status = UsbAudioDev->UsbIoControl->UsbGetConfigDescriptor(UsbAudioDev->UsbIoControl, &UsbConfigDesc);
+    if (EFI_ERROR(Status))
+        goto FREE_HANDLE_POOL;
+
+    // Allocate pools.
+    UsbConfigDescFull = AllocateZeroPool(UsbConfigDesc.TotalLength);
+    UsbConfigDescFullNew = AllocateZeroPool(UsbConfigDesc.TotalLength);
+    if ((UsbConfigDescFull == NULL) || (UsbConfigDescFullNew == NULL))
+        goto FREE_CONF_DESC_POOL;
+
+    // Get full configuration descriptor.
+    Status = UsbGetDescriptor(UsbAudioDev->UsbIoControl, USB_DESC_TYPE_CONFIG << 8, 0,
+        UsbConfigDesc.TotalLength, UsbConfigDescFull, &UsbStatus);
+    if (EFI_ERROR(Status))
+        goto FREE_CONF_DESC_POOL;
+
+    // Try to find our address and speed.
+    UsbAudioDev->UsbDeviceAddress = 0;
+    for (UINT8 addr = 1; addr <= 127; addr++) {
+        // Test each speed.
+        for (UINT8 speed = EFI_USB_SPEED_FULL; speed <= EFI_USB_SPEED_SUPER; speed++) {
+            // Reset request output buffer.
+            UsbDeviceDescNewLength = sizeof(USB_DEVICE_DESCRIPTOR);
+            ZeroMem(&UsbDeviceDescNew, UsbDeviceDescNewLength);
+
+            // Build request.
+            ZeroMem(&UsbDescReq, sizeof(USB_DEVICE_REQUEST));
+            UsbDescReq.RequestType = USB_DEV_GET_DESCRIPTOR_REQ_TYPE;
+            UsbDescReq.Request = USB_REQ_GET_DESCRIPTOR;
+            UsbDescReq.Value = USB_DESC_TYPE_DEVICE << 8;
+            UsbDescReq.Length = sizeof(USB_DEVICE_DESCRIPTOR);
+
+            // Send request to get device descriptor.
+            Status = UsbAudioDev->UsbHcIo->ControlTransfer(UsbAudioDev->UsbHcIo, addr, speed, UsbDeviceDesc.MaxPacketSize0,
+                &UsbDescReq, EfiUsbDataIn, &UsbDeviceDescNew, &UsbDeviceDescNewLength, PcdGet32(PcdUsbTransferTimeoutValue),
+                NULL, &UsbStatus);
+            if (EFI_ERROR(Status))
+                continue;
+            
+            if (CompareMem(&UsbDeviceDescNew, &UsbDeviceDesc, sizeof(USB_DEVICE_DESCRIPTOR)) == 0) {
+                // Reset request output buffer.
+                UsbConfigDescFullNewLength = UsbConfigDesc.TotalLength;
+                ZeroMem(UsbConfigDescFullNew, UsbConfigDescFullNewLength);
+
+                // Build request.
+                ZeroMem(&UsbDescReq, sizeof(USB_DEVICE_REQUEST));
+                UsbDescReq.RequestType = USB_DEV_GET_DESCRIPTOR_REQ_TYPE;
+                UsbDescReq.Request = USB_REQ_GET_DESCRIPTOR;
+                UsbDescReq.Value = USB_DESC_TYPE_CONFIG << 8;
+                UsbDescReq.Length = UsbConfigDesc.TotalLength;
+
+                // Send request to get config descriptor.
+                Status = UsbAudioDev->UsbHcIo->ControlTransfer(UsbAudioDev->UsbHcIo, addr, speed, UsbDeviceDesc.MaxPacketSize0,
+                    &UsbDescReq, EfiUsbDataIn, UsbConfigDescFullNew, &UsbConfigDescFullNewLength, PcdGet32(PcdUsbTransferTimeoutValue),
+                    NULL, &UsbStatus);
+                if (EFI_ERROR(Status))
+                    continue;
+
+                // Check if full config descriptors match.
+                if (CompareMem(UsbConfigDescFullNew, UsbConfigDescFull, UsbConfigDesc.TotalLength) == 0) {
+                    UsbAudioDev->UsbDeviceAddress = addr;
+                    UsbAudioDev->UsbDeviceSpeed = speed;
+                    DEBUG((DEBUG_INFO, "UsbAudioControllerGetHostController(): device @ 0x%X, speed: 0x%X\n",
+                        UsbAudioDev->UsbDeviceAddress, UsbAudioDev->UsbDeviceSpeed));
+                    goto FREE_CONF_DESC_POOL;
+                }
+            }
+        }
+    }
+
+    // If address is still zero, we couldn't find the device.
+    if (UsbAudioDev->UsbDeviceAddress == 0)
+        Status = EFI_NOT_FOUND;
+
+FREE_CONF_DESC_POOL:
+    // Free config descriptor.
+    FreePool(UsbConfigDescFull);
+
+FREE_HANDLE_POOL:
+    // Free handle array.
+    FreePool(UsbHcHandles);
     return Status;
 }
 
@@ -239,6 +404,8 @@ UsbAudioControllerDriverBindingStart(
     USB_AUDIO_DEV *UsbAudioDev = AllocateZeroPool(sizeof(USB_AUDIO_DEV));
     UsbAudioDev->UsbIoControl = UsbIo;
     UsbAudioDev->DevicePathControl = DevicePath;
+    UsbAudioDev->DriverBinding = This;
+    UsbAudioDev->ControllerHandle = ControllerHandle;
     
     // Get USB interface descriptor.
     Status = UsbIo->UsbGetInterfaceDescriptor(UsbIo, &UsbInterfaceDesc);
@@ -303,9 +470,11 @@ UsbAudioControllerDriverBindingStart(
 
         // Allocate array of associated interfaces.
         UsbAudioDev->AssocInterfacesLength = UsbAudioDesc->InterfaceCollection;
-        UsbAudioDev->AssocInterfaces = AllocateZeroPool(sizeof(UINT8) * UsbAudioDev->AssocInterfacesLength);
-        for (UINT8 i = 0; i < UsbAudioDev->AssocInterfacesLength; i++)
-            UsbAudioDev->AssocInterfaces[i] = UsbAudioDesc->InterfaceNr[i];
+        UsbAudioDev->AssocInterfaces = AllocateZeroPool(sizeof(USB_AUDIO_ASSOC_DEV) * UsbAudioDev->AssocInterfacesLength);
+        for (UINT8 i = 0; i < UsbAudioDev->AssocInterfacesLength; i++) {
+            UsbAudioDev->AssocInterfaces[i].UsbAudioDev = UsbAudioDev;
+            UsbAudioDev->AssocInterfaces[i].InterfaceNumber = UsbAudioDesc->InterfaceNr[i];
+        }
 
     } else if (UsbAudioDev->ProtocolVersion == USB_AUDIO_PROTOCOL_VER_02_00) {
         // USB device implements ADC v2.
@@ -322,8 +491,12 @@ UsbAudioControllerDriverBindingStart(
     // Free configuration descriptor.
     FreePool(UsbConfigDescFull);
 
+    // Get host controller.
+    Status = UsbAudioControllerGetHostController(UsbAudioDev);
+    ASSERT_EFI_ERROR(Status);
+
     // Get associated interfaces.
-    Status = UsbAudioControllerGetAssocInterfaces(This, ControllerHandle, UsbAudioDev);
+    Status = UsbAudioControllerGetAssocInterfaces(UsbAudioDev);
     ASSERT_EFI_ERROR(Status);
 
     // Print descriptors.
@@ -335,8 +508,82 @@ UsbAudioControllerDriverBindingStart(
         DescOffset += Header->Length;
     }
 
+    EFI_HANDLE* handles = NULL;   
+    UINTN handleCount = 0;
+
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
+    ASSERT_EFI_ERROR(Status);
+    
+    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
+    DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
+    EFI_FILE_PROTOCOL* root = NULL;
+
+    
+
+    UINT8 *buffer = AllocateZeroPool(2000000);
+
+    // opewn file.
+    EFI_FILE_PROTOCOL* token = NULL;
+    for (UINTN handle = 0; handle < handleCount; handle++) {
+        Status = gBS->HandleProtocol(handles[handle], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
+        ASSERT_EFI_ERROR(Status);
+
+        Status = fs->OpenVolume(fs, &root);
+        ASSERT_EFI_ERROR(Status);
+
+        Status = root->Open(root, &token, L"quadra.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        if (!(EFI_ERROR(Status)))
+            break;
+    }
+
+    UINTN bytes = 2000000;
+    EFI_USB_IO_PROTOCOL *UsbIoStream = UsbAudioDev->AssocInterfaces[0].UsbIo;
+    EFI_USB_INTERFACE_DESCRIPTOR UsbStreamDesc;
+
+
+
+    
+
+
+    
+
+
+
+    Status = UsbIoStream->UsbGetInterfaceDescriptor(UsbIoStream, &UsbStreamDesc);
+    ASSERT_EFI_ERROR(Status);
+
+    Status = UsbSetInterface(UsbIoStream, UsbStreamDesc.InterfaceNumber, 1, &UsbStatus);
+    ASSERT_EFI_ERROR(Status);
+
+    UINT16 altNum;
+    Status = UsbGetInterface(UsbIoStream, UsbStreamDesc.InterfaceNumber, &altNum, &UsbStatus);
+    ASSERT_EFI_ERROR(Status);
+
+    DEBUG((DEBUG_INFO, "selected 0x%X for interface 0x%X\n", altNum, UsbStreamDesc.InterfaceNumber));
+
+    Status = UsbIoStream->UsbGetInterfaceDescriptor(UsbIoStream, &UsbStreamDesc);
+    ASSERT_EFI_ERROR(Status);
+
+    EFI_USB_ENDPOINT_DESCRIPTOR endDesc;
+    ZeroMem(&endDesc, sizeof(EFI_USB_ENDPOINT_DESCRIPTOR));
+    Status = UsbIoStream->UsbGetEndpointDescriptor(UsbIoStream, 0, &endDesc);
+
+    DEBUG((DEBUG_INFO, "usb class 0x%X subclass 0x%X endpoints %u\n", UsbStreamDesc.InterfaceClass, UsbStreamDesc.InterfaceSubClass, UsbStreamDesc.NumEndpoints));
+    DEBUG((DEBUG_INFO, "endpoint 0x%X size %u bytes\n", endDesc.EndpointAddress, endDesc.MaxPacketSize));
+
+    Status = token->Read(token, &bytes, buffer);
+    ASSERT_EFI_ERROR(Status);
+    
+    for (UINTN i = 0; i < 2000000; i += 192) {
+        // Send to usb.
+       // Status = UsbIoStream->UsbIsochronousTransfer(UsbIoStream, 0x01, buffer + i, 192, &UsbStatus);
+       // Status = UsbHcIo->IsochronousTransfer(UsbHcIo, )
+      //  ASSERT_EFI_ERROR(Status);
+       // DEBUG((DEBUG_INFO, "Sent\n"));
+    }
+
     // Get feature unit.
-    INT16 volume = 0;
+   /* INT16 volume = 0;
     INT16 maxvolume = 0;
     INT16 minvolume = 0;
     USB_DEVICE_REQUEST FeatureRequest;
@@ -363,7 +610,7 @@ UsbAudioControllerDriverBindingStart(
     INT16 volumeminDb = volumemultipler * minvolume;
 
     DEBUG((DEBUG_INFO, "Volume %d dB (0x%X), min %d dB (0x%X), max %d dB (0x%X)\n", volumeDb, volume, volumeminDb, minvolume, volumemaxDb, maxvolume));
-
+*/
     return EFI_SUCCESS;
 }
 

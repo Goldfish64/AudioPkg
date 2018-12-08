@@ -51,7 +51,11 @@
 [Protocols]
   gEfiPciIoProtocolGuid # CONSUMES
   gEfiUsbIoProtocolGuid # CONSUMES
+  gEfiUsb2HcProtocolGuid
   gEfiHdaCodecProtocolGuid # PRODUCES
+
+[Pcd]
+  gEfiMdePkgTokenSpaceGuid.PcdUsbTransferTimeoutValue  ## CONSUMES
 
 [Sources]
   HdaCodec/HdaVerbs.h

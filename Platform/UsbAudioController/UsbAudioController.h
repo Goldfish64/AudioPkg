@@ -30,10 +30,26 @@
 
 typedef struct _USB_AUDIO_DEV USB_AUDIO_DEV;
 
+typedef struct {
+    USB_AUDIO_DEV *UsbAudioDev;
+
+    UINT8 InterfaceNumber;
+    EFI_HANDLE DeviceHandle;
+    EFI_USB_IO_PROTOCOL *UsbIo;
+} USB_AUDIO_ASSOC_DEV;
+
 struct _USB_AUDIO_DEV {
     // Consumed protocols.
     EFI_USB_IO_PROTOCOL *UsbIoControl;
     EFI_DEVICE_PATH_PROTOCOL *DevicePathControl;
+    EFI_DRIVER_BINDING_PROTOCOL *DriverBinding;
+    EFI_HANDLE ControllerHandle;
+
+    // USB host controller.
+    EFI_USB2_HC_PROTOCOL *UsbHcIo;
+    EFI_HANDLE UsbHcHandle;
+    UINT8 UsbDeviceAddress;
+    UINT8 UsbDeviceSpeed;
 
     // USB Audio stuff.
     UINT8 ProtocolVersion;
@@ -41,9 +57,7 @@ struct _USB_AUDIO_DEV {
     UINTN ControlDescriptorsLength;
 
     // Associated interfaces.
-    UINT8 *AssocInterfaces;
-    EFI_HANDLE *AssocHandles;
-    EFI_USB_IO_PROTOCOL **AssocUsbIo;
+    USB_AUDIO_ASSOC_DEV *AssocInterfaces;
     UINT8 AssocInterfacesLength;
 };
 
