@@ -31,7 +31,7 @@ GLOBAL_REMOVE_IF_UNREFERENCED
 EFI_UNICODE_STRING_TABLE gHdaCodecDriverNameTable[] = {
     {
         "eng;en",
-        L"Hda Codec Driver"
+        L"HDA Codec Driver"
     },
     {
         NULL,

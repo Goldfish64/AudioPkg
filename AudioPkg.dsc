@@ -23,52 +23,52 @@
 ##
 
 [Defines]
-  PLATFORM_NAME           = AudioPkg
-  PLATFORM_GUID           = 06275C22-C2FC-4D76-9886-EEAAB2331531
-  PLATFORM_VERSION        = 1.0
-  SUPPORTED_ARCHITECTURES = X64
-  BUILD_TARGETS           = RELEASE|DEBUG
-  SKUID_IDENTIFIER        = DEFAULT
-  DSC_SPECIFICATION       = 0x00010006
+    PLATFORM_NAME           = AudioPkg
+    PLATFORM_GUID           = 06275C22-C2FC-4D76-9886-EEAAB2331531
+    PLATFORM_VERSION        = 1.0
+    SUPPORTED_ARCHITECTURES = X64
+    BUILD_TARGETS           = RELEASE|DEBUG
+    SKUID_IDENTIFIER        = DEFAULT
+    DSC_SPECIFICATION       = 0x00010006
 
 [LibraryClasses]
-  BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
-  BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
-  BaseSynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
-  DebugLib|MdePkg/Library/UefiDebugLibConOut/UefiDebugLibConOut.inf
-  DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
-  PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
-  DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
-  IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
-  MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
-  PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
-  TimerLib|MdePkg/Library/SecPeiDxeTimerLibCpu/SecPeiDxeTimerLibCpu.inf
-  UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
-  UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
-  UefiFileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
-  UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
-  UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
+    BaseLib|MdePkg/Library/BaseLib/BaseLib.inf
+    BaseMemoryLib|MdePkg/Library/BaseMemoryLib/BaseMemoryLib.inf
+    BaseSynchronizationLib|MdePkg/Library/BaseSynchronizationLib/BaseSynchronizationLib.inf
+    DebugLib|MdePkg/Library/UefiDebugLibConOut/UefiDebugLibConOut.inf
+    DebugPrintErrorLevelLib|MdePkg/Library/BaseDebugPrintErrorLevelLib/BaseDebugPrintErrorLevelLib.inf
+    PrintLib|MdePkg/Library/BasePrintLib/BasePrintLib.inf
+    DevicePathLib|MdePkg/Library/UefiDevicePathLib/UefiDevicePathLib.inf
+    IoLib|MdePkg/Library/BaseIoLibIntrinsic/BaseIoLibIntrinsic.inf
+    MemoryAllocationLib|MdePkg/Library/UefiMemoryAllocationLib/UefiMemoryAllocationLib.inf
+    PcdLib|MdePkg/Library/BasePcdLibNull/BasePcdLibNull.inf
+    TimerLib|MdePkg/Library/SecPeiDxeTimerLibCpu/SecPeiDxeTimerLibCpu.inf
+    UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
+    UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
+    UefiFileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
+    UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
+    UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
 
 [Components]
-  AudioPkg/Platform/AudioDxe.inf
+    AudioPkg/AudioDxe/AudioDxe.inf
 
 [PcdsFixedAtBuild]
-  gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
-!if $(TARGET) == DEBUG
-  # DEBUG_ASSERT_ENABLED | DEBUG_PRINT_ENABLED | DEBUG_CODE_ENABLED | CLEAR_MEMORY_ENABLED | ASSERT_DEADLOOP_ENABLED
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
-  # DEBUG_ERROR | DEBUG_WARN | DEBUG_INFO
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
-  gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000042
-!else
-  # DEBUG_PRINT_ENABLED
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|2
-  # DEBUG_ERROR | DEBUG_WARN
-  gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000002
-  gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000002
-!endif
+    gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
+    !if $(TARGET) == DEBUG
+        # DEBUG_ASSERT_ENABLED | DEBUG_PRINT_ENABLED | DEBUG_CODE_ENABLED | CLEAR_MEMORY_ENABLED | ASSERT_DEADLOOP_ENABLED
+        gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|0x2f
+        # DEBUG_ERROR | DEBUG_WARN | DEBUG_INFO
+        gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
+        gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000042
+    !else
+        # DEBUG_PRINT_ENABLED
+        gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|2
+        # DEBUG_ERROR | DEBUG_WARN
+        gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000002
+        gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000002
+    !endif
 
 [BuildOptions]
-!if $(TARGET) == RELEASE
-  XCODE:*_*_*_CC_FLAGS = -flto
-!endif
+    !if $(TARGET) == RELEASE
+        XCODE:*_*_*_CC_FLAGS = -flto
+    !endif

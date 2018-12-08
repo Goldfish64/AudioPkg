@@ -23,48 +23,47 @@
 ##
 
 [Defines]
-  INF_VERSION    = 0x00010005
-  BASE_NAME      = AudioDxe
-  ENTRY_POINT    = AudioDxeInit
-  FILE_GUID      = AEA1FB0A-8D5B-4733-8D4C-7291D83CE29E
-  MODULE_TYPE    = UEFI_DRIVER
-  VERSION_STRING = 1.0
+    INF_VERSION    = 0x00010005
+    BASE_NAME      = AudioDxe
+    ENTRY_POINT    = AudioDxeInit
+    FILE_GUID      = AEA1FB0A-8D5B-4733-8D4C-7291D83CE29E
+    MODULE_TYPE    = UEFI_DRIVER
+    VERSION_STRING = 1.0
 
 [Packages]
-  MdePkg/MdePkg.dec
-  AudioPkg/AudioPkg.dec
+    MdePkg/MdePkg.dec
+    AudioPkg/AudioPkg.dec
 
 [LibraryClasses]
-  BaseMemoryLib
-  BaseSynchronizationLib
-  DebugLib
-  DevicePathLib
-  MemoryAllocationLib
-  PcdLib
-  UefiBootServicesTableLib
-  UefiDriverEntryPoint
-  UefiFileHandleLib
-  UefiLib
-  UefiRuntimeServicesTableLib
+    BaseMemoryLib
+    BaseSynchronizationLib
+    DebugLib
+    DevicePathLib
+    MemoryAllocationLib
+    PcdLib
+    UefiBootServicesTableLib
+    UefiDriverEntryPoint
+    UefiFileHandleLib
+    UefiLib
 
 [Protocols]
-  gEfiPciIoProtocolGuid # CONSUMES
-  gEfiHdaCodecProtocolGuid # PRODUCES
+    gEfiPciIoProtocolGuid # CONSUMES
+    gEfiHdaCodecProtocolGuid # PRODUCES
 
 [Sources]
-  HdaCodec/HdaVerbs.h
-  HdaCodec/HdaCodecDebug.c
-  HdaCodec/HdaCodecComponentName.h
-  HdaCodec/HdaCodecComponentName.c
-  HdaCodec/HdaCodecProtocol.h
-  HdaCodec/HdaCodec.h
-  HdaCodec/HdaCodec.c
-  HdaController/HdaControllerComponentName.h
-  HdaController/HdaControllerComponentName.c
-  HdaController/HdaRegisters.h
-  HdaController/HdaControllerMem.h
-  HdaController/HdaControllerMem.c
-  HdaController/HdaController.h
-  HdaController/HdaController.c
-  AudioDxe.h
-  AudioDxe.c
+    HdaCodec/HdaVerbs.h
+    HdaCodec/HdaCodecDebug.c
+    HdaCodec/HdaCodecComponentName.h
+    HdaCodec/HdaCodecComponentName.c
+    HdaCodec/HdaCodecProtocol.h
+    HdaCodec/HdaCodec.h
+    HdaCodec/HdaCodec.c
+    HdaController/HdaControllerComponentName.h
+    HdaController/HdaControllerComponentName.c
+    HdaController/HdaRegisters.h
+    HdaController/HdaControllerMem.h
+    HdaController/HdaControllerMem.c
+    HdaController/HdaController.h
+    HdaController/HdaController.c
+    AudioDxe.h
+    AudioDxe.c
