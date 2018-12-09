@@ -29,7 +29,7 @@ EFI_STATUS
 EFIAPI
 HdaCodecProbeWidget(
     HDA_WIDGET_DEV *HdaWidget) {
-    DEBUG((DEBUG_INFO, "HdaCodecProbeWidget(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaCodecProbeWidget(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -45,7 +45,7 @@ HdaCodecProbeWidget(
         return Status;
     HdaWidget->Type = HDA_PARAMETER_WIDGET_CAPS_TYPE(HdaWidget->Capabilities);
     HdaWidget->AmpOverride = HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_AMP_OVERRIDE;
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X type: 0x%X\n", HdaWidget->NodeId, HdaWidget->Type));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X type: 0x%X\n", HdaWidget->NodeId, HdaWidget->Type));
     //DEBUG((DEBUG_INFO, "Widget @ 0x%X capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->Capabilities));
 
     // Get default unsolicitation.
@@ -263,7 +263,7 @@ EFI_STATUS
 EFIAPI
 HdaCodecProbeFuncGroup(
     HDA_FUNC_GROUP *FuncGroup) {
-    DEBUG((DEBUG_INFO, "HdaCodecProbeFuncGroup(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaCodecProbeFuncGroup(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -436,6 +436,32 @@ HdaCodecProbeCodec(
         HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &HdaCodecDev->RevisionId);
     if (EFI_ERROR(Status))
         return Status;
+
+    // Try to match codec name.
+    HdaCodecDev->Name = NULL;
+    UINTN CodecIndex = 0;
+    while (gHdaCodecList[CodecIndex].Id != 0) {
+        // Check ID and revision against array element.
+        if ((gHdaCodecList[CodecIndex].Id == HdaCodecDev->VendorId) && (gHdaCodecList[CodecIndex].Rev <= ((UINT16)HdaCodecDev->RevisionId)))
+            HdaCodecDev->Name = gHdaCodecList[CodecIndex].Name;
+        CodecIndex++;
+    }
+
+    // If match wasn't found, try again with a generic device ID.
+    if (HdaCodecDev->Name == NULL) {
+        CodecIndex = 0;
+        while (gHdaCodecList[CodecIndex].Id != 0) {
+            // Check ID and revision against array element.
+            if (gHdaCodecList[CodecIndex].Id == GET_CODEC_GENERIC_ID(HdaCodecDev->VendorId))
+                HdaCodecDev->Name = gHdaCodecList[CodecIndex].Name;
+            CodecIndex++;
+        }
+    }
+
+    // If match still wasn't found, codec is unknown.
+    if (HdaCodecDev->Name == NULL)
+        HdaCodecDev->Name = L"Unknown";
+    DEBUG((DEBUG_INFO, "Codec name: %s\n", HdaCodecDev->Name));
     
     // Get function group count.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
@@ -586,6 +612,7 @@ HdaCodecInstallInfoProtocol(
     // Populate data.
     HdaCodecInfoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
     HdaCodecInfoData->HdaCodecDev = HdaCodecDev;
+    HdaCodecInfoData->HdaCodecInfo.GetName = HdaCodecInfoGetCodecName;
     HdaCodecInfoData->HdaCodecInfo.GetVendorId = HdaCodecInfoGetVendorId;
     HdaCodecInfoData->HdaCodecInfo.GetRevisionId = HdaCodecInfoGetRevisionId;
     HdaCodecInfoData->HdaCodecInfo.GetAudioFuncId = HdaCodecInfoGetAudioFuncId;

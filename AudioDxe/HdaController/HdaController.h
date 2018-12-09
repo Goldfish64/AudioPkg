@@ -98,6 +98,8 @@ typedef struct {
     EFI_PHYSICAL_ADDRESS BufferListPhysAddr;
 } HDA_STREAM;
 
+typedef struct _HDA_CONTROLLER_INFO_PRIVATE_DATA HDA_CONTROLLER_INFO_PRIVATE_DATA;
+
 typedef struct _HDA_CONTROLLER_PRIVATE_DATA HDA_CONTROLLER_PRIVATE_DATA;
 struct _HDA_CONTROLLER_DEV {
     // PCI protocol.
@@ -107,7 +109,12 @@ struct _HDA_CONTROLLER_DEV {
     EFI_HANDLE ControllerHandle;
     EFI_DRIVER_BINDING_PROTOCOL *DriverBinding;
 
+    // Published info protocol.
+    HDA_CONTROLLER_INFO_PRIVATE_DATA *HdaControllerInfoData;
+
     // Capabilites.
+    UINT32 VendorId;
+    CHAR16 *Name;
     UINT8 MajorVersion;
     UINT8 MinorVersion;
     UINT16 Capabilities;
@@ -145,7 +152,19 @@ struct _HDA_CONTROLLER_DEV {
     UINT32 *dmaList;
 };
 
+// HDA Codec Info private data.
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')
+struct _HDA_CONTROLLER_INFO_PRIVATE_DATA {
+    // Signature.
+    UINTN Signature;
+
+    // HDA Codec Info protocol and codec device.
+    EFI_HDA_CONTROLLER_INFO_PROTOCOL HdaControllerInfo;
+    HDA_CONTROLLER_DEV *HdaControllerDev;
+};
+
+#define HDA_CONTROLLER_INFO_PRIVATE_DATA_FROM_THIS(This) \
+    CR(This, HDA_CONTROLLER_INFO_PRIVATE_DATA, HdaControllerInfo, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
 
 struct _HDA_CONTROLLER_PRIVATE_DATA {
     // Signature.
@@ -154,9 +173,6 @@ struct _HDA_CONTROLLER_PRIVATE_DATA {
     // HDA Codec protocol and address.
     EFI_HDA_IO_PROTOCOL HdaCodec;
     UINT8 HdaCodecAddress;
-    UINT16 VendorId;
-    UINT16 DeviceId;
-    EFI_UNICODE_STRING_TABLE *HdaCodecNameTable;
 
     // HDA controller.
     HDA_CONTROLLER_DEV *HdaDev;
@@ -213,5 +229,11 @@ HdaControllerDriverBindingStop(
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
     IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaControllerInfoGetName(
+    IN  EFI_HDA_CONTROLLER_INFO_PROTOCOL *This,
+    OUT CHAR16 **ControllerName);
 
 #endif

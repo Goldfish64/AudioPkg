@@ -25,6 +25,35 @@
 #include "HdaCodec.h"
 
 /**                                                                 
+  Gets the codec's name.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] CodecName         A pointer to the buffer to return the codec name.
+
+  @retval EFI_SUCCESS           The codec name was retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetCodecName(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT CHAR16 **CodecName) {
+    //DEBUG((DEBUG_INFO, "HdaCodecInfoGetCodecName(): start\n"));
+    
+    // Create variables.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
+
+    // If parameters are null, fail.
+    if ((This == NULL) || (CodecName == NULL))
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data and fill codec name parameter.
+    HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
+    *CodecName = HdaPrivateData->HdaCodecDev->Name;
+    return EFI_SUCCESS;
+}
+
+/**                                                                 
   Gets the codec's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.

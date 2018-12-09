@@ -273,6 +273,11 @@ HdaCodecDumpMain(
     Status = gBS->OpenProtocol(HdaCodecHandles[0], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
     ASSERT_EFI_ERROR(Status);
 
+    // Get name.
+    CHAR16 *Name;
+    Status = HdaCodecInfo->GetName(HdaCodecInfo, &Name);
+    Print(L"Codec: %s\n", Name);
+
     // Get AFG ID.
     UINT8 AudioFuncId;
     BOOLEAN Unsol;

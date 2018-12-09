@@ -77,6 +77,21 @@ typedef struct {
 } HDA_WIDGET;
 
 /**                                                                 
+  Gets the codec's name.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] CodecName         A pointer to the buffer to return the codec name.
+
+  @retval EFI_SUCCESS           The codec name was retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_INFO_GET_NAME)(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT CHAR16 **CodecName);
+
+/**                                                                 
   Gets the codec's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -191,6 +206,7 @@ EFI_STATUS
 
 // Protocol struct.
 struct _EFI_HDA_CODEC_INFO_PROTOCOL {
+    EFI_HDA_CODEC_INFO_GET_NAME                     GetName;
     EFI_HDA_CODEC_INFO_GET_VENDOR_ID                GetVendorId;
     EFI_HDA_CODEC_INFO_GET_REVISION_ID              GetRevisionId;
     EFI_HDA_CODEC_INFO_GET_AUDIO_FUNC_ID            GetAudioFuncId;

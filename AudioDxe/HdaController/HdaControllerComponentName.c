@@ -71,45 +71,18 @@ HdaControllerComponentNameGetControllerName(
 
     // Create variables.
     EFI_STATUS Status;
-    EFI_PCI_IO_PROTOCOL *PciIo;
-    UINT32 PciVendorDeviceId = VEN_INVALID_ID;
+    EFI_HDA_CONTROLLER_INFO_PROTOCOL *HdaControllerInfo;
 
     // Ensure there is no child handle.
     if (ChildHandle != NULL)
         return EFI_UNSUPPORTED;
 
-    // Ensure controller is being managed by HdaController.
-    Status = EfiTestManagedDevice(ControllerHandle, gHdaControllerDriverBinding.DriverBindingHandle, &gEfiPciIoProtocolGuid);
-    if (EFI_ERROR(Status))
-        return Status;
-
-    // Get PCI I/O protocol.
-    Status = gBS->OpenProtocol(ControllerHandle, &gEfiPciIoProtocolGuid, (VOID **)&PciIo,
+    // Get info protocol.
+    Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaControllerInfoProtocolGuid, (VOID**)&HdaControllerInfo,
         gHdaControllerDriverBinding.DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
     if (EFI_ERROR(Status))
         return Status;
 
-    // Get PCI device/vendor ID.
-    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint32, PCI_VENDOR_ID_OFFSET, 1, &PciVendorDeviceId);
-    ASSERT_EFI_ERROR(Status);
-
-    // Determine vendor of controller.
-    switch (GET_PCI_VENDOR_ID(PciVendorDeviceId)) {
-        case VEN_INTEL_ID:
-            *ControllerName = VEN_INTEL_CONTROLLER_STR;
-            break;
-        
-        case VEN_NVIDIA_ID:
-            *ControllerName = VEN_NVIDIA_CONTROLLER_STR;
-            break;
-
-        case VEN_AMD_ID:
-            *ControllerName = VEN_AMD_CONTROLLER_STR;
-            break;
-
-        // If unknown vendor, use generic string.
-        default:
-            *ControllerName = VEN_INVALID_CONTROLLER_STR;
-    }
-    return EFI_SUCCESS;
+    // Get controller name.
+    return HdaControllerInfo->GetName(HdaControllerInfo, ControllerName);
 }

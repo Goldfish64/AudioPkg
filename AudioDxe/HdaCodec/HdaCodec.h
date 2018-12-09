@@ -26,6 +26,7 @@
 #define _EFI_HDA_CODEC_H_
 
 #include "AudioDxe.h"
+#include <Library/HdaModels.h>
 
 typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
@@ -111,6 +112,7 @@ struct _HDA_CODEC_DEV {
     // Codec information.
     UINT32 VendorId;
     UINT32 RevisionId;
+    CHAR16 *Name;
 
     HDA_FUNC_GROUP *FuncGroups;
     UINTN FuncGroupsCount;
@@ -162,6 +164,12 @@ HdaCodecDriverBindingStop(
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
     IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetCodecName(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT CHAR16 **CodecName);
 
 EFI_STATUS
 EFIAPI

@@ -48,6 +48,7 @@
 
 [Protocols]
     gEfiPciIoProtocolGuid # CONSUMES
+    gEfiHdaControllerInfoProtocolGuid # PRODUCES
     gEfiHdaIoProtocolGuid # PRODUCES
     gEfiHdaCodecInfoProtocolGuid # PRODUCES
 
@@ -62,6 +63,7 @@
     HdaController/HdaRegisters.h
     HdaController/HdaControllerMem.h
     HdaController/HdaControllerMem.c
+    HdaController/HdaControllerInfo.c
     HdaController/HdaController.h
     HdaController/HdaController.c
     AudioDxe.h

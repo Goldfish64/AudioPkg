@@ -189,9 +189,7 @@ HdaControllerScanCodecs(
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
     UINT16 HdaStatests;
-    UINT32 HdaCodecVendorDeviceId;
 
-    CHAR16 *HdaCodecName;
     EFI_DEVICE_PATH_PROTOCOL *HdaCodecDevicePath;
     EFI_HANDLE ProtocolHandle;
     VOID *TmpProtocol;
@@ -215,37 +213,17 @@ HdaControllerScanCodecs(
             HdaPrivateData->HdaCodec.GetAddress = HdaControllerCodecProtocolGetAddress;
             HdaPrivateData->HdaCodec.SendCommand = HdaControllerCodecProtocolSendCommand;
 
-            // Get vendor/device ID for codec.
-            Status = HdaPrivateData->HdaCodec.SendCommand(&HdaPrivateData->HdaCodec, HDA_NID_ROOT,
-                HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &HdaCodecVendorDeviceId);
-            if (EFI_ERROR(Status))
-                goto HDA_CODEC_CLEANUP;
-            HdaPrivateData->VendorId = GET_CODEC_VENDOR_ID(HdaCodecVendorDeviceId);
-            HdaPrivateData->DeviceId = GET_CODEC_DEVICE_ID(HdaCodecVendorDeviceId);
-
-            // Get codec name.
-            HdaCodecName = AudioDxeGetCodecName(HdaPrivateData->VendorId, HdaPrivateData->DeviceId);
-
-            // Add names.
-            Status = AddUnicodeString2("eng", gHdaCodecComponentName.SupportedLanguages, &HdaPrivateData->HdaCodecNameTable, HdaCodecName, TRUE);
-            if (EFI_ERROR(Status))
-                goto HDA_CODEC_CLEANUP;
-            Status = AddUnicodeString2("en", gHdaCodecComponentName2.SupportedLanguages, &HdaPrivateData->HdaCodecNameTable, HdaCodecName, TRUE);
-            if (EFI_ERROR(Status))
-                goto HDA_CODEC_CLEANUP;
-
             // Add to array.
             HdaDev->PrivateDatas[i] = HdaPrivateData;
             Status = EFI_SUCCESS;
-            continue;
+          //  continue;
 
-HDA_CODEC_CLEANUP:
-            DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
-            HdaDev->PrivateDatas[i] = NULL;
+//HDA_CODEC_CLEANUP:
+    //        DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
+       //     HdaDev->PrivateDatas[i] = NULL;
 
             // Free objects.
-            FreeUnicodeStringTable(HdaPrivateData->HdaCodecNameTable);
-            FreePool(HdaPrivateData);
+       //     FreePool(HdaPrivateData);
         }
     }
 
@@ -287,7 +265,6 @@ HDA_CODEC_CLEANUP_POST:
                 &gEfiHdaIoProtocolGuid, &HdaDev->PrivateDatas[i]->HdaCodec, NULL);
 
             // Free objects.
-            FreeUnicodeStringTable(HdaDev->PrivateDatas[i]->HdaCodecNameTable);
             FreePool(HdaCodecDevicePath);
             FreePool(HdaDev->PrivateDatas[i]);
             HdaDev->PrivateDatas[i] = NULL;
@@ -427,6 +404,31 @@ DONE:
 
 EFI_STATUS
 EFIAPI
+HdaControllerInstallInfoProtocol(
+    IN HDA_CONTROLLER_DEV *HdaControllerDev) {
+    DEBUG((DEBUG_INFO, "HdaControllerInstallInfoProtocol(): start\n"));
+
+    // Create variables.
+    HDA_CONTROLLER_INFO_PRIVATE_DATA *HdaControllerInfoData;
+
+    // Allocate space for info protocol data.
+    HdaControllerInfoData = AllocateZeroPool(sizeof(HDA_CONTROLLER_INFO_PRIVATE_DATA));
+    if (HdaControllerInfoData == NULL)
+        return EFI_OUT_OF_RESOURCES;
+
+    // Populate data.
+    HdaControllerInfoData->Signature = HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE;
+    HdaControllerInfoData->HdaControllerDev = HdaControllerDev;
+    HdaControllerInfoData->HdaControllerInfo.GetName = HdaControllerInfoGetName;
+
+    // Install protocol.
+    HdaControllerDev->HdaControllerInfoData = HdaControllerInfoData;
+    return gBS->InstallMultipleProtocolInterfaces(&HdaControllerDev->ControllerHandle,
+        &gEfiHdaControllerInfoProtocolGuid, &HdaControllerInfoData->HdaControllerInfo, NULL);
+}
+
+EFI_STATUS
+EFIAPI
 HdaControllerDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
@@ -560,19 +562,11 @@ HdaControllerDriverBindingStart(
     Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
     if (EFI_ERROR (Status))
         goto CLOSE_PCIIO;
-    if (HdaDevC & PCI_HDA_DEVC_NOSNOOPEN)
-        DEBUG((DEBUG_INFO, "snoop\n"));
 
     HdaDevC &= ~PCI_HDA_DEVC_NOSNOOPEN;
     Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
     if (EFI_ERROR (Status))
         goto CLOSE_PCIIO;
-    DEBUG((DEBUG_INFO, "snoop register: 0x%X 0x%X 0x%X\n", HdaDevC, PCI_HDA_DEVC_NOSNOOPEN, ~PCI_HDA_DEVC_NOSNOOPEN));
-
-    Status = PciIo->Pci.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_DEVC_OFFSET, 1, &HdaDevC);
-    if (EFI_ERROR (Status))
-        goto CLOSE_PCIIO;
-    DEBUG((DEBUG_INFO, "snoop register: 0x%X\n", HdaDevC));
 
     // Get major/minor version.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_VMAJ, 1, &HdaMajorVersion);
@@ -595,6 +589,33 @@ HdaControllerDriverBindingStart(
     HdaDev->DriverBinding = This;
     HdaDev->MajorVersion = HdaMajorVersion;
     HdaDev->MinorVersion = HdaMinorVersion;
+    HdaDev->VendorId = HdaVendorDeviceId;
+
+    // Try to match controller name.
+    HdaDev->Name = NULL;
+    UINTN ControllerIndex = 0;
+    while (gHdaControllerList[ControllerIndex].Id != 0) {
+        // Check ID and revision against array element.
+        if (gHdaControllerList[ControllerIndex].Id == HdaDev->VendorId)
+            HdaDev->Name = gHdaControllerList[ControllerIndex].Name;
+        ControllerIndex++;
+    }
+
+    // If match wasn't found, try again with a generic device ID.
+    if (HdaDev->Name == NULL) {
+        ControllerIndex = 0;
+        while (gHdaControllerList[ControllerIndex].Id != 0) {
+            // Check ID and revision against array element.
+            if (gHdaControllerList[ControllerIndex].Id == GET_PCI_GENERIC_ID(HdaDev->VendorId))
+                HdaDev->Name = gHdaControllerList[ControllerIndex].Name;
+            ControllerIndex++;
+        }
+    }
+
+    // If match still wasn't found, codec is unknown.
+    if (HdaDev->Name == NULL)
+        HdaDev->Name = L"HD Audio Controller";
+    DEBUG((DEBUG_INFO, "Controller name: %s\n", HdaDev->Name));
 
     // Get capabilities.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_GCAP, 1, &HdaDev->Capabilities);
@@ -609,6 +630,10 @@ HdaControllerDriverBindingStart(
     Status = HdaControllerReset(PciIo);
     if (EFI_ERROR(Status))
         goto CLOSE_PCIIO;
+
+    // Install info protocol.
+    Status = HdaControllerInstallInfoProtocol(HdaDev);
+    ASSERT_EFI_ERROR(Status);
 
         UINT32 *dmaList;
     EFI_PHYSICAL_ADDRESS dmaListAddr;

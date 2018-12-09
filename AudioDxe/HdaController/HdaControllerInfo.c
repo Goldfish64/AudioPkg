@@ -1,5 +1,5 @@
 /*
- * File: HdaCodecComponentName.h
+ * File: HdaControllerInfo.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,29 +22,33 @@
  * SOFTWARE.
  */
 
-#ifndef _EFI_HDA_CODEC_COMPONENT_NAME_H_
-#define _EFI_HDA_CODEC_COMPONENT_NAME_H_
+#include "HdaController.h"
 
-#include "AudioDxe.h"
-#include <Protocol/ComponentName.h>
+/**                                                                 
+  Gets the controller's name.
 
+  @param[in]  This              A pointer to the EFI_HDA_CONTROLLER_INFO_PROTOCOL instance.
+  @param[out] CodecName         A pointer to the buffer to return the codec name.
+
+  @retval EFI_SUCCESS           The controller name was retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
 EFI_STATUS
 EFIAPI
-HdaCodecComponentNameGetDriverName(
-    IN EFI_COMPONENT_NAME_PROTOCOL *This,
-    IN CHAR8 *Language,
-    OUT CHAR16 **DriverName);
+HdaControllerInfoGetName(
+    IN  EFI_HDA_CONTROLLER_INFO_PROTOCOL *This,
+    OUT CHAR16 **ControllerName) {
+    //DEBUG((DEBUG_INFO, "HdaControllerInfoGetName(): start\n"));
+    
+    // Create variables.
+    HDA_CONTROLLER_INFO_PRIVATE_DATA *HdaPrivateData;
 
-EFI_STATUS
-EFIAPI
-HdaCodecComponentNameGetControllerName(
-    IN EFI_COMPONENT_NAME_PROTOCOL *This,
-    IN EFI_HANDLE ControllerHandle,
-    IN EFI_HANDLE ChildHandle OPTIONAL,
-    IN CHAR8 *Language,
-    OUT CHAR16 **ControllerName);
+    // If parameters are null, fail.
+    if ((This == NULL) || (ControllerName == NULL))
+        return EFI_INVALID_PARAMETER;
 
-extern EFI_COMPONENT_NAME_PROTOCOL gHdaCodecComponentName;
-extern EFI_COMPONENT_NAME2_PROTOCOL gHdaCodecComponentName2;
-
-#endif
+    // Get private data and fill node ID parameter.
+    HdaPrivateData = HDA_CONTROLLER_INFO_PRIVATE_DATA_FROM_THIS(This);
+    *ControllerName = HdaPrivateData->HdaControllerDev->Name;
+    return EFI_SUCCESS;
+}
