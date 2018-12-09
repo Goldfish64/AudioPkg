@@ -31,6 +31,7 @@
 typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
 typedef struct _HDA_WIDGET HDA_WIDGET;
+typedef struct _HDA_CODEC_INFO_PRIVATE_DATA HDA_CODEC_INFO_PRIVATE_DATA;
 
 struct _HDA_WIDGET {
     HDA_FUNC_GROUP *FuncGroup;
@@ -102,6 +103,10 @@ struct _HDA_CODEC_DEV {
     // Protocols.
     EFI_HDA_IO_PROTOCOL *HdaIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+    EFI_HANDLE ControllerHandle;
+
+    // Published protocols.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaCodecInfo;
 
     // Codec information.
     UINT16 VendorId;
@@ -119,6 +124,19 @@ struct _HDA_CODEC_DEV {
     UINTN OutputPortsCount;
     UINTN InputPortsCount;
 };
+
+// HDA Codec Info private data.
+#define HDA_CODEC_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','D','C','O')
+struct _HDA_CODEC_INFO_PRIVATE_DATA {
+    // Signature.
+    UINTN Signature;
+
+    // HDA Codec Info protocol and codec device.
+    EFI_HDA_CODEC_INFO_PROTOCOL HdaCodecInfo;
+    HDA_CODEC_DEV *HdaCodecDev;
+};
+
+#define HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CODEC_INFO_PRIVATE_DATA, HdaCodecInfo, HDA_CODEC_PRIVATE_DATA_SIGNATURE)
 
 EFI_STATUS
 EFIAPI
@@ -146,5 +164,17 @@ HdaCodecDriverBindingStop(
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
     IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetVendorId(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT16 *VendorId);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetDeviceId(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT16 *DeviceId);
 
 #endif

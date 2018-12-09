@@ -49,12 +49,14 @@
 [Protocols]
     gEfiPciIoProtocolGuid # CONSUMES
     gEfiHdaIoProtocolGuid # PRODUCES
+    gEfiHdaCodecInfoProtocolGuid # PRODUCES
 
 [Sources]
     HdaCodec/HdaVerbs.h
     HdaCodec/HdaCodecDebug.c
     HdaCodec/HdaCodecComponentName.h
     HdaCodec/HdaCodecComponentName.c
+    HdaCodec/HdaCodecInfo.c
     HdaCodec/HdaCodec.h
     HdaCodec/HdaCodec.c
     HdaController/HdaControllerComponentName.h

@@ -31,7 +31,27 @@ HdaCodecDumpMain(
     IN EFI_SYSTEM_TABLE *SystemTable) {
     Print(L"HdaCodecDump start\n");
 
-    
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_HANDLE *HdaCodecHandles;
+    UINTN HdaCodecHandleCount;
+    EFI_HDA_CODEC_INFO_PROTOCOL *HdaCodecInfo;
+
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiHdaCodecInfoProtocolGuid, NULL, &HdaCodecHandleCount, &HdaCodecHandles);
+    ASSERT_EFI_ERROR(Status);
+
+    Status = gBS->OpenProtocol(HdaCodecHandles[0], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    ASSERT_EFI_ERROR(Status);
+
+    // Get vendor.
+    UINT16 VendorId;
+    Status = HdaCodecInfo->GetVendorId(HdaCodecInfo, &VendorId);
+    Print(L"Vendor ID: 0x%X\n", VendorId);
+
+    // Get device.
+    UINT16 DeviceId;
+    Status = HdaCodecInfo->GetDeviceId(HdaCodecInfo, &DeviceId);
+    Print(L"Device ID: 0x%X\n", DeviceId);
 
     return EFI_SUCCESS;
 }

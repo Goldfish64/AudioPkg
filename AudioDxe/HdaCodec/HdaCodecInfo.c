@@ -1,5 +1,5 @@
 /*
- * File: HdaCodecInfo.h
+ * File: HdaCodecInfo.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,17 +22,7 @@
  * SOFTWARE.
  */
 
-#ifndef _EFI_HDA_CODEC_INFO_H_
-#define _EFI_HDA_CODEC_INFO_H_
-
-#include <Uefi.h>
-
-// HDA Codec Info protocol GUID.
-#define EFI_HDA_CODEC_INFO_PROTOCOL_GUID { \
-    0x6C9CDDE1, 0xE8A5, 0x43E5, { 0xBE, 0x88, 0xDA, 0x15, 0xBC, 0x1C, 0x02, 0x50 } \
-}
-extern EFI_GUID gEfiHdaCodecInfoProtocolGuid;
-typedef struct _EFI_HDA_CODEC_INFO_PROTOCOL EFI_HDA_CODEC_INFO_PROTOCOL;
+#include "HdaCodec.h"
 
 /**                                                                 
   Gets the codec's vendor ID.
@@ -43,11 +33,25 @@ typedef struct _EFI_HDA_CODEC_INFO_PROTOCOL EFI_HDA_CODEC_INFO_PROTOCOL;
   @retval EFI_SUCCESS           The vendor ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
 **/
-typedef
 EFI_STATUS
-(EFIAPI *EFI_HDA_CODEC_INFO_GET_VENDOR_ID)(
+EFIAPI
+HdaCodecInfoGetVendorId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *VendorId);
+    OUT UINT16 *VendorId) {
+    DEBUG((DEBUG_INFO, "HdaCodecInfoGetVendorId(): start\n"));
+    
+    // Create variables.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
+
+    // If parameters are null, fail.
+    if (This == NULL || VendorId == NULL)
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data and fill vendor ID parameter.
+    HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
+    *VendorId = HdaPrivateData->HdaCodecDev->VendorId;
+    return EFI_SUCCESS;
+}
 
 /**                                                                 
   Gets the codec's device ID.
@@ -58,15 +62,22 @@ EFI_STATUS
   @retval EFI_SUCCESS           The device ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
 **/
-typedef
 EFI_STATUS
-(EFIAPI *EFI_HDA_CODEC_INFO_GET_DEVICE_ID)(
+EFIAPI
+HdaCodecInfoGetDeviceId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *DeviceId);
+    OUT UINT16 *DeviceId) {
+    DEBUG((DEBUG_INFO, "HdaCodecInfoGetDeviceId(): start\n"));
+    
+    // Create variables.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
-struct _EFI_HDA_CODEC_INFO_PROTOCOL {
-    EFI_HDA_CODEC_INFO_GET_VENDOR_ID GetVendorId;
-    EFI_HDA_CODEC_INFO_GET_DEVICE_ID GetDeviceId;
-};
+    // If parameters are null, fail.
+    if (This == NULL || DeviceId == NULL)
+        return EFI_INVALID_PARAMETER;
 
-#endif
+    // Get private data and fill device ID parameter.
+    HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
+    *DeviceId = HdaPrivateData->HdaCodecDev->DeviceId;
+    return EFI_SUCCESS;
+}

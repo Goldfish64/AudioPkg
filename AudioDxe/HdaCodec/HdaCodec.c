@@ -47,7 +47,7 @@ HdaCodecProbeWidget(
     HdaWidget->Type = HDA_PARAMETER_WIDGET_CAPS_TYPE(HdaWidget->Capabilities);
     HdaWidget->AmpOverride = HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_AMP_OVERRIDE;
     DEBUG((DEBUG_INFO, "Widget @ 0x%X type: 0x%X\n", HdaWidget->NodeId, HdaWidget->Type));
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->Capabilities));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->Capabilities));
 
     // Get default unsolicitation.
     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -55,7 +55,7 @@ HdaCodecProbeWidget(
     if (EFI_ERROR(Status))
         return Status;
     HdaWidget->DefaultUnSol = (UINT8)Response;
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X unsolicitation: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultUnSol));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X unsolicitation: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultUnSol));
 
     // Get default EAPD.
     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -63,7 +63,7 @@ HdaCodecProbeWidget(
     if (EFI_ERROR(Status))
         return Status;
     HdaWidget->DefaultEapd = (UINT8)Response;
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X EAPD: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultEapd));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X EAPD: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultEapd));
 
     // Get connection list length.
     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -71,7 +71,7 @@ HdaCodecProbeWidget(
     if (EFI_ERROR(Status))
         return Status;
     HdaWidget->ConnectionCount = HDA_PARAMETER_CONN_LIST_LENGTH_LEN(HdaWidget->ConnectionListLength);
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X connection list length: 0x%X\n", HdaWidget->NodeId, HdaWidget->ConnectionListLength));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X connection list length: 0x%X\n", HdaWidget->NodeId, HdaWidget->ConnectionListLength));
 
     // Get connections.
     HdaWidget->Connections = AllocateZeroPool(sizeof(UINT16) * HdaWidget->ConnectionCount);
@@ -94,24 +94,24 @@ HdaCodecProbeWidget(
     }
 
     // Print connections.
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X connections (%u):", HdaWidget->NodeId, HdaWidget->ConnectionCount));
-    for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++)
-        DEBUG((DEBUG_INFO, " 0x%X", HdaWidget->Connections[c]));
-    DEBUG((DEBUG_INFO, "\n"));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X connections (%u):", HdaWidget->NodeId, HdaWidget->ConnectionCount));
+    //for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++)
+        //DEBUG((DEBUG_INFO, " 0x%X", HdaWidget->Connections[c]));
+    //DEBUG((DEBUG_INFO, "\n"));
 
     // Get supported power states.
     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
         HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &HdaWidget->SupportedPowerStates);
     if (EFI_ERROR(Status))
         return Status;
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X supported power states: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPowerStates));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X supported power states: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPowerStates));
 
     // Get default power state.
     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
         HDA_CODEC_VERB_12BIT(HDA_VERB_GET_POWER_STATE, 0), &HdaWidget->DefaultPowerState);
     if (EFI_ERROR(Status))
         return Status;
-    DEBUG((DEBUG_INFO, "Widget @ 0x%X power state: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultPowerState));
+    //DEBUG((DEBUG_INFO, "Widget @ 0x%X power state: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultPowerState));
 
     // Do we have input amps?
     if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_IN_AMP) {
@@ -120,7 +120,7 @@ HdaCodecProbeWidget(
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &HdaWidget->AmpInCapabilities);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X input amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpInCapabilities));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X input amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpInCapabilities));
 
         // Determine number of input amps and allocate arrays.
         AmpInCount = HdaWidget->ConnectionCount;
@@ -146,8 +146,8 @@ HdaCodecProbeWidget(
             if (EFI_ERROR(Status))
                 return Status;
             HdaWidget->AmpInRightDefaultGainMute[i] = (UINT8)Response;
-            DEBUG((DEBUG_INFO, "Widget @ 0x%X input amp %u defaults: 0x%X 0x%X\n", HdaWidget->NodeId, i,
-                HdaWidget->AmpInLeftDefaultGainMute[i], HdaWidget->AmpInRightDefaultGainMute[i]));
+            //DEBUG((DEBUG_INFO, "Widget @ 0x%X input amp %u defaults: 0x%X 0x%X\n", HdaWidget->NodeId, i,
+            //    HdaWidget->AmpInLeftDefaultGainMute[i], HdaWidget->AmpInRightDefaultGainMute[i]));
         }
     }
 
@@ -158,7 +158,7 @@ HdaCodecProbeWidget(
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &HdaWidget->AmpOutCapabilities);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X output amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpOutCapabilities));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X output amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpOutCapabilities));
 
         // Get left.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -175,8 +175,8 @@ HdaCodecProbeWidget(
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->AmpOutRightDefaultGainMute = (UINT8)Response;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X output amp defaults: 0x%X 0x%X\n", HdaWidget->NodeId,
-            HdaWidget->AmpOutLeftDefaultGainMute, HdaWidget->AmpOutRightDefaultGainMute));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X output amp defaults: 0x%X 0x%X\n", HdaWidget->NodeId,
+        //    HdaWidget->AmpOutLeftDefaultGainMute, HdaWidget->AmpOutRightDefaultGainMute));
     }
 
     // Is the widget an Input or Output?
@@ -186,14 +186,14 @@ HdaCodecProbeWidget(
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &HdaWidget->SupportedPcmRates);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X supported PCM sizes/rates: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPcmRates));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X supported PCM sizes/rates: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPcmRates));
 
         // Get supported stream formats.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &HdaWidget->SupportedFormats);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X supported formats: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedFormats));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X supported formats: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedFormats));
 
         // Get default converter format.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -201,7 +201,7 @@ HdaCodecProbeWidget(
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultConvFormat = (UINT16)Response;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X default format: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvFormat));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X default format: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvFormat));
 
         // Get default converter stream/channel.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -209,7 +209,7 @@ HdaCodecProbeWidget(
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultConvStreamChannel = (UINT8)Response;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X default stream/channel: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvStreamChannel));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X default stream/channel: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvStreamChannel));
 
         // Get default converter channel count.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -217,14 +217,14 @@ HdaCodecProbeWidget(
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultConvChannelCount = (UINT8)Response;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X default channel count: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvChannelCount));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X default channel count: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvChannelCount));
     } else if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) { // Is the widget a Pin Complex?
         // Get pin capabilities.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_PIN_CAPS), &HdaWidget->PinCapabilities);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X pin capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->PinCapabilities));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X pin capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->PinCapabilities));
 
         // Get default pin control.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -232,21 +232,21 @@ HdaCodecProbeWidget(
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultPinControl = (UINT8)Response;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X default pin control: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultPinControl));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X default pin control: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultPinControl));
 
         // Get default pin configuration.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONFIGURATION_DEFAULT, 0), &HdaWidget->DefaultConfiguration);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X default pin configuration: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConfiguration));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X default pin configuration: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConfiguration));
     } else if (HdaWidget->Type == HDA_WIDGET_TYPE_VOLUME_KNOB) { // Is the widget a Volume Knob?
         // Get volume knob capabilities.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
             HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VOLUME_KNOB_CAPS), &HdaWidget->VolumeCapabilities);
         if (EFI_ERROR(Status))
             return Status;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X volume knob capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->VolumeCapabilities));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X volume knob capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->VolumeCapabilities));
 
         // Get default volume.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
@@ -254,7 +254,7 @@ HdaCodecProbeWidget(
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultVolume = (UINT8)Response;
-        DEBUG((DEBUG_INFO, "Widget @ 0x%X default volume: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultVolume));
+        //DEBUG((DEBUG_INFO, "Widget @ 0x%X default volume: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultVolume));
     }
 
     return EFI_SUCCESS;
@@ -572,6 +572,31 @@ HdaCodecParsePorts(
 
 EFI_STATUS
 EFIAPI
+HdaCodecInstallInfoProtocol(
+    HDA_CODEC_DEV *HdaCodecDev) {
+    DEBUG((DEBUG_INFO, "HdaCodecInstallInfoProtocol(): start\n"));
+
+    // Create variables.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaCodecInfoData;
+
+    // Allocate space for info protocol data.
+    HdaCodecInfoData = AllocateZeroPool(sizeof(HDA_CODEC_INFO_PRIVATE_DATA));
+    if (HdaCodecInfoData == NULL)
+        return EFI_OUT_OF_RESOURCES;
+
+    // Populate data.
+    HdaCodecInfoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
+    HdaCodecInfoData->HdaCodecDev = HdaCodecDev;
+    HdaCodecInfoData->HdaCodecInfo.GetVendorId = HdaCodecInfoGetVendorId;
+    HdaCodecInfoData->HdaCodecInfo.GetDeviceId = HdaCodecInfoGetDeviceId;
+
+    // Install protocol.
+    HdaCodecDev->HdaCodecInfo = HdaCodecInfoData;
+    return gBS->InstallMultipleProtocolInterfaces(&HdaCodecDev->ControllerHandle, &gEfiHdaCodecInfoProtocolGuid, &HdaCodecInfoData->HdaCodecInfo, NULL);
+}
+
+EFI_STATUS
+EFIAPI
 HdaCodecDriverBindingSupported(
     IN EFI_DRIVER_BINDING_PROTOCOL *This,
     IN EFI_HANDLE ControllerHandle,
@@ -632,6 +657,7 @@ HdaCodecDriverBindingStart(
     HdaCodecDev = AllocateZeroPool(sizeof(HDA_CODEC_DEV));
     HdaCodecDev->HdaIo = HdaIo;
     HdaCodecDev->DevicePath = HdaCodecDevicePath;
+    HdaCodecDev->ControllerHandle = ControllerHandle;
 
     // Get address of codec.
     UINT8 CodecAddress;
@@ -647,6 +673,11 @@ HdaCodecDriverBindingStart(
 
     // Get ports.
     Status = HdaCodecParsePorts(HdaCodecDev);
+    if (EFI_ERROR (Status))
+        goto CLOSE_HDA;
+
+    // Publish information protocol.
+    Status = HdaCodecInstallInfoProtocol(HdaCodecDev);
     if (EFI_ERROR (Status))
         goto CLOSE_HDA;
 
@@ -750,353 +781,9 @@ HdaCodecDriverBindingStart(
         HdaWidget = HdaWidget->UpstreamWidget;
     }
 
-
-
-    //Status = HdaIo->SendCommand(HdaIo, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
-       // HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, 0, FALSE, TRUE, TRUE, FALSE, TRUE)), &Tmp);
-    
-    
-    
-
-
-
-
-    /*Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker amp 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker amp 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0x0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker pin-ctls 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0x0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker eapd 0x%X\n", Tmp));
-    
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xF01f), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0x0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x2 output stream 0x%X\n", Tmp));*/
-    
-
-    //Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    //ASSERT_EFI_ERROR(Status);
-   // DEBUG((DEBUG_INFO, "0x0e mixer amp 0x%X\n", Tmp));
-    
-    //DEBUG((DEBUG_INFO, "0x0e mixer amp 0x%X\n", Tmp));
-   // Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_CHANNEL_COUNT, 0x0), &Tmp);
-  //  ASSERT_EFI_ERROR(Status);
-   // Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB030), &Tmp);
-    //ASSERT_EFI_ERROR(Status);
-  //  Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x0), &Tmp);
-    //ASSERT_EFI_ERROR(Status);*/
-
-  /*  Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x10), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    //Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_CHANNEL_COUNT, 0x0), &Tmp);
-   // ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB030), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-   // Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB030), &Tmp);
-    //ASSERT_EFI_ERROR(Status);
-   // Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x0), &Tmp);
-   // ASSERT_EFI_ERROR(Status);*/
-
-
-   // Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-   // ASSERT_EFI_ERROR(Status);
-   // Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x10), &Tmp);
-    //ASSERT_EFI_ERROR(Status);
-
-
-    /*Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1b, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1b, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x1b line out amp 0x%X\n", Tmp));
-    
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1b, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x1b line out conn list entries: 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1b, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_SELECT_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x1b line out conn list selected: %u\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1b, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1b, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x1b line out pin ctls: 0x%X\n", Tmp));
-
-
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 line out amp 0x%X\n", Tmp));
-    
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 line out conn list entries: 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_SELECT_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 line out conn list selected: %u\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 line out pin ctls: 0x%X\n", Tmp));
-    
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB01F), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c mixer amp-out 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x7000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c mixer amp-in index 0 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2001), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c mixer amp-in index 1 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output amp 0x%X\n", Tmp));
-
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output format 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x10), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output stream 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_CHANNEL_COUNT, 1), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_CHANNEL_COUNT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output channels 0x%X\n", Tmp));*/
-
-   /* Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x17 speaker amp 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_EAPD_BTL_ENABLE, 0x2), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x17 speaker eapd 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x17 speaker pin ctls: 0x%X\n", Tmp));   8300*/
-/*
-    // dc7700
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker amp 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker pin ctls: 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x16, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x16 speaker conn list: 0x%X\n", Tmp));
-
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0e mixer list: 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB01F), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0e mixer amp-out 0x%X\n", Tmp));
-
-    //Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x7000), &Tmp);
-    //ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 0 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0e, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2001), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0e mixer amp-in index 1 0x%X\n", Tmp));*/
-
-  /*  Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB057), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output amp 0x%X\n", Tmp));*/
-
-/*
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output format 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x60), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output stream 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_CHANNEL_COUNT, 1), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_CHANNEL_COUNT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output channels 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x1, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_POWER_STATE, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x01 poewr state 0x%X\n", Tmp));
-
-*/
-
-  /* Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c speaker amp 0x%X\n", Tmp));
-    
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c speaker conn list entries: 0x%X\n", Tmp));
-    //Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0d, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONN_SELECT_CONTROL, 0), &Tmp);
-    //ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_SELECT_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c speaker conn list selected: %u\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c speaker eapd: %u\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0c, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0c speaker pin ctls: 0x%X\n", Tmp));
-
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB020), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x3 output amp 0x%X\n", Tmp));
-
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x3 output format 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x10), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x3 output stream 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_CHANNEL_COUNT, 1), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x3, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_CHANNEL_COUNT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x3 output channels 0x%X\n", Tmp));*/
-
-
-    /*Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x14 speaker amp 0x%X\n", Tmp));
-    
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x14 speaker conn list entries: 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONN_SELECT_CONTROL, 1), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_SELECT_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x14 speaker conn list selected: %u\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x14, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL, 0x40), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x17, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x14 speaker pin ctls: 0x%X\n", Tmp));
-
-
-    
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0d, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0x7000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0d, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0d mixer amp-in index 0 0x%X\n", Tmp));
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x0d, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0x2001), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x0d mixer amp-in index 1 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE, 0xB03f), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE, 0xA000), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output amp 0x%X\n", Tmp));
-
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT, 0x4011), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_4BIT(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output format 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL, 0x10), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output stream 0x%X\n", Tmp));
-
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_CHANNEL_COUNT, 1), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    Status = HdaCodecProto->SendCommand(HdaCodecProto, 0x2, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_CHANNEL_COUNT, 0), &Tmp);
-    ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "0x02 output channels 0x%X\n", Tmp));*/
-
     // Success.
     return EFI_SUCCESS;
+
 
 //FREE_DEVICE:
     // Free device.

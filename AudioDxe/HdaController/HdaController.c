@@ -774,8 +774,8 @@ HdaControllerDriverBindingStart(
     ASSERT_EFI_ERROR(Status);
 
     // Update stream.
-    Status = HdaControllerSetStream(HdaOutStream, TRUE, 6);
-    ASSERT_EFI_ERROR(Status);
+    //Status = HdaControllerSetStream(HdaOutStream, TRUE, 6);
+    //ASSERT_EFI_ERROR(Status);
     
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));
     return EFI_SUCCESS;

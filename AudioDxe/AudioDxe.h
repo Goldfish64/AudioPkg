@@ -47,6 +47,7 @@
 #include <Protocol/DevicePathUtilities.h>
 #include <Protocol/DriverBinding.h>
 #include <Protocol/HdaIo.h>
+#include <Protocol/HdaCodecInfo.h>
 #include <Protocol/SimpleFileSystem.h>
 
 // Driver version
