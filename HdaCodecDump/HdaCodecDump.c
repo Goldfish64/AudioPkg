@@ -45,8 +45,9 @@ HdaCodecDumpMain(
 
     // Get AFG ID.
     UINT8 AudioFuncId;
-    Status = HdaCodecInfo->GetAudioFuncId(HdaCodecInfo, &AudioFuncId);
-    Print(L"AFG Function Id: 0x%X\n", AudioFuncId);
+    BOOLEAN Unsol;
+    Status = HdaCodecInfo->GetAudioFuncId(HdaCodecInfo, &AudioFuncId, &Unsol);
+    Print(L"AFG Function Id: 0x%X (unsol &u)\n", AudioFuncId, Unsol);
 
     // Get vendor.
     UINT32 VendorId;

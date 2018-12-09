@@ -44,7 +44,7 @@ HdaCodecInfoGetVendorId(
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
     // If parameters are null, fail.
-    if (This == NULL || VendorId == NULL)
+    if ((This == NULL) || (VendorId == NULL))
         return EFI_INVALID_PARAMETER;
 
     // Get private data and fill vendor ID parameter.
@@ -73,7 +73,7 @@ HdaCodecInfoGetRevisionId(
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
     // If parameters are null, fail.
-    if (This == NULL || RevisionId == NULL)
+    if ((This == NULL) || (RevisionId == NULL))
         return EFI_INVALID_PARAMETER;
 
     // Get private data and fill revision ID parameter.
@@ -95,18 +95,20 @@ EFI_STATUS
 EFIAPI
 HdaCodecInfoGetAudioFuncId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT8 *AudioFuncId) {
+    OUT UINT8 *AudioFuncId,
+    OUT BOOLEAN *UnsolCapable) {
     DEBUG((DEBUG_INFO, "HdaCodecInfoGetAudioFuncId(): start\n"));
     
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
     // If parameters are null, fail.
-    if (This == NULL || AudioFuncId == NULL)
+    if ((This == NULL) || (AudioFuncId == NULL) || (UnsolCapable == NULL))
         return EFI_INVALID_PARAMETER;
 
     // Get private data and fill node ID parameter.
     HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
-    *AudioFuncId = HdaPrivateData->HdaCodecDev->AudioFuncGroup;
+    *AudioFuncId = HdaPrivateData->HdaCodecDev->AudioFuncGroup->NodeId;
+    *UnsolCapable = HdaPrivateData->HdaCodecDev->AudioFuncGroup->UnsolCapable;
     return EFI_SUCCESS;
 }

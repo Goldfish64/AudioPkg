@@ -83,6 +83,7 @@ struct _HDA_WIDGET {
 struct _HDA_FUNC_GROUP {
     HDA_CODEC_DEV *HdaCodecDev;
     UINT8 NodeId;
+    BOOLEAN UnsolCapable;
     UINT8 Type;
     
     // Capabilities.
@@ -113,7 +114,7 @@ struct _HDA_CODEC_DEV {
 
     HDA_FUNC_GROUP *FuncGroups;
     UINTN FuncGroupsCount;
-    UINT8 AudioFuncGroup;
+    HDA_FUNC_GROUP *AudioFuncGroup;
 
     // Output and input ports.
     HDA_WIDGET **OutputPorts;
@@ -178,6 +179,7 @@ EFI_STATUS
 EFIAPI
 HdaCodecInfoGetAudioFuncId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT8 *AudioFuncId);
+    OUT UINT8 *AudioFuncId,
+    OUT BOOLEAN *UnsolCapable);
 
 #endif
