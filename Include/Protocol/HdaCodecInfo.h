@@ -34,6 +34,48 @@
 extern EFI_GUID gEfiHdaCodecInfoProtocolGuid;
 typedef struct _EFI_HDA_CODEC_INFO_PROTOCOL EFI_HDA_CODEC_INFO_PROTOCOL;
 
+// Widget structure.
+typedef struct {
+    UINT8 NodeId;
+
+    // General widgets.
+    UINT32 Capabilities;
+    UINT8 DefaultUnSol;
+    UINT8 DefaultEapd;
+
+    // Connections.
+    UINT32 ConnectionListLength;
+    UINT16 *Connections;
+
+    // Power.
+    UINT32 SupportedPowerStates;
+    UINT32 DefaultPowerState;
+
+    // Amps.
+    UINT32 AmpInCapabilities;
+    UINT32 AmpOutCapabilities;
+    UINT8 *AmpInLeftDefaultGainMute;
+    UINT8 *AmpInRightDefaultGainMute;
+    UINT8 AmpOutLeftDefaultGainMute;
+    UINT8 AmpOutRightDefaultGainMute;
+
+    // Input/Output.
+    UINT32 SupportedPcmRates;
+    UINT32 SupportedFormats;
+    UINT16 DefaultConvFormat;
+    UINT8 DefaultConvStreamChannel;
+    UINT8 DefaultConvChannelCount;
+
+    // Pin Complex.
+    UINT32 PinCapabilities;
+    UINT8 DefaultPinControl;
+    UINT32 DefaultConfiguration;
+
+    // Volume Knob.
+    UINT32 VolumeCapabilities;
+    UINT8 DefaultVolume;
+} HDA_WIDGET;
+
 /**                                                                 
   Gets the codec's vendor and device ID.
 
@@ -98,11 +140,64 @@ EFI_STATUS
     OUT UINT32 *Rates,
     OUT UINT32 *Formats);
 
+/**                                                                 
+  Gets the codec's default amp capabilities.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] AmpInCaps         The default input amp capabilities.
+  @param[out] AmpOutCaps        The default output amp capabilities.
+
+  @retval EFI_SUCCESS           The default amp capabilities were retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_INFO_GET_DEFAULT_AMP_CAPS)(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT32 *AmpInCaps,
+    OUT UINT32 *AmpOutCaps);
+
+/**                                                                 
+  Gets the codec's widgets.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] Widgets           A pointer to the buffer to return the requested array of widgets.
+  @param[out] WidgetCount       The number of widgets returned in Widgets.
+
+  @retval EFI_SUCCESS           The widgets were retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_INFO_GET_WIDGETS)(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT HDA_WIDGET **Widgets,
+    OUT UINTN *WidgetCount);
+
+/**                                                                 
+  Frees an array of HDA_WIDGET.
+
+  @param[in] Widgets            A pointer to the buffer array of widgets that is to be freed.
+  @param[in] WidgetCount        The number of widgets in Widgets.
+
+  @retval EFI_SUCCESS           The buffer was freed.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_INFO_FREE_WIDGETS_BUFFER)(
+    IN  HDA_WIDGET *Widgets,
+    IN  UINTN WidgetCount);
+
+// Protocol struct.
 struct _EFI_HDA_CODEC_INFO_PROTOCOL {
     EFI_HDA_CODEC_INFO_GET_VENDOR_ID                GetVendorId;
     EFI_HDA_CODEC_INFO_GET_REVISION_ID              GetRevisionId;
     EFI_HDA_CODEC_INFO_GET_AUDIO_FUNC_ID            GetAudioFuncId;
     EFI_HDA_CODEC_INFO_GET_DEFAULT_RATES_FORMATS    GetDefaultRatesFormats;
+    EFI_HDA_CODEC_INFO_GET_DEFAULT_AMP_CAPS         GetDefaultAmpCaps;
+    EFI_HDA_CODEC_INFO_GET_WIDGETS                  GetWidgets;
+    EFI_HDA_CODEC_INFO_FREE_WIDGETS_BUFFER          FreeWidgetsBuffer;
 };
 
 #endif

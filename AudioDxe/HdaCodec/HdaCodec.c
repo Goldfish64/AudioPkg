@@ -28,7 +28,7 @@
 EFI_STATUS
 EFIAPI
 HdaCodecProbeWidget(
-    HDA_WIDGET *HdaWidget) {
+    HDA_WIDGET_DEV *HdaWidget) {
     DEBUG((DEBUG_INFO, "HdaCodecProbeWidget(): start\n"));
 
     // Create variables.
@@ -273,8 +273,8 @@ HdaCodecProbeFuncGroup(
     UINT8 WidgetStart;
     UINT8 WidgetEnd;
     UINT8 WidgetCount;
-    HDA_WIDGET *HdaWidget;
-    HDA_WIDGET *HdaConnectedWidget;
+    HDA_WIDGET_DEV *HdaWidget;
+    HDA_WIDGET_DEV *HdaConnectedWidget;
 
     // Get function group type.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
@@ -358,7 +358,7 @@ HdaCodecProbeFuncGroup(
         return EFI_UNSUPPORTED;
 
     // Allocate space for widgets.
-    FuncGroup->Widgets = AllocateZeroPool(sizeof(HDA_WIDGET) * WidgetCount);
+    FuncGroup->Widgets = AllocateZeroPool(sizeof(HDA_WIDGET_DEV) * WidgetCount);
     FuncGroup->WidgetsCount = WidgetCount;
 
     // Probe widgets.
@@ -386,7 +386,7 @@ HdaCodecProbeFuncGroup(
         // Get connections.
         if (HdaWidget->ConnectionCount > 0) {
             // Allocate array of widget pointers.
-            HdaWidget->WidgetConnections = AllocateZeroPool(sizeof(HDA_WIDGET*) * HdaWidget->ConnectionCount);
+            HdaWidget->WidgetConnections = AllocateZeroPool(sizeof(HDA_WIDGET_DEV*) * HdaWidget->ConnectionCount);
 
             // Populate array.
             for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++) {
@@ -471,7 +471,7 @@ HdaCodecProbeCodec(
 EFI_STATUS
 EFIAPI
 HdaCodecFindUpstreamOutput(
-    HDA_WIDGET *HdaWidget,
+    HDA_WIDGET_DEV *HdaWidget,
     UINT8 Level) {
     //DEBUG((DEBUG_INFO, "HdaCodecFindUpstreamOutput(): start\n"));
 
@@ -481,7 +481,7 @@ HdaCodecFindUpstreamOutput(
 
     // Create variables.
     EFI_STATUS Status;
-    HDA_WIDGET *HdaConnectedWidget;
+    HDA_WIDGET_DEV *HdaConnectedWidget;
 
     // Go through connections and check for Output widgets.
     for (UINT8 c = 0; c < HdaWidget->ConnectionCount; c++) {
@@ -521,7 +521,7 @@ HdaCodecParsePorts(
     // Create variables.
     EFI_STATUS Status;
     HDA_FUNC_GROUP *HdaFuncGroup;
-    HDA_WIDGET *HdaWidget;
+    HDA_WIDGET_DEV *HdaWidget;
     UINT8 DefaultDeviceType;
 
     // Loop through each function group.
@@ -555,7 +555,7 @@ HdaCodecParsePorts(
                     continue;
 
                 // Reallocate output array.
-                HdaCodecDev->OutputPorts = ReallocatePool(sizeof(HDA_WIDGET*) * HdaCodecDev->OutputPortsCount, sizeof(HDA_WIDGET*) * (HdaCodecDev->OutputPortsCount + 1), HdaCodecDev->OutputPorts);
+                HdaCodecDev->OutputPorts = ReallocatePool(sizeof(HDA_WIDGET_DEV*) * HdaCodecDev->OutputPortsCount, sizeof(HDA_WIDGET_DEV*) * (HdaCodecDev->OutputPortsCount + 1), HdaCodecDev->OutputPorts);
                 if (HdaCodecDev->OutputPorts == NULL)
                     return EFI_OUT_OF_RESOURCES;
                 HdaCodecDev->OutputPortsCount++;
@@ -590,6 +590,9 @@ HdaCodecInstallInfoProtocol(
     HdaCodecInfoData->HdaCodecInfo.GetRevisionId = HdaCodecInfoGetRevisionId;
     HdaCodecInfoData->HdaCodecInfo.GetAudioFuncId = HdaCodecInfoGetAudioFuncId;
     HdaCodecInfoData->HdaCodecInfo.GetDefaultRatesFormats = HdaCodecInfoGetDefaultRatesFormats;
+    HdaCodecInfoData->HdaCodecInfo.GetDefaultAmpCaps = HdaCodecInfoGetDefaultAmpCaps;
+    HdaCodecInfoData->HdaCodecInfo.GetWidgets = HdaCodecInfoGetWidgets;
+    HdaCodecInfoData->HdaCodecInfo.FreeWidgetsBuffer = HdaCodecInfoFreeWidgetsBuffer;
 
     // Install protocol.
     HdaCodecDev->HdaCodecInfo = HdaCodecInfoData;
@@ -683,10 +686,10 @@ HdaCodecDriverBindingStart(
         goto CLOSE_HDA;
 
     // Demo.
-    HDA_WIDGET *HdaWidgetOutPort = HdaCodecDev->OutputPorts[0];
+    HDA_WIDGET_DEV *HdaWidgetOutPort = HdaCodecDev->OutputPorts[0];
     DEBUG((DEBUG_INFO, "Ensure widget 0x%X is hooked up!\n", HdaWidgetOutPort->NodeId));
 
-    HDA_WIDGET *HdaWidget = HdaWidgetOutPort;
+    HDA_WIDGET_DEV *HdaWidget = HdaWidgetOutPort;
 
   // stream
   DEBUG((DEBUG_INFO, "Set data\n"));

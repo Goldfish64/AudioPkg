@@ -29,10 +29,10 @@
 
 typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
-typedef struct _HDA_WIDGET HDA_WIDGET;
+typedef struct _HDA_WIDGET_DEV HDA_WIDGET_DEV;
 typedef struct _HDA_CODEC_INFO_PRIVATE_DATA HDA_CODEC_INFO_PRIVATE_DATA;
 
-struct _HDA_WIDGET {
+struct _HDA_WIDGET_DEV {
     HDA_FUNC_GROUP *FuncGroup;
     UINT8 NodeId;
     UINT8 Type;
@@ -45,9 +45,9 @@ struct _HDA_WIDGET {
     // Connections.
     UINT32 ConnectionListLength;
     UINT16 *Connections;
-    HDA_WIDGET **WidgetConnections;
+    HDA_WIDGET_DEV **WidgetConnections;
     UINT8 ConnectionCount;
-    HDA_WIDGET *UpstreamWidget;
+    HDA_WIDGET_DEV *UpstreamWidget;
     UINT8 UpstreamIndex;
 
     // Power.
@@ -95,7 +95,7 @@ struct _HDA_FUNC_GROUP {
     UINT32 SupportedPowerStates;
     UINT32 GpioCapabilities;
 
-    HDA_WIDGET *Widgets;
+    HDA_WIDGET_DEV *Widgets;
     UINT8 WidgetsCount;
 };
 
@@ -117,8 +117,8 @@ struct _HDA_CODEC_DEV {
     HDA_FUNC_GROUP *AudioFuncGroup;
 
     // Output and input ports.
-    HDA_WIDGET **OutputPorts;
-    HDA_WIDGET **InputPorts;
+    HDA_WIDGET_DEV **OutputPorts;
+    HDA_WIDGET_DEV **InputPorts;
     UINTN OutputPortsCount;
     UINTN InputPortsCount;
 };
@@ -188,5 +188,25 @@ HdaCodecInfoGetDefaultRatesFormats(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT UINT32 *Rates,
     OUT UINT32 *Formats);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetDefaultAmpCaps(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT32 *AmpInCaps,
+    OUT UINT32 *AmpOutCaps);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetWidgets(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT HDA_WIDGET **Widgets,
+    OUT UINTN *WidgetCount);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoFreeWidgetsBuffer(
+    IN  HDA_WIDGET *Widgets,
+    IN  UINTN WidgetCount);
 
 #endif

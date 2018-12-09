@@ -24,6 +24,87 @@
 
 #include "HdaCodecDump.h"
 
+VOID
+EFIAPI
+HdaCodecDumpPrintRatesFormats(
+    IN UINT32 Rates,
+    IN UINT32 Formats) {
+    // Print sample rates.
+    Print(L"    rates [0x%X]:", (UINT16)Rates);
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_8KHZ)
+        Print(L" 8000");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_11KHZ)
+        Print(L" 11025");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16KHZ)
+        Print(L" 16000");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_22KHZ)
+        Print(L" 22050");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_32KHZ)
+        Print(L" 32000");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_44KHZ)
+        Print(L" 44100");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_48KHZ)
+        Print(L" 48000");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_88KHZ)
+        Print(L" 88200");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_96KHZ)
+        Print(L" 96000");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_176KHZ)
+        Print(L" 176400");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_192KHZ)
+        Print(L" 192000");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_384KHZ)
+        Print(L" 384000");
+    Print(L"\n");
+
+    // Print bits.
+    Print(L"    bits [0x%X]:", (UINT16)(Rates >> 16));
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_8BIT)
+        Print(L" 8");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16BIT)
+        Print(L" 16");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_20BIT)
+        Print(L" 20");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_24BIT)
+        Print(L" 24");
+    if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_32BIT)
+        Print(L" 32");
+    Print(L"\n");
+
+    // Print formats.
+    Print(L"    formats [0x%X]:", Formats);
+    if (Formats & HDA_PARAMETER_SUPPORTED_STREAM_FORMATS_PCM)
+        Print(L" PCM");
+    if (Formats & HDA_PARAMETER_SUPPORTED_STREAM_FORMATS_FLOAT32)
+        Print(L" FLOAT32");
+    if (Formats & HDA_PARAMETER_SUPPORTED_STREAM_FORMATS_AC3)
+        Print(L" AC3");
+    Print(L"\n");
+}
+
+VOID
+EFIAPI
+HdaCodecDumpPrintAmpCaps(
+    IN UINT32 AmpCaps) {
+    if (AmpCaps) {
+        Print(L"ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2, mute=%u\n",
+            HDA_PARAMETER_AMP_CAPS_OFFSET(AmpCaps), HDA_PARAMETER_AMP_CAPS_NUM_STEPS(AmpCaps),
+            HDA_PARAMETER_AMP_CAPS_STEP_SIZE(AmpCaps), (AmpCaps & HDA_PARAMETER_AMP_CAPS_MUTE) != 0);
+    } else
+        Print(L"N/A\n");
+}
+
+VOID
+EFIAPI
+HdaCodecDumpPrintWidgets(
+    IN HDA_WIDGET *Widgets,
+    IN UINTN WidgetCount) {
+    // Print each widget.
+    for (UINTN w = 0; w < WidgetCount; w++) {
+        Print(L"Node 0x%2X [] wcaps 0x%X:\n", Widgets[w].NodeId, Widgets[w].Capabilities);
+    }
+}
+
 EFI_STATUS
 EFIAPI
 HdaCodecDumpMain(
@@ -62,63 +143,28 @@ HdaCodecDumpMain(
     // Get supported rates/formats.
     UINT32 Rates, Formats;
     Status = HdaCodecInfo->GetDefaultRatesFormats(HdaCodecInfo, &Rates, &Formats);
-    Print(L"Default PCM:\n");
 
     if ((Rates != 0) || (Formats != 0)) {
-        // Print sample rates.
-        Print(L"    rates [0x%X]:", (UINT16)Rates);
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_8KHZ)
-            Print(L" 8000");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_11KHZ)
-            Print(L" 11025");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16KHZ)
-            Print(L" 16000");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_22KHZ)
-            Print(L" 22050");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_32KHZ)
-            Print(L" 32000");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_44KHZ)
-            Print(L" 44100");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_48KHZ)
-            Print(L" 48000");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_88KHZ)
-            Print(L" 88200");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_96KHZ)
-            Print(L" 96000");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_176KHZ)
-            Print(L" 176400");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_192KHZ)
-            Print(L" 192000");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_384KHZ)
-            Print(L" 384000");
-        Print(L"\n");
+        Print(L"Default PCM:\n");
+        HdaCodecDumpPrintRatesFormats(Rates, Formats);
+    } else
+        Print(L"Default PCM: N/A\n");
 
-        // Print bits.
-        Print(L"    bits [0x%X]:", (UINT16)(Rates >> 16));
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_8BIT)
-            Print(L" 8");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16BIT)
-            Print(L" 16");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_20BIT)
-            Print(L" 20");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_24BIT)
-            Print(L" 24");
-        if (Rates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_32BIT)
-            Print(L" 32");
-        Print(L"\n");
+    // Get default amp caps.
+    UINT32 AmpInCaps, AmpOutCaps;
+    Status = HdaCodecInfo->GetDefaultAmpCaps(HdaCodecInfo, &AmpInCaps, &AmpOutCaps);
+    Print(L"Default Amp-In caps: ");
+    HdaCodecDumpPrintAmpCaps(AmpInCaps);
+    Print(L"Default Amp-Out caps: ");
+    HdaCodecDumpPrintAmpCaps(AmpOutCaps);
 
-        // Print formats.
-        Print(L"    formats [0x%X]:", Formats);
-        if (Formats & HDA_PARAMETER_SUPPORTED_STREAM_FORMATS_PCM)
-            Print(L" PCM");
-        if (Formats & HDA_PARAMETER_SUPPORTED_STREAM_FORMATS_FLOAT32)
-            Print(L" FLOAT32");
-        if (Formats & HDA_PARAMETER_SUPPORTED_STREAM_FORMATS_AC3)
-            Print(L" AC3");
-        Print(L"\n");
-    } else {
-        Print(L" N/A\n");
-    }
+    // Get widgets.
+    HDA_WIDGET *Widgets;
+    UINTN WidgetCount;
+    Status = HdaCodecInfo->GetWidgets(HdaCodecInfo, &Widgets, &WidgetCount);
+    HdaCodecDumpPrintWidgets(Widgets, WidgetCount);
+    Status = HdaCodecInfo->FreeWidgetsBuffer(Widgets, WidgetCount);
+    
 
     return EFI_SUCCESS;
 }
