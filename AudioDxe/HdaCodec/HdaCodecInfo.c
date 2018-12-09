@@ -112,3 +112,35 @@ HdaCodecInfoGetAudioFuncId(
     *UnsolCapable = HdaPrivateData->HdaCodecDev->AudioFuncGroup->UnsolCapable;
     return EFI_SUCCESS;
 }
+
+/**                                                                 
+  Gets the codec's default supported stream rates and formats.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] Rates             The default supported rates.
+  @param[out] Formats           The default supported formats.
+
+  @retval EFI_SUCCESS           The stream rates and formats were retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetDefaultRatesFormats(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT32 *Rates,
+    OUT UINT32 *Formats) {
+    DEBUG((DEBUG_INFO, "HdaCodecInfoGetDefaultRatesFormats(): start\n"));
+    
+    // Create variables.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
+
+    // If parameters are null, fail.
+    if ((This == NULL) || (Rates == NULL) || (Formats == NULL))
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data and fill rates and formats parameters.
+    HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
+    *Rates = HdaPrivateData->HdaCodecDev->AudioFuncGroup->SupportedPcmRates;
+    *Formats = HdaPrivateData->HdaCodecDev->AudioFuncGroup->SupportedFormats;
+    return EFI_SUCCESS;
+}

@@ -589,6 +589,7 @@ HdaCodecInstallInfoProtocol(
     HdaCodecInfoData->HdaCodecInfo.GetVendorId = HdaCodecInfoGetVendorId;
     HdaCodecInfoData->HdaCodecInfo.GetRevisionId = HdaCodecInfoGetRevisionId;
     HdaCodecInfoData->HdaCodecInfo.GetAudioFuncId = HdaCodecInfoGetAudioFuncId;
+    HdaCodecInfoData->HdaCodecInfo.GetDefaultRatesFormats = HdaCodecInfoGetDefaultRatesFormats;
 
     // Install protocol.
     HdaCodecDev->HdaCodecInfo = HdaCodecInfoData;

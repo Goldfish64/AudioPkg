@@ -182,4 +182,11 @@ HdaCodecInfoGetAudioFuncId(
     OUT UINT8 *AudioFuncId,
     OUT BOOLEAN *UnsolCapable);
 
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetDefaultRatesFormats(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT32 *Rates,
+    OUT UINT32 *Formats);
+
 #endif

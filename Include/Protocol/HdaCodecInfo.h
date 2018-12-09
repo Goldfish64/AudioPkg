@@ -69,6 +69,7 @@ EFI_STATUS
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] AudioFuncId       The node ID of the codec's audio function.
+  @param[out] UnsolCapable      Whether or not the function supports unsolicitation.
 
   @retval EFI_SUCCESS           The node ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
@@ -80,10 +81,28 @@ EFI_STATUS
     OUT UINT8 *AudioFuncId,
     OUT BOOLEAN *UnsolCapable);
 
+/**                                                                 
+  Gets the codec's default supported stream rates and formats.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] Rates             The default supported rates.
+  @param[out] Formats           The default supported formats.
+
+  @retval EFI_SUCCESS           The stream rates and formats were retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_INFO_GET_DEFAULT_RATES_FORMATS)(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT32 *Rates,
+    OUT UINT32 *Formats);
+
 struct _EFI_HDA_CODEC_INFO_PROTOCOL {
-    EFI_HDA_CODEC_INFO_GET_VENDOR_ID        GetVendorId;
-    EFI_HDA_CODEC_INFO_GET_REVISION_ID      GetRevisionId;
-    EFI_HDA_CODEC_INFO_GET_AUDIO_FUNC_ID    GetAudioFuncId;
+    EFI_HDA_CODEC_INFO_GET_VENDOR_ID                GetVendorId;
+    EFI_HDA_CODEC_INFO_GET_REVISION_ID              GetRevisionId;
+    EFI_HDA_CODEC_INFO_GET_AUDIO_FUNC_ID            GetAudioFuncId;
+    EFI_HDA_CODEC_INFO_GET_DEFAULT_RATES_FORMATS    GetDefaultRatesFormats;
 };
 
 #endif
