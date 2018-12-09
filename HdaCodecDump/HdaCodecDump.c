@@ -101,7 +101,150 @@ HdaCodecDumpPrintWidgets(
     IN UINTN WidgetCount) {
     // Print each widget.
     for (UINTN w = 0; w < WidgetCount; w++) {
-        Print(L"Node 0x%2X [] wcaps 0x%X:\n", Widgets[w].NodeId, Widgets[w].Capabilities);
+        // Determine name of widget.
+        CHAR16 *WidgetNames[HDA_WIDGET_TYPE_VENDOR + 1] = {
+            L"Audio Output", L"Audio Input", L"Audio Mixer",
+            L"Audio Selector", L"Pin Complex", L"Power Widget",
+            L"Volume Knob Widget", L"Beep Generator Widget",
+            L"Reserved", L"Reserved", L"Reserved", L"Reserved",
+            L"Reserved", L"Reserved", L"Reserved",
+            L"Vendor Defined Widget"
+        };
+
+        // Print header and capabilities.
+        Print(L"Node 0x%2X [%s] wcaps 0x%X:", Widgets[w].NodeId,
+            WidgetNames[HDA_PARAMETER_WIDGET_CAPS_TYPE(Widgets[w].Capabilities)], Widgets[w].Capabilities);
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_STEREO)
+            Print(L" Stereo");
+        else
+            Print(L" Mono");
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_DIGITAL)
+            Print(L" Digital");
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_IN_AMP)
+            Print(L" Amp-In");
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP)
+            Print(L" Amp-Out");
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_L_R_SWAP)
+            Print(L" R/L");
+        Print(L"\n");
+
+        // Print input amp info.
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_IN_AMP) {
+            // Print caps.
+            Print(L"  Amp-in caps: ");
+            HdaCodecDumpPrintAmpCaps(Widgets[w].AmpInCapabilities);
+
+            // Print default values.
+            Print(L"  Amp-In vals:");
+            for (UINT8 i = 0; i < HDA_PARAMETER_CONN_LIST_LENGTH_LEN(Widgets[w].ConnectionListLength); i++) {
+                if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_STEREO)
+                    Print(L" [0x%2X 0x%2X]", Widgets[w].AmpInLeftDefaultGainMute[i], Widgets[w].AmpInRightDefaultGainMute[i]);
+                else
+                    Print(L" [0x%2X]", Widgets[w].AmpInLeftDefaultGainMute[i]);
+            }
+            Print(L"\n");
+        }
+
+        // Print output amp info.
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP) {
+            // Print caps.
+            Print(L"  Amp-Out caps: ");
+            HdaCodecDumpPrintAmpCaps(Widgets[w].AmpOutCapabilities);
+
+            // Print default values.
+            Print(L"  Amp-Out vals:");
+            if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_STEREO)
+                Print(L" [0x%2X 0x%2X]\n", Widgets[w].AmpOutLeftDefaultGainMute, Widgets[w].AmpOutRightDefaultGainMute);
+            else
+                Print(L" [0x%2X]\n", Widgets[w].AmpOutLeftDefaultGainMute);
+        }
+
+        // Print pin complexe info.
+        if (HDA_PARAMETER_WIDGET_CAPS_TYPE(Widgets[w].Capabilities) == HDA_WIDGET_TYPE_PIN_COMPLEX) {
+            // Print pin capabilities.
+            Print(L"  Pincap 0x%8X:", Widgets[w].PinCapabilities);
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_INPUT)
+                Print(L" IN");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_OUTPUT)
+                Print(L" OUT");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_HEADPHONE)
+                Print(L" HP");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_EAPD)
+                Print(L" EAPD");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_TRIGGER)
+                Print(L" Trigger");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_PRESENCE)
+                Print(L" Detect");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_HBR)
+                Print(L" HBR");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_HDMI)
+                Print(L" HDMI");
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_DISPLAYPORT)
+                Print(L" DP");
+            Print(L"\n");
+
+            // Print EAPD info.
+            if (Widgets[w].PinCapabilities & HDA_PARAMETER_PIN_CAPS_EAPD) {
+                Print(L"  EAPD 0x%X:", Widgets[w].DefaultEapd);
+                if (Widgets[w].DefaultEapd & HDA_EAPD_BTL_ENABLE_BTL)
+                    Print(L" BTL");
+                if (Widgets[w].DefaultEapd & HDA_EAPD_BTL_ENABLE_EAPD)
+                    Print(L" EAPD");
+                if (Widgets[w].DefaultEapd & HDA_EAPD_BTL_ENABLE_L_R_SWAP)
+                    Print(L" R/L");
+                Print(L"\n");
+            }
+
+            // Create pin default names.
+            CHAR16 *PortConnectivities[4] = { L"Jack", L"None", L"Fixed", L"Int Jack" };
+            CHAR16 *DefaultDevices[HDA_CONFIG_DEFAULT_DEVICE_OTHER + 1] = {
+                L"Line Out", L"Speaker", L"HP Out", L"CD", L"SPDIF Out",
+                L"Digital Out", L"Modem Line", L"Modem Handset", L"Line In", L"Aux",
+                L"Mic", L"Telephone", L"SPDIF In", L"Digital In", L"Reserved", L"Other" };
+            CHAR16 *Surfaces[4] = { L"Ext", L"Int", L"Ext", L"Other" };
+            CHAR16 *Locations[0xF + 1] = {
+                L"N/A", L"Rear", L"Front", L"Left", L"Right", L"Top", L"Bottom", L"Special",
+                L"Reserved", L"Reserved", L"Reserved", L"Reserved", L"Reserved", L"Reserved" };
+            CHAR16 *ConnTypes[HDA_CONFIG_DEFAULT_CONN_OTHER + 1] = {
+                L"Unknown", L"1/8", L"1/4", L"ATAPI", L"RCA", L"Optical", L"Digital",
+                L"Analog", L"Multi", L"XLR", L"RJ11", L"Combo", L"Other", L"Other", L"Other", L"Other" };
+            CHAR16 *Colors[HDA_CONFIG_DEFAULT_COLOR_OTHER + 1] = {
+                L"Unknown", L"Black", L"Grey", L"Blue", L"Green", L"Red", L"Orange",
+                L"Yellow", L"Purple", L"Pink", L"Reserved", L"Reserved", L"Reserved",
+                L"Reserved", L"White", L"Other" };
+
+            // Print pin default header.
+            Print(L"  Pin Default 0x%8X: [%s] %s at %s %s\n", Widgets[w].DefaultConfiguration,
+                PortConnectivities[HDA_VERB_GET_CONFIGURATION_DEFAULT_PORT_CONN(Widgets[w].DefaultConfiguration)],
+                DefaultDevices[HDA_VERB_GET_CONFIGURATION_DEFAULT_DEVICE(Widgets[w].DefaultConfiguration)],
+                Surfaces[HDA_VERB_GET_CONFIGURATION_DEFAULT_SURF(Widgets[w].DefaultConfiguration)],
+                Locations[HDA_VERB_GET_CONFIGURATION_DEFAULT_LOC(Widgets[w].DefaultConfiguration)]);
+
+            // Print connection type and color.
+            Print(L"    Conn = %s, Color = %s\n",
+                ConnTypes[HDA_VERB_GET_CONFIGURATION_DEFAULT_CONN_TYPE(Widgets[w].DefaultConfiguration)],
+                Colors[HDA_VERB_GET_CONFIGURATION_DEFAULT_COLOR(Widgets[w].DefaultConfiguration)]);
+            
+            // Print default association and sequence.
+            Print(L"    DefAssociation = 0x%X, Sequence = 0x%X\n",
+                HDA_VERB_GET_CONFIGURATION_DEFAULT_ASSOCIATION(Widgets[w].DefaultConfiguration),
+                HDA_VERB_GET_CONFIGURATION_DEFAULT_SEQUENCE(Widgets[w].DefaultConfiguration));
+
+            // Print default pin control.
+            Print(L"Pin-ctls: 0x%2X:", Widgets[w].DefaultPinControl);
+            if (Widgets[w].DefaultPinControl & HDA_PIN_WIDGET_CONTROL_VREF_EN)
+                Print(L" VREF");
+            if (Widgets[w].DefaultPinControl & HDA_PIN_WIDGET_CONTROL_IN_EN)
+                Print(L" IN");
+            if (Widgets[w].DefaultPinControl & HDA_PIN_WIDGET_CONTROL_OUT_EN)
+                Print(L" OUT");
+            if (Widgets[w].DefaultPinControl & HDA_PIN_WIDGET_CONTROL_HP_EN)
+                Print(L" HP");
+            Print(L"\n");
+        }
+
+
+
     }
 }
 
