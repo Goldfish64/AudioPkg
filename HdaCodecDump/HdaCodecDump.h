@@ -34,6 +34,8 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 
+#include <Library/HdaVerbs.h>
+
 // Consumed protocols.
 #include <Protocol/HdaCodecInfo.h>
 

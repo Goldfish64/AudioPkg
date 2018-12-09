@@ -26,7 +26,6 @@
 #define _EFI_HDA_CODEC_H_
 
 #include "AudioDxe.h"
-#include "HdaVerbs.h"
 
 typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
@@ -109,10 +108,8 @@ struct _HDA_CODEC_DEV {
     HDA_CODEC_INFO_PRIVATE_DATA *HdaCodecInfo;
 
     // Codec information.
-    UINT16 VendorId;
-    UINT16 DeviceId;
-    UINT8 RevisionId;
-    UINT8 SteppindId;
+    UINT32 VendorId;
+    UINT32 RevisionId;
 
     HDA_FUNC_GROUP *FuncGroups;
     UINTN FuncGroupsCount;
@@ -169,12 +166,18 @@ EFI_STATUS
 EFIAPI
 HdaCodecInfoGetVendorId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *VendorId);
+    OUT UINT32 *VendorId);
 
 EFI_STATUS
 EFIAPI
-HdaCodecInfoGetDeviceId(
+HdaCodecInfoGetRevisionId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *DeviceId);
+    OUT UINT32 *RevisionId);
+
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetAudioFuncId(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT8 *AudioFuncId);
 
 #endif

@@ -35,38 +35,54 @@ extern EFI_GUID gEfiHdaCodecInfoProtocolGuid;
 typedef struct _EFI_HDA_CODEC_INFO_PROTOCOL EFI_HDA_CODEC_INFO_PROTOCOL;
 
 /**                                                                 
-  Gets the codec's vendor ID.
+  Gets the codec's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
-  @param[out] VendorId          The vendor ID of the codec.
+  @param[out] VendorId          The vendor and device ID of the codec.
 
-  @retval EFI_SUCCESS           The vendor ID was retrieved.
+  @retval EFI_SUCCESS           The vendor and device ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
 **/
 typedef
 EFI_STATUS
 (EFIAPI *EFI_HDA_CODEC_INFO_GET_VENDOR_ID)(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *VendorId);
+    OUT UINT32 *VendorId);
 
 /**                                                                 
-  Gets the codec's device ID.
+  Gets the codec's revision ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
-  @param[out] DeviceId          The device ID of the codec.
+  @param[out] RevisionId        The revision ID of the codec.
 
-  @retval EFI_SUCCESS           The device ID was retrieved.
+  @retval EFI_SUCCESS           The revision ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
 **/
 typedef
 EFI_STATUS
-(EFIAPI *EFI_HDA_CODEC_INFO_GET_DEVICE_ID)(
+(EFIAPI *EFI_HDA_CODEC_INFO_GET_REVISION_ID)(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *DeviceId);
+    OUT UINT32 *RevisionId);
+
+/**                                                                 
+  Gets the node ID of the codec's audio function.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] AudioFuncId       The node ID of the codec's audio function.
+
+  @retval EFI_SUCCESS           The node ID was retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_CODEC_INFO_GET_AUDIO_FUNC_ID)(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT8 *AudioFuncId);
 
 struct _EFI_HDA_CODEC_INFO_PROTOCOL {
-    EFI_HDA_CODEC_INFO_GET_VENDOR_ID GetVendorId;
-    EFI_HDA_CODEC_INFO_GET_DEVICE_ID GetDeviceId;
+    EFI_HDA_CODEC_INFO_GET_VENDOR_ID        GetVendorId;
+    EFI_HDA_CODEC_INFO_GET_REVISION_ID      GetRevisionId;
+    EFI_HDA_CODEC_INFO_GET_AUDIO_FUNC_ID    GetAudioFuncId;
 };
 
 #endif

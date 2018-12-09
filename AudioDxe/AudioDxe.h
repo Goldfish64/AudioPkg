@@ -40,6 +40,8 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
 
+#include <Library/HdaVerbs.h>
+
 //
 // Proctols that are consumed.
 //

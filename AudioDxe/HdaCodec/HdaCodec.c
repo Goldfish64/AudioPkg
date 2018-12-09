@@ -24,7 +24,6 @@
 
 #include "HdaCodec.h"
 #include "HdaCodecComponentName.h"
-#include "HdaVerbs.h"
 
 EFI_STATUS
 EFIAPI
@@ -426,20 +425,16 @@ HdaCodecProbeCodec(
 
     // Get vendor and device ID.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &HdaCodecDev->VendorId);
     if (EFI_ERROR(Status))
         return Status;
-    HdaCodecDev->VendorId = HDA_PARAMETER_VENDOR_ID_VEN(Response);
-    HdaCodecDev->DeviceId = HDA_PARAMETER_VENDOR_ID_DEV(Response);
-    DEBUG((DEBUG_INFO, "Codec ID: 0x%X:0x%X\n", HdaCodecDev->VendorId, HdaCodecDev->DeviceId));
+    DEBUG((DEBUG_INFO, "Codec ID: 0x%X:0x%X\n", HDA_PARAMETER_VENDOR_ID_VEN(HdaCodecDev->VendorId), HDA_PARAMETER_VENDOR_ID_DEV(HdaCodecDev->VendorId)));
 
     // Get revision ID.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &Response);
+        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &HdaCodecDev->RevisionId);
     if (EFI_ERROR(Status))
         return Status;
-    HdaCodecDev->RevisionId = HDA_PARAMETER_REVISION_ID_REV_ID(Response);
-    HdaCodecDev->SteppindId = HDA_PARAMETER_REVISION_ID_STEPPING(Response);
     
     // Get function group count.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
@@ -588,7 +583,8 @@ HdaCodecInstallInfoProtocol(
     HdaCodecInfoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
     HdaCodecInfoData->HdaCodecDev = HdaCodecDev;
     HdaCodecInfoData->HdaCodecInfo.GetVendorId = HdaCodecInfoGetVendorId;
-    HdaCodecInfoData->HdaCodecInfo.GetDeviceId = HdaCodecInfoGetDeviceId;
+    HdaCodecInfoData->HdaCodecInfo.GetRevisionId = HdaCodecInfoGetRevisionId;
+    HdaCodecInfoData->HdaCodecInfo.GetAudioFuncId = HdaCodecInfoGetAudioFuncId;
 
     // Install protocol.
     HdaCodecDev->HdaCodecInfo = HdaCodecInfoData;

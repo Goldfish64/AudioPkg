@@ -43,15 +43,22 @@ HdaCodecDumpMain(
     Status = gBS->OpenProtocol(HdaCodecHandles[0], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
     ASSERT_EFI_ERROR(Status);
 
+    // Get AFG ID.
+    UINT8 AudioFuncId;
+    Status = HdaCodecInfo->GetAudioFuncId(HdaCodecInfo, &AudioFuncId);
+    Print(L"AFG Function Id: 0x%X\n", AudioFuncId);
+
     // Get vendor.
-    UINT16 VendorId;
+    UINT32 VendorId;
     Status = HdaCodecInfo->GetVendorId(HdaCodecInfo, &VendorId);
     Print(L"Vendor ID: 0x%X\n", VendorId);
 
-    // Get device.
-    UINT16 DeviceId;
-    Status = HdaCodecInfo->GetDeviceId(HdaCodecInfo, &DeviceId);
-    Print(L"Device ID: 0x%X\n", DeviceId);
+    // Get revision.
+    UINT32 RevisionId;
+    Status = HdaCodecInfo->GetRevisionId(HdaCodecInfo, &RevisionId);
+    Print(L"Revision ID: 0x%X\n", RevisionId);
+
+
 
     return EFI_SUCCESS;
 }

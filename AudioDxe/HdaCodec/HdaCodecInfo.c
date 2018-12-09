@@ -25,19 +25,19 @@
 #include "HdaCodec.h"
 
 /**                                                                 
-  Gets the codec's vendor ID.
+  Gets the codec's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
-  @param[out] VendorId          The vendor ID of the codec.
+  @param[out] VendorId          The vendor and device ID of the codec.
 
-  @retval EFI_SUCCESS           The vendor ID was retrieved.
+  @retval EFI_SUCCESS           The vendor and device ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
 **/
 EFI_STATUS
 EFIAPI
 HdaCodecInfoGetVendorId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *VendorId) {
+    OUT UINT32 *VendorId) {
     DEBUG((DEBUG_INFO, "HdaCodecInfoGetVendorId(): start\n"));
     
     // Create variables.
@@ -54,30 +54,59 @@ HdaCodecInfoGetVendorId(
 }
 
 /**                                                                 
-  Gets the codec's device ID.
+  Gets the codec's revision ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
-  @param[out] DeviceId          The device ID of the codec.
+  @param[out] RevisionId        The revision ID of the codec.
 
-  @retval EFI_SUCCESS           The device ID was retrieved.
+  @retval EFI_SUCCESS           The revision ID was retrieved.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
 **/
 EFI_STATUS
 EFIAPI
-HdaCodecInfoGetDeviceId(
+HdaCodecInfoGetRevisionId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
-    OUT UINT16 *DeviceId) {
-    DEBUG((DEBUG_INFO, "HdaCodecInfoGetDeviceId(): start\n"));
+    OUT UINT32 *RevisionId) {
+    DEBUG((DEBUG_INFO, "HdaCodecInfoGetRevisionId(): start\n"));
     
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
     // If parameters are null, fail.
-    if (This == NULL || DeviceId == NULL)
+    if (This == NULL || RevisionId == NULL)
         return EFI_INVALID_PARAMETER;
 
-    // Get private data and fill device ID parameter.
+    // Get private data and fill revision ID parameter.
     HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
-    *DeviceId = HdaPrivateData->HdaCodecDev->DeviceId;
+    *RevisionId = HdaPrivateData->HdaCodecDev->RevisionId;
+    return EFI_SUCCESS;
+}
+
+/**                                                                 
+  Gets the node ID of the codec's audio function.
+
+  @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
+  @param[out] AudioFuncId       The node ID of the codec's audio function.
+
+  @retval EFI_SUCCESS           The node ID was retrieved.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+**/
+EFI_STATUS
+EFIAPI
+HdaCodecInfoGetAudioFuncId(
+    IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
+    OUT UINT8 *AudioFuncId) {
+    DEBUG((DEBUG_INFO, "HdaCodecInfoGetAudioFuncId(): start\n"));
+    
+    // Create variables.
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
+
+    // If parameters are null, fail.
+    if (This == NULL || AudioFuncId == NULL)
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data and fill node ID parameter.
+    HdaPrivateData = HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This);
+    *AudioFuncId = HdaPrivateData->HdaCodecDev->AudioFuncGroup;
     return EFI_SUCCESS;
 }

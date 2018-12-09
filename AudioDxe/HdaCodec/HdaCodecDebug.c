@@ -22,8 +22,6 @@
  * SOFTWARE.
  */
 
-#include "HdaCodec.h"
-#include "HdaVerbs.h"
 
 /*EFI_STATUS
 EFIAPI

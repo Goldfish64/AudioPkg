@@ -27,10 +27,8 @@
 #include "HdaRegisters.h"
 #include "HdaControllerComponentName.h"
 
-#include <Protocol/HdaIo.h>
 #include "HdaCodec/HdaCodec.h"
 #include "HdaCodec/HdaCodecComponentName.h"
-#include "HdaCodec/HdaVerbs.h"
 
 // HDA I/O Device Path GUID.
 EFI_GUID gEfiHdaIoDevicePathGuid = EFI_HDA_IO_DEVICE_PATH_GUID;

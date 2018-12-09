@@ -25,8 +25,6 @@
 #ifndef _EFI_HDA_VERBS_H_
 #define _EFI_HDA_VERBS_H_
 
-#include "AudioDxe.h"
-
 // Root node ID.
 #define HDA_NID_ROOT    0
 
