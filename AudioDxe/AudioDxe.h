@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef __EFI_AUDIODXE_H__
-#define __EFI_AUDIODXE_H__
+#ifndef _EFI_AUDIODXE_H_
+#define _EFI_AUDIODXE_H_
 
 //
 // Common UEFI includes and library classes.
@@ -40,6 +40,7 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
 
+#include <Library/HdaModels.h>
 #include <Library/HdaVerbs.h>
 
 //
@@ -61,15 +62,6 @@
 // Driver Bindings.
 EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding;
 EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
-
-// Vendor IDs.
-#define VEN_AMD_ID      0x1002
-#define VEN_IDT_ID      0x111D
-#define VEN_INTEL_ID    0x8086
-#define VEN_NVIDIA_ID   0x10DE
-#define VEN_QEMU_ID     0x1AF4
-#define VEN_REALTEK_ID  0x10EC
-#define VEN_INVALID_ID  0xFFFF
 
 #define GET_PCI_VENDOR_ID(a)    (a & 0xFFFF)
 #define GET_PCI_DEVICE_ID(a)    ((a >> 16) & 0xFFFF)

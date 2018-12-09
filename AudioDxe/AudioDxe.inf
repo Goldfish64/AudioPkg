@@ -52,7 +52,6 @@
     gEfiHdaCodecInfoProtocolGuid # PRODUCES
 
 [Sources]
-    HdaCodec/HdaCodecDebug.c
     HdaCodec/HdaCodecComponentName.h
     HdaCodec/HdaCodecComponentName.c
     HdaCodec/HdaCodecInfo.c
