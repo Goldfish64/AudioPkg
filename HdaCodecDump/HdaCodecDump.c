@@ -243,7 +243,13 @@ HdaCodecDumpPrintWidgets(
             Print(L"\n");
         }
 
-
+        // Print connections.
+        if (Widgets[w].Capabilities & HDA_PARAMETER_WIDGET_CAPS_CONN_LIST) {
+            Print(L"  Connection: %u\n    ", HDA_PARAMETER_CONN_LIST_LENGTH_LEN(Widgets[w].ConnectionListLength));
+            for (UINT8 i = 0; i < HDA_PARAMETER_CONN_LIST_LENGTH_LEN(Widgets[w].ConnectionListLength); i++)
+                Print(L" 0x%2X", Widgets[w].Connections[i]);
+            Print(L"\n");
+        }
 
     }
 }
