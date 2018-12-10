@@ -50,6 +50,9 @@
 //
 #define HDA_CONTROLLER_CONSTRUCT(vendor, id) (((UINT32) (id) << 16) | ((VEN_##vendor##_ID) & 0xFFFF))
 
+// AMD.
+#define HDA_CONTROLLER_AMDXXXX    HDA_CONTROLLER_CONSTRUCT(AMD, 0xFFFF)
+
 // Intel.
 #define HDA_CONTROLLER_ICH6         HDA_CONTROLLER_CONSTRUCT(INTEL, 0x2668)
 #define HDA_CONTROLLER_63XXESB      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x269A)
@@ -125,6 +128,9 @@
 // Controller name strings.
 //
 static const struct { UINT32 Id; CHAR16 *Name; } gHdaControllerList[] = {
+    // AMD.
+    { HDA_CONTROLLER_AMDXXXX,       L"AMD HD Audio Controller" },
+
     // Intel.
     { HDA_CONTROLLER_ICH6,          L"Intel ICH6 HD Audio Controller" },
     { HDA_CONTROLLER_63XXESB,       L"Intel 63XXESB HD Audio Controller" },
