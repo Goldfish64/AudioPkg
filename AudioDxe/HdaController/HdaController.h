@@ -75,14 +75,17 @@ typedef struct {
     UINT32 Address;
     UINT32 AddressHigh;
     UINT32 Length;
-    UINT32 Reserved;
+    UINT32 InterruptOnCompletion;
 } HDA_BDL_ENTRY;
 #pragma pack()
+
+#define HDA_BDL_IOC_BIT     BIT0
+
 //#define HDA_NUM_OF_BDL_ENTRIES  256
-#define HDA_NUM_OF_BDL_ENTRIES  2
+#define HDA_NUM_OF_BDL_ENTRIES  8//2
 #define HDA_BDL_SIZE            (sizeof(HDA_BDL_ENTRY) * HDA_NUM_OF_BDL_ENTRIES)
 
-#define HDA_STREAM_BUF_SIZE     262144
+#define HDA_STREAM_BUF_SIZE     524288//262144// 524288//
 #define HDA_BDL_BLOCKSIZE       (HDA_STREAM_BUF_SIZE / HDA_NUM_OF_BDL_ENTRIES)
 
 typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
@@ -161,6 +164,11 @@ struct _HDA_CONTROLLER_DEV {
     HDA_CONTROLLER_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
 
     UINT32 *dmaList;
+    EFI_FILE_PROTOCOL *token;
+    UINT8 *filebuffer;
+    UINTN position;
+    UINTN size;
+    BOOLEAN uphalf;
 };
 
 // HDA Codec Info private data.

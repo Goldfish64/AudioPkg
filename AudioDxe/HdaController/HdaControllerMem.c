@@ -560,11 +560,13 @@ HdaControllerInitStreams(
         }
 
         // Fill buffer list.
+        UINTN half = HDA_NUM_OF_BDL_ENTRIES / 2;
         for (UINTN b = 0; b < HDA_NUM_OF_BDL_ENTRIES; b++) {
             DataBlockAddr = HdaStream->BufferDataPhysAddr + (b * HDA_BDL_BLOCKSIZE);
             HdaStream->BufferList[b].Address = (UINT32)DataBlockAddr;
             HdaStream->BufferList[b].AddressHigh = (UINT32)(DataBlockAddr >> 32);
             HdaStream->BufferList[b].Length = HDA_BDL_BLOCKSIZE;
+            HdaStream->BufferList[b].InterruptOnCompletion = ((b == (HDA_NUM_OF_BDL_ENTRIES - 1) || (b == (half - 1))) ? HDA_BDL_IOC_BIT : 0);
         }
 
         // Set last valid index (LVI).

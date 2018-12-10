@@ -30,6 +30,8 @@
 #include "HdaCodec/HdaCodec.h"
 #include "HdaCodec/HdaCodecComponentName.h"
 
+#include <Guid/FileInfo.h>
+
 // HDA I/O Device Path GUID.
 EFI_GUID gEfiHdaIoDevicePathGuid = EFI_HDA_IO_DEVICE_PATH_GUID;
 
@@ -120,13 +122,33 @@ VOID
 HdaControllerResponsePollTimerHandler(
     IN EFI_EVENT Event,
     IN VOID *Context) {
-   // HDA_CONTROLLER_DEV *HdaDev = (HDA_CONTROLLER_DEV*)Context;
+    HDA_CONTROLLER_DEV *HdaDev = (HDA_CONTROLLER_DEV*)Context;
     
-    //UINT32 lpib;
-    //HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDLPIB(0), 1, &lpib);
-   // DEBUG((DEBUG_INFO, "LPIB: 0x%X\n", lpib));
+    HDA_STREAM *HdaOutStream = HdaDev->OutputStreams + 0;
 
-  // DEBUG((DEBUG_INFO, "pos streams %u %u %u %u %u %u\n", HdaDev->dmaList[0], HdaDev->dmaList[2], HdaDev->dmaList[4], HdaDev->dmaList[6], HdaDev->dmaList[8], HdaDev->dmaList[10]));
+    // get status.
+    UINT8 status;
+    HdaDev->PciIo->Mem.Read(HdaDev->PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaOutStream->Index), 1, &status);
+
+    if (status & HDA_REG_SDNSTS_BCIS) {
+        if (HdaDev->uphalf)
+            CopyMem(HdaOutStream->BufferData + (HDA_STREAM_BUF_SIZE / 2), HdaDev->filebuffer + HdaDev->position, HDA_STREAM_BUF_SIZE / 2);
+        else
+            CopyMem(HdaOutStream->BufferData, HdaDev->filebuffer + HdaDev->position, HDA_STREAM_BUF_SIZE / 2);
+        HdaDev->position += (HDA_STREAM_BUF_SIZE / 2);
+
+        HdaDev->uphalf = !HdaDev->uphalf;
+
+        status = HDA_REG_SDNSTS_BCIS;
+        HdaDev->PciIo->Mem.Write(HdaDev->PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaOutStream->Index), 1, &status);
+        DEBUG((DEBUG_INFO, "Bit set %u!\n", HdaDev->uphalf));
+      //  UINTN bufferLengthActual = HDA_STREAM_BUF_SIZE;
+        // HdaDev->token->Read(HdaDev->token, &bufferLengthActual, HdaOutStream->BufferData);
+       //// HdaDev->position += bufferLengthActual;
+       // HdaDev->token->SetPosition(HdaDev->token, HdaDev->position);
+       // DEBUG((DEBUG_INFO, "%u bytes\n", bufferLengthActual));
+       // ASSERT_EFI_ERROR(Status);
+    }
 }
 
 EFI_STATUS
@@ -677,10 +699,7 @@ HdaControllerDriverBindingStart(
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
 
-    // Setup response ring buffer poll timer.
-    Status = gBS->SetTimer(HdaDev->ResponsePollTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(1000));
-    if (EFI_ERROR(Status))
-        goto CLEANUP_CORB_RIRB;
+
 
     // needed for QEMU.
    // UINT16 dd = 0xFF;
@@ -728,28 +747,49 @@ HdaControllerDriverBindingStart(
         Status = fs->OpenVolume(fs, &root);
         ASSERT_EFI_ERROR(Status);
 
-        Status = root->Open(root, &token, L"quadra.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        Status = root->Open(root, &token, L"welcome.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if (!(EFI_ERROR(Status)))
             break;
     }
+    HdaDev->token = token;
 
    // UINTN blocklength = 2000000;
 
         // Get stream.
     HDA_STREAM *HdaOutStream = HdaDev->OutputStreams + 0;
+
+        // Get size.
+        EFI_FILE_INFO FileInfo;
+        UINTN FileInfoSize;
+        Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, &FileInfo);
+        ASSERT_EFI_ERROR(Status);
+
+        HdaDev->filebuffer = AllocatePool(FileInfo.FileSize);
      
         // copy le data.
-        UINTN bufferLengthActual = HDA_STREAM_BUF_SIZE;
-        Status = token->Read(token, &bufferLengthActual, HdaOutStream->BufferData);
+        UINTN bufferLengthActual = FileInfo.FileSize;
+        Status = token->Read(token, &bufferLengthActual, HdaDev->filebuffer);
+        //HdaDev->position += bufferLengthActual;
+        //token->SetPosition(token, HdaDev->position);
        // DEBUG((DEBUG_INFO, "%u bytes\n", bufferLengthActual));
         ASSERT_EFI_ERROR(Status);
         //Status = token->SetPosition(token, 4096);
+
+        // copy.
+        CopyMem(HdaOutStream->BufferData, HdaDev->filebuffer + HdaDev->position, HDA_STREAM_BUF_SIZE);
+        HdaDev->position += HDA_STREAM_BUF_SIZE;
+        HdaDev->uphalf = FALSE;
 
 
 
     UINT16 stmFormat = 0x4011;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDNFMT(HdaOutStream->Index), 1, &stmFormat);
     ASSERT_EFI_ERROR(Status);
+
+        // Setup response ring buffer poll timer.
+    Status = gBS->SetTimer(HdaDev->ResponsePollTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(10));
+    if (EFI_ERROR(Status))
+        goto CLEANUP_CORB_RIRB;
 
     // Update stream.
     Status = HdaControllerSetStream(HdaOutStream, TRUE, 6);
