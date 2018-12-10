@@ -51,6 +51,7 @@
     gEfiHdaControllerInfoProtocolGuid # PRODUCES
     gEfiHdaIoProtocolGuid # PRODUCES
     gEfiHdaCodecInfoProtocolGuid # PRODUCES
+    gEfiAudioIoProtocolGuid # PRODUCES
 
 [Sources]
     HdaCodec/HdaCodecComponentName.h
