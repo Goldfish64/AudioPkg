@@ -204,7 +204,7 @@ HdaCodecDumpPrintWidgets(
             CHAR16 *Surfaces[4] = { L"Ext", L"Int", L"Ext", L"Other" };
             CHAR16 *Locations[0xF + 1] = {
                 L"N/A", L"Rear", L"Front", L"Left", L"Right", L"Top", L"Bottom", L"Special",
-                L"Reserved", L"Reserved", L"Reserved", L"Reserved", L"Reserved", L"Reserved" };
+                L"Special", L"Special", L"Reserved", L"Reserved", L"Reserved", L"Reserved" };
             CHAR16 *ConnTypes[HDA_CONFIG_DEFAULT_CONN_OTHER + 1] = {
                 L"Unknown", L"1/8", L"1/4", L"ATAPI", L"RCA", L"Optical", L"Digital",
                 L"Analog", L"Multi", L"XLR", L"RJ11", L"Combo", L"Other", L"Other", L"Other", L"Other" };

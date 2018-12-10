@@ -703,6 +703,7 @@ static const struct { UINT32 Id; UINT16 Rev; CHAR16 *Name; } gHdaCodecList[] = {
     { HDA_CODEC_ALC889,             0x0000, L"Realtek ALC889" },
     { HDA_CODEC_ALC892,             0x0000, L"Realtek ALC892" },
     { HDA_CODEC_ALC898,             0x0000, L"Realtek ALC898" },
+    { HDA_CODEC_ALC899,             0x0000, L"Realtek ALC899" },
     { HDA_CODEC_ALC1150,            0x0000, L"Realtek ALC1150" },
     { HDA_CODEC_ALC1220,            0x0000, L"Realtek ALC1220" },
     { HDA_CODEC_ALCXXXX,            0x0000, L"Realtek (Unknown)" },
