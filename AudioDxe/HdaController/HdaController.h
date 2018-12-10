@@ -78,8 +78,12 @@ typedef struct {
     UINT32 Reserved;
 } HDA_BDL_ENTRY;
 #pragma pack()
-#define HDA_NUM_OF_BDL_ENTRIES  256
+//#define HDA_NUM_OF_BDL_ENTRIES  256
+#define HDA_NUM_OF_BDL_ENTRIES  2
 #define HDA_BDL_SIZE            (sizeof(HDA_BDL_ENTRY) * HDA_NUM_OF_BDL_ENTRIES)
+
+#define HDA_STREAM_BUF_SIZE     262144
+#define HDA_BDL_BLOCKSIZE       (HDA_STREAM_BUF_SIZE / HDA_NUM_OF_BDL_ENTRIES)
 
 typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
 
@@ -93,9 +97,16 @@ typedef struct {
 
     UINT8 Type;
     UINT8 Index;
+
+    // Buffer blocks.
     HDA_BDL_ENTRY *BufferList;
     VOID *BufferListMapping;
     EFI_PHYSICAL_ADDRESS BufferListPhysAddr;
+
+    // Buffer fed into BDL.
+    UINT8 *BufferData;
+    VOID *BufferDataMapping;
+    EFI_PHYSICAL_ADDRESS BufferDataPhysAddr;
 } HDA_STREAM;
 
 typedef struct _HDA_CONTROLLER_INFO_PRIVATE_DATA HDA_CONTROLLER_INFO_PRIVATE_DATA;

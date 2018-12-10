@@ -47,13 +47,9 @@ HdaControllerCleanupCorb(
 
 EFI_STATUS
 EFIAPI
-HdaControllerEnableCorb(
-    IN HDA_CONTROLLER_DEV *HdaDev);
-
-EFI_STATUS
-EFIAPI
-HdaControllerDisableCorb(
-    IN HDA_CONTROLLER_DEV *HdaDev);
+HdaControllerSetCorb(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN BOOLEAN Enable);
 
 EFI_STATUS
 EFIAPI
@@ -67,13 +63,9 @@ HdaControllerCleanupRirb(
 
 EFI_STATUS
 EFIAPI
-HdaControllerEnableRirb(
-    IN HDA_CONTROLLER_DEV *HdaDev);
-
-EFI_STATUS
-EFIAPI
-HdaControllerDisableRirb(
-    IN HDA_CONTROLLER_DEV *HdaDev);
+HdaControllerSetRirb(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN BOOLEAN Enable);
 
 EFI_STATUS
 EFIAPI
