@@ -53,6 +53,7 @@
 [Components]
     AudioPkg/AudioDxe/AudioDxe.inf
     AudioPkg/HdaCodecDump/HdaCodecDump.inf
+    AudioPkg/AudioDemo/AudioDemo.inf
 
 [PcdsFixedAtBuild]
     gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
