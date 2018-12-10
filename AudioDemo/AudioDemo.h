@@ -34,9 +34,10 @@
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
 
-#include <Library/HdaVerbs.h>
+#include <Guid/FileInfo.h>
 
 // Consumed protocols.
-#include <Protocol/HdaCodecInfo.h>
+#include <Protocol/AudioIo.h>
+#include <Protocol/SimpleFileSystem.h>
 
 #endif

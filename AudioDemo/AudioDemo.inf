@@ -46,6 +46,7 @@
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES
+    gEfiSimpleFileSystemProtocolGuid # CONSUMES
 
 [Sources]
     AudioDemo.h
