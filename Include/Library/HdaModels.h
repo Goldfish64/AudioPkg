@@ -22,7 +22,8 @@
  * SOFTWARE.
  */
 
-// From the VoodooHDA project (https://sourceforge.net/p/voodoohda).
+// From the VoodooHDA project (https://sourceforge.net/p/voodoohda),
+// ALSA (Linux kernel), and vendor datasheets.
 
 #ifndef _EFI_HDA_MODELS_H_
 #define _EFI_HDA_MODELS_H_
@@ -51,23 +52,35 @@
 
 // Intel.
 #define HDA_CONTROLLER_ICH6         HDA_CONTROLLER_CONSTRUCT(INTEL, 0x2668)
+#define HDA_CONTROLLER_63XXESB      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x269A)
 #define HDA_CONTROLLER_ICH7         HDA_CONTROLLER_CONSTRUCT(INTEL, 0x27D8)
 #define HDA_CONTROLLER_ICH8         HDA_CONTROLLER_CONSTRUCT(INTEL, 0x284B)
 #define HDA_CONTROLLER_ICH9         HDA_CONTROLLER_CONSTRUCT(INTEL, 0x293E)
-#define HDA_CONTROLLER_ICH10        HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3A6E)
-#define HDA_CONTROLLER_5SERIES      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3B56)
-#define HDA_CONTROLLER_QS57         HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3B57)
+#define HDA_CONTROLLER_ICH10_1      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3A3E)
+#define HDA_CONTROLLER_ICH10_2      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3A6E)
+#define HDA_CONTROLLER_5SERIES_1    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3B56)
+#define HDA_CONTROLLER_5SERIES_2    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x3B57)
 #define HDA_CONTROLLER_6SERIES      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x1C20)
 #define HDA_CONTROLLER_X79          HDA_CONTROLLER_CONSTRUCT(INTEL, 0x1D20)
 #define HDA_CONTROLLER_7SERIES      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x1E20)
-#define HDA_CONTROLLER_8SERIES      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8C20)
-#define HDA_CONTROLLER_9SERIES      HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8CA0)
+#define HDA_CONTROLLER_8SERIES_1    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8C20)
+#define HDA_CONTROLLER_8SERIES_2    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8C21)
+#define HDA_CONTROLLER_8SERIES_3    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x9C20)
+#define HDA_CONTROLLER_8SERIES_4    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x9C21)
+#define HDA_CONTROLLER_9SERIES_1    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8CA0)
+#define HDA_CONTROLLER_9SERIES_2    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x9CA0)
 #define HDA_CONTROLLER_X99_1        HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8D20)
 #define HDA_CONTROLLER_X99_2        HDA_CONTROLLER_CONSTRUCT(INTEL, 0x8D21)
 #define HDA_CONTROLLER_100SERIES    HDA_CONTROLLER_CONSTRUCT(INTEL, 0xA170)
 #define HDA_CONTROLLER_200SERIES    HDA_CONTROLLER_CONSTRUCT(INTEL, 0xA2F0)
 #define HDA_CONTROLLER_300SERIES    HDA_CONTROLLER_CONSTRUCT(INTEL, 0xA348)
-#define HDA_CONTROLLER_ICHXXXX      HDA_CONTROLLER_CONSTRUCT(INTEL, 0xFFFF)
+
+#define HDA_CONTROLLER_HASWELL_1    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x0A0C)
+#define HDA_CONTROLLER_HASWELL_2    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x0C0C)
+#define HDA_CONTROLLER_CRYSTALWELL  HDA_CONTROLLER_CONSTRUCT(INTEL, 0x0D0C)
+#define HDA_CONTROLLER_BROADWELL    HDA_CONTROLLER_CONSTRUCT(INTEL, 0x160C)
+
+#define HDA_CONTROLLER_INTELXXXX    HDA_CONTROLLER_CONSTRUCT(INTEL, 0xFFFF)
 
 //
 // Controller name strings.
@@ -75,23 +88,33 @@
 static const struct { UINT32 Id; CHAR16 *Name; } gHdaControllerList[] = {
     // Intel.
     { HDA_CONTROLLER_ICH6,          L"Intel ICH6 HD Audio Controller" },
+    { HDA_CONTROLLER_63XXESB,       L"Intel 63XXESB HD Audio Controller" },
     { HDA_CONTROLLER_ICH7,          L"Intel ICH7 HD Audio Controller" },
     { HDA_CONTROLLER_ICH8,          L"Intel ICH8 HD Audio Controller" },
     { HDA_CONTROLLER_ICH9,          L"Intel ICH9 HD Audio Controller" },
-    { HDA_CONTROLLER_ICH10,         L"Intel ICH10 HD Audio Controller" },
-    { HDA_CONTROLLER_5SERIES,       L"Intel 5 Series HD Audio Controller" },
-    { HDA_CONTROLLER_QS57,          L"Intel 5 Series HD Audio Controller" },
+    { HDA_CONTROLLER_ICH10_1,       L"Intel ICH10 HD Audio Controller" },
+    { HDA_CONTROLLER_ICH10_2,       L"Intel ICH10 HD Audio Controller" },
+    { HDA_CONTROLLER_5SERIES_1,     L"Intel 5 Series HD Audio Controller" },
+    { HDA_CONTROLLER_5SERIES_2,     L"Intel 5 Series HD Audio Controller" },
     { HDA_CONTROLLER_6SERIES,       L"Intel 6 Series HD Audio Controller" },
     { HDA_CONTROLLER_X79,           L"Intel X79/C600 Series HD Audio Controller" },
     { HDA_CONTROLLER_7SERIES,       L"Intel 7 Series HD Audio Controller" },
-    { HDA_CONTROLLER_8SERIES,       L"Intel 8 Series HD Audio Controller" },
-    { HDA_CONTROLLER_9SERIES,       L"Intel 9 Series HD Audio Controller" },
+    { HDA_CONTROLLER_8SERIES_1,     L"Intel 8 Series HD Audio Controller" },
+    { HDA_CONTROLLER_8SERIES_2,     L"Intel 8 Series HD Audio Controller" },
+    { HDA_CONTROLLER_8SERIES_3,     L"Intel 8 Series HD Audio Controller" },
+    { HDA_CONTROLLER_8SERIES_4,     L"Intel 8 Series HD Audio Controller" },
+    { HDA_CONTROLLER_9SERIES_1,     L"Intel 9 Series HD Audio Controller" },
+    { HDA_CONTROLLER_9SERIES_2,     L"Intel 9 Series HD Audio Controller" },
     { HDA_CONTROLLER_X99_1,         L"Intel X99/C610 Series HD Audio Controller" },
     { HDA_CONTROLLER_X99_2,         L"Intel X99/C610 Series HD Audio Controller" },
     { HDA_CONTROLLER_100SERIES,     L"Intel 100 Series HD Audio Controller" },
     { HDA_CONTROLLER_200SERIES,     L"Intel 200 Series HD Audio Controller" },
     { HDA_CONTROLLER_300SERIES,     L"Intel 300 Series HD Audio Controller" },
-    { HDA_CONTROLLER_ICHXXXX,       L"Intel HD Audio Controller" },
+    { HDA_CONTROLLER_HASWELL_1,     L"Intel Haswell HD Audio Controller" },
+    { HDA_CONTROLLER_HASWELL_2,     L"Intel Ivy Bridge/Haswell HD Audio Controller" },
+    { HDA_CONTROLLER_CRYSTALWELL,   L"Intel Crystal Well HD Audio Controller" },
+    { HDA_CONTROLLER_BROADWELL,     L"Intel Broadwell HD Audio Controller" },
+    { HDA_CONTROLLER_INTELXXXX,     L"Intel HD Audio Controller" },
 
     // End.
     { 0,                            NULL }
@@ -209,9 +232,35 @@ static const struct { UINT32 Id; CHAR16 *Name; } gHdaControllerList[] = {
 #define HDA_CODEC_IDT92HD66C3_65    HDA_CODEC_CONSTRUCT(IDT, 0x76F3)
 #define HDA_CODEC_IDTXXXX           HDA_CODEC_CONSTRUCT(IDT, 0xFFFF)
 
+// Intel.
+#define HDA_CODEC_INTELCRESTLINE    HDA_CODEC_CONSTRUCT(INTEL, 0x29FB)
+#define HDA_CODEC_INTELBEARLAKE     HDA_CODEC_CONSTRUCT(INTEL, 0x2801)
+#define HDA_CODEC_INTELCANTIGA      HDA_CODEC_CONSTRUCT(INTEL, 0x2802)
+#define HDA_CODEC_INTELEAGLELAKE    HDA_CODEC_CONSTRUCT(INTEL, 0x2803)
+#define HDA_CODEC_INTELIBEXPEAK     HDA_CODEC_CONSTRUCT(INTEL, 0x2804)
+#define HDA_CODEC_INTELIBEXPEAK2    HDA_CODEC_CONSTRUCT(INTEL, 0x0054)
+#define HDA_CODEC_INTELCOUGARPOINT  HDA_CODEC_CONSTRUCT(INTEL, 0x2805)
+#define HDA_CODEC_INTELPANTHERPOINT HDA_CODEC_CONSTRUCT(INTEL, 0x2806)
+#define HDA_CODEC_INTELHASWELL      HDA_CODEC_CONSTRUCT(INTEL, 0x2807)
+#define HDA_CODEC_INTELBROADWELL    HDA_CODEC_CONSTRUCT(INTEL, 0x2808)
+#define HDA_CODEC_INTELSKYLAKE      HDA_CODEC_CONSTRUCT(INTEL, 0x2809)
+#define HDA_CODEC_INTELBROXTON      HDA_CODEC_CONSTRUCT(INTEL, 0x280A)
+#define HDA_CODEC_INTELKABYLAKE     HDA_CODEC_CONSTRUCT(INTEL, 0x280B)
+#define HDA_CODEC_INTELCANNONLAKE   HDA_CODEC_CONSTRUCT(INTEL, 0x280C)
+#define HDA_CODEC_INTELGEMINILAKE   HDA_CODEC_CONSTRUCT(INTEL, 0x280D)
+#define HDA_CODEC_INTELGEMINILAKE2  HDA_CODEC_CONSTRUCT(INTEL, 0x2800)
+#define HDA_CODEC_INTELXXXX         HDA_CODEC_CONSTRUCT(INTEL, 0xFFFF)
+
 // Realtek.
 #define HDA_CODEC_ALC221            HDA_CODEC_CONSTRUCT(REALTEK, 0x0221)
+#define HDA_CODEC_ALC225            HDA_CODEC_CONSTRUCT(REALTEK, 0x0225)
+#define HDA_CODEC_ALC230            HDA_CODEC_CONSTRUCT(REALTEK, 0x0230)
 #define HDA_CODEC_ALC233            HDA_CODEC_CONSTRUCT(REALTEK, 0x0233)
+#define HDA_CODEC_ALC235            HDA_CODEC_CONSTRUCT(REALTEK, 0x0235)
+#define HDA_CODEC_ALC236            HDA_CODEC_CONSTRUCT(REALTEK, 0x0236)
+#define HDA_CODEC_ALC255            HDA_CODEC_CONSTRUCT(REALTEK, 0x0255)
+#define HDA_CODEC_ALC256            HDA_CODEC_CONSTRUCT(REALTEK, 0x0256)
+#define HDA_CODEC_ALC257            HDA_CODEC_CONSTRUCT(REALTEK, 0x0257)
 #define HDA_CODEC_ALC260            HDA_CODEC_CONSTRUCT(REALTEK, 0x0260)
 #define HDA_CODEC_ALC262            HDA_CODEC_CONSTRUCT(REALTEK, 0x0262)
 #define HDA_CODEC_ALC267            HDA_CODEC_CONSTRUCT(REALTEK, 0x0267)
@@ -222,14 +271,27 @@ static const struct { UINT32 Id; CHAR16 *Name; } gHdaControllerList[] = {
 #define HDA_CODEC_ALC273            HDA_CODEC_CONSTRUCT(REALTEK, 0x0273)
 #define HDA_CODEC_ALC275            HDA_CODEC_CONSTRUCT(REALTEK, 0x0275)
 #define HDA_CODEC_ALC276            HDA_CODEC_CONSTRUCT(REALTEK, 0x0276)
+#define HDA_CODEC_ALC280            HDA_CODEC_CONSTRUCT(REALTEK, 0x0280)
 #define HDA_CODEC_ALC282            HDA_CODEC_CONSTRUCT(REALTEK, 0x0282)
+#define HDA_CODEC_ALC283            HDA_CODEC_CONSTRUCT(REALTEK, 0x0283)
+#define HDA_CODEC_ALC284            HDA_CODEC_CONSTRUCT(REALTEK, 0x0284)
+#define HDA_CODEC_ALC285            HDA_CODEC_CONSTRUCT(REALTEK, 0x0285)
+#define HDA_CODEC_ALC286            HDA_CODEC_CONSTRUCT(REALTEK, 0x0286)
+#define HDA_CODEC_ALC288            HDA_CODEC_CONSTRUCT(REALTEK, 0x0288)
+#define HDA_CODEC_ALC289            HDA_CODEC_CONSTRUCT(REALTEK, 0x0289)
+#define HDA_CODEC_ALC290            HDA_CODEC_CONSTRUCT(REALTEK, 0x0290)
 #define HDA_CODEC_ALC292            HDA_CODEC_CONSTRUCT(REALTEK, 0x0292)
+#define HDA_CODEC_ALC293            HDA_CODEC_CONSTRUCT(REALTEK, 0x0293)
+#define HDA_CODEC_ALC294            HDA_CODEC_CONSTRUCT(REALTEK, 0x0294)
 #define HDA_CODEC_ALC295            HDA_CODEC_CONSTRUCT(REALTEK, 0x0295)
+#define HDA_CODEC_ALC298            HDA_CODEC_CONSTRUCT(REALTEK, 0x0298)
 #define HDA_CODEC_ALC660            HDA_CODEC_CONSTRUCT(REALTEK, 0x0660)
 #define HDA_CODEC_ALC662            HDA_CODEC_CONSTRUCT(REALTEK, 0x0662)
 #define HDA_CODEC_ALC663            HDA_CODEC_CONSTRUCT(REALTEK, 0x0663)
 #define HDA_CODEC_ALC665            HDA_CODEC_CONSTRUCT(REALTEK, 0x0665)
+#define HDA_CODEC_ALC668            HDA_CODEC_CONSTRUCT(REALTEK, 0x0668)
 #define HDA_CODEC_ALC670            HDA_CODEC_CONSTRUCT(REALTEK, 0x0670)
+#define HDA_CODEC_ALC671            HDA_CODEC_CONSTRUCT(REALTEK, 0x0671)
 #define HDA_CODEC_ALC680            HDA_CODEC_CONSTRUCT(REALTEK, 0x0680)
 #define HDA_CODEC_ALC861            HDA_CODEC_CONSTRUCT(REALTEK, 0x0861)
 #define HDA_CODEC_ALC861VD          HDA_CODEC_CONSTRUCT(REALTEK, 0x0862)
@@ -462,8 +524,35 @@ static const struct { UINT32 Id; UINT16 Rev; CHAR16 *Name; } gHdaCodecList[] = {
     { HDA_CODEC_IDT92HD99BXX,       0x0000, L"IDT 92HD99BXX" },
     { HDA_CODEC_IDTXXXX,            0x0000, L"IDT (Unknown)" },
 
+    // Intel.
+    { HDA_CODEC_INTELCRESTLINE,     0x0000, L"Intel Crestline HDMI" },
+    { HDA_CODEC_INTELBEARLAKE,      0x0000, L"Intel Bearlake HDMI" },
+    { HDA_CODEC_INTELCANTIGA,       0x0000, L"Intel Cantiga HDMI" },
+    { HDA_CODEC_INTELEAGLELAKE,     0x0000, L"Intel Eaglelake HDMI" },
+    { HDA_CODEC_INTELIBEXPEAK,      0x0000, L"Intel Ibex Peak HDMI" },
+    { HDA_CODEC_INTELIBEXPEAK2,     0x0000, L"Intel Ibex Peak HDMI" },
+    { HDA_CODEC_INTELCOUGARPOINT,   0x0000, L"Intel Cougar Point HDMI" },
+    { HDA_CODEC_INTELPANTHERPOINT,  0x0000, L"Intel Panther Point HDMI" },
+    { HDA_CODEC_INTELHASWELL,       0x0000, L"Intel Haswell HDMI" },
+    { HDA_CODEC_INTELBROADWELL,     0x0000, L"Intel Broadwell HDMI" },
+    { HDA_CODEC_INTELSKYLAKE,       0x0000, L"Intel Skylake HDMI" },
+    { HDA_CODEC_INTELBROXTON,       0x0000, L"Intel Broxton HDMI" },
+    { HDA_CODEC_INTELKABYLAKE,      0x0000, L"Intel Kaby Lake HDMI" },
+    { HDA_CODEC_INTELCANNONLAKE,    0x0000, L"Intel Cannon Lake HDMI" },
+    { HDA_CODEC_INTELGEMINILAKE,    0x0000, L"Intel Gemini Lake HDMI" },
+    { HDA_CODEC_INTELGEMINILAKE2,   0x0000, L"Intel Gemini Lake HDMI" },
+    { HDA_CODEC_INTELXXXX,          0x0000, L"Intel HDMI" },
+
     // Realtek.
     { HDA_CODEC_ALC221,             0x0000, L"Realtek ALC221" },
+    { HDA_CODEC_ALC225,             0x0000, L"Realtek ALC225" },
+    { HDA_CODEC_ALC230,             0x0000, L"Realtek ALC230" },
+    { HDA_CODEC_ALC233,             0x0000, L"Realtek ALC233" },
+    { HDA_CODEC_ALC235,             0x0000, L"Realtek ALC235" },
+    { HDA_CODEC_ALC236,             0x0000, L"Realtek ALC236" },
+    { HDA_CODEC_ALC255,             0x0000, L"Realtek ALC255" },
+    { HDA_CODEC_ALC256,             0x0000, L"Realtek ALC256" },
+    { HDA_CODEC_ALC257,             0x0000, L"Realtek ALC257" },
     { HDA_CODEC_ALC260,             0x0000, L"Realtek ALC260" },
     { HDA_CODEC_ALC262,             0x0000, L"Realtek ALC262" },
     { HDA_CODEC_ALC267,             0x0000, L"Realtek ALC267" },
@@ -474,12 +563,28 @@ static const struct { UINT32 Id; UINT16 Rev; CHAR16 *Name; } gHdaCodecList[] = {
     { HDA_CODEC_ALC273,             0x0000, L"Realtek ALC273" },
     { HDA_CODEC_ALC275,             0x0000, L"Realtek ALC275" },
     { HDA_CODEC_ALC276,             0x0000, L"Realtek ALC276" },
+    { HDA_CODEC_ALC280,             0x0000, L"Realtek ALC280" },
+    { HDA_CODEC_ALC282,             0x0000, L"Realtek ALC282" },
+    { HDA_CODEC_ALC283,             0x0000, L"Realtek ALC283" },
+    { HDA_CODEC_ALC284,             0x0000, L"Realtek ALC284" },
+    { HDA_CODEC_ALC285,             0x0000, L"Realtek ALC285" },
+    { HDA_CODEC_ALC286,             0x0000, L"Realtek ALC286" },
+    { HDA_CODEC_ALC288,             0x0000, L"Realtek ALC288" },
+    { HDA_CODEC_ALC289,             0x0000, L"Realtek ALC289" },
+    { HDA_CODEC_ALC290,             0x0000, L"Realtek ALC290" },
+    { HDA_CODEC_ALC292,             0x0000, L"Realtek ALC292" },
+    { HDA_CODEC_ALC293,             0x0000, L"Realtek ALC293" },
+    { HDA_CODEC_ALC294,             0x0000, L"Realtek ALC294" },
+    { HDA_CODEC_ALC295,             0x0000, L"Realtek ALC295" },
+    { HDA_CODEC_ALC298,             0x0000, L"Realtek ALC298" },
     { HDA_CODEC_ALC660,             0x0000, L"Realtek ALC660" },
     { HDA_CODEC_ALC662,             0x0002, L"Realtek ALC662v2" },
     { HDA_CODEC_ALC662,             0x0000, L"Realtek ALC662" },
     { HDA_CODEC_ALC663,             0x0000, L"Realtek ALC663" },
     { HDA_CODEC_ALC665,             0x0000, L"Realtek ALC665" },
+    { HDA_CODEC_ALC668,             0x0000, L"Realtek ALC668" },
     { HDA_CODEC_ALC670,             0x0000, L"Realtek ALC670" },
+    { HDA_CODEC_ALC671,             0x0000, L"Realtek ALC671" },
     { HDA_CODEC_ALC680,             0x0000, L"Realtek ALC680" },
     { HDA_CODEC_ALC861,             0x0000, L"Realtek ALC861" },
     { HDA_CODEC_ALC861VD,           0x0000, L"Realtek ALC861-VD" },
@@ -501,6 +606,7 @@ static const struct { UINT32 Id; UINT16 Rev; CHAR16 *Name; } gHdaCodecList[] = {
     { HDA_CODEC_ALC892,             0x0000, L"Realtek ALC892" },
     { HDA_CODEC_ALC898,             0x0000, L"Realtek ALC898" },
     { HDA_CODEC_ALC1150,            0x0000, L"Realtek ALC1150" },
+    { HDA_CODEC_ALC1220,            0x0000, L"Realtek ALC1220" },
     { HDA_CODEC_ALCXXXX,            0x0000, L"Realtek (Unknown)" },
 
     // Sigmatel.
