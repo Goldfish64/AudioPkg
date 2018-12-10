@@ -46,6 +46,7 @@
 //
 // Proctols that are consumed/produced.
 //
+#include <Protocol/AudioIo.h>
 #include <Protocol/DevicePath.h>
 #include <Protocol/DevicePathUtilities.h>
 #include <Protocol/DriverBinding.h>

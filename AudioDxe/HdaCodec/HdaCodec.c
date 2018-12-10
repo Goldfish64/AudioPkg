@@ -597,19 +597,22 @@ HdaCodecParsePorts(
 
 EFI_STATUS
 EFIAPI
-HdaCodecInstallInfoProtocol(
+HdaCodecInstallProtocols(
     HDA_CODEC_DEV *HdaCodecDev) {
-    DEBUG((DEBUG_INFO, "HdaCodecInstallInfoProtocol(): start\n"));
+    DEBUG((DEBUG_INFO, "HdaCodecInstallProtocols(): start\n"));
 
     // Create variables.
+    EFI_STATUS Status;
     HDA_CODEC_INFO_PRIVATE_DATA *HdaCodecInfoData;
+    AUDIO_IO_PRIVATE_DATA *AudioIoData;
 
-    // Allocate space for info protocol data.
+    // Allocate space for protocol data.
     HdaCodecInfoData = AllocateZeroPool(sizeof(HDA_CODEC_INFO_PRIVATE_DATA));
-    if (HdaCodecInfoData == NULL)
-        return EFI_OUT_OF_RESOURCES;
+    AudioIoData = AllocateZeroPool(sizeof(AUDIO_IO_PRIVATE_DATA));
+    if ((HdaCodecInfoData == NULL) || (AudioIoData == NULL))
+        goto FREE_POOLS;
 
-    // Populate data.
+    // Populate info protocol data.
     HdaCodecInfoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
     HdaCodecInfoData->HdaCodecDev = HdaCodecDev;
     HdaCodecInfoData->HdaCodecInfo.GetName = HdaCodecInfoGetCodecName;
@@ -620,10 +623,28 @@ HdaCodecInstallInfoProtocol(
     HdaCodecInfoData->HdaCodecInfo.GetDefaultAmpCaps = HdaCodecInfoGetDefaultAmpCaps;
     HdaCodecInfoData->HdaCodecInfo.GetWidgets = HdaCodecInfoGetWidgets;
     HdaCodecInfoData->HdaCodecInfo.FreeWidgetsBuffer = HdaCodecInfoFreeWidgetsBuffer;
+    HdaCodecDev->HdaCodecInfoData = HdaCodecInfoData;
 
-    // Install protocol.
-    HdaCodecDev->HdaCodecInfo = HdaCodecInfoData;
-    return gBS->InstallMultipleProtocolInterfaces(&HdaCodecDev->ControllerHandle, &gEfiHdaCodecInfoProtocolGuid, &HdaCodecInfoData->HdaCodecInfo, NULL);
+    // Populate I/O protocol data.
+    AudioIoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
+    AudioIoData->HdaCodecDev = HdaCodecDev;
+    AudioIoData->AudioIo.AudioPlay = HdaCodecAudioIoPlay;
+    HdaCodecDev->AudioIoData = AudioIoData;
+
+    // Install protocols.
+    Status = gBS->InstallMultipleProtocolInterfaces(&HdaCodecDev->ControllerHandle,
+        &gEfiHdaCodecInfoProtocolGuid, &HdaCodecInfoData->HdaCodecInfo,
+        &gEfiAudioIoProtocolGuid, &AudioIoData->AudioIo, NULL);
+    if (EFI_ERROR(Status))
+        goto FREE_POOLS;
+    return EFI_SUCCESS;
+
+FREE_POOLS:
+    if (HdaCodecInfoData != NULL)
+        FreePool(HdaCodecInfoData);
+    if (AudioIoData != NULL)
+        FreePool(AudioIoData);
+    return EFI_OUT_OF_RESOURCES;
 }
 
 EFI_STATUS
@@ -701,8 +722,8 @@ HdaCodecDriverBindingStart(
     if (EFI_ERROR (Status))
         goto CLOSE_HDA;
 
-    // Publish information protocol.
-    Status = HdaCodecInstallInfoProtocol(HdaCodecDev);
+    // Publish protocols.
+    Status = HdaCodecInstallProtocols(HdaCodecDev);
     if (EFI_ERROR (Status))
         goto CLOSE_HDA;
 

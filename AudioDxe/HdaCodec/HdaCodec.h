@@ -32,6 +32,7 @@ typedef struct _HDA_CODEC_DEV HDA_CODEC_DEV;
 typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
 typedef struct _HDA_WIDGET_DEV HDA_WIDGET_DEV;
 typedef struct _HDA_CODEC_INFO_PRIVATE_DATA HDA_CODEC_INFO_PRIVATE_DATA;
+typedef struct _AUDIO_IO_PRIVATE_DATA AUDIO_IO_PRIVATE_DATA;
 
 struct _HDA_WIDGET_DEV {
     HDA_FUNC_GROUP *FuncGroup;
@@ -107,7 +108,8 @@ struct _HDA_CODEC_DEV {
     EFI_HANDLE ControllerHandle;
 
     // Published protocols.
-    HDA_CODEC_INFO_PRIVATE_DATA *HdaCodecInfo;
+    HDA_CODEC_INFO_PRIVATE_DATA *HdaCodecInfoData;
+    AUDIO_IO_PRIVATE_DATA *AudioIoData;
 
     // Codec information.
     UINT32 VendorId;
@@ -137,6 +139,18 @@ struct _HDA_CODEC_INFO_PRIVATE_DATA {
 };
 
 #define HDA_CODEC_INFO_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CODEC_INFO_PRIVATE_DATA, HdaCodecInfo, HDA_CODEC_PRIVATE_DATA_SIGNATURE)
+
+// Audio I/O private data.
+struct _AUDIO_IO_PRIVATE_DATA {
+    // Signature.
+    UINTN Signature;
+
+    // Audio I/O protocol and codec device.
+    EFI_AUDIO_IO_PROTOCOL AudioIo;
+    HDA_CODEC_DEV *HdaCodecDev;
+};
+
+#define AUDIO_IO_PRIVATE_DATA_FROM_THIS(This) CR(This, AUDIO_IO_PRIVATE_DATA, AudioIo, HDA_CODEC_PRIVATE_DATA_SIGNATURE)
 
 EFI_STATUS
 EFIAPI
@@ -216,5 +230,13 @@ EFIAPI
 HdaCodecInfoFreeWidgetsBuffer(
     IN  HDA_WIDGET *Widgets,
     IN  UINTN WidgetCount);
+
+EFI_STATUS
+EFIAPI
+HdaCodecAudioIoPlay(
+    IN  EFI_AUDIO_IO_PROTOCOL *This,
+    IN  UINT32 OutputIndex,
+    IN  VOID *Data,
+    IN  UINTN DataLength);
 
 #endif
