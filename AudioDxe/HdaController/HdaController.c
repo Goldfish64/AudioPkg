@@ -542,7 +542,6 @@ HdaControllerDriverBindingStart(
 
     // Is this an Intel controller?
     if (GET_PCI_VENDOR_ID(HdaVendorDeviceId) == VEN_INTEL_ID) {
-        DEBUG((DEBUG_INFO, "HDA controller is Intel.\n"));
         UINT8 HdaTcSel;
         
         // Set TC0 in TCSEL register.
@@ -553,8 +552,6 @@ HdaControllerDriverBindingStart(
         Status = PciIo->Pci.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_TCSEL_OFFSET, 1, &HdaTcSel);
         if (EFI_ERROR (Status))
             goto CLOSE_PCIIO;
-    } else {
-        return EFI_SUCCESS; //temp.
     }
 
     // Disable No Snoop Enable bit.

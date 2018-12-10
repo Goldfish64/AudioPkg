@@ -673,12 +673,13 @@ HdaCodecDriverBindingStart(
     EFI_DEVICE_PATH_PROTOCOL *HdaCodecDevicePath;
     HDA_CODEC_DEV *HdaCodecDev;
 
+    // Open HDA I/O protocol.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiHdaIoProtocolGuid, (VOID**)&HdaIo,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
 
-    // Get Device Path protocol.
+    // Open Device Path protocol.
     Status = gBS->OpenProtocol(ControllerHandle, &gEfiDevicePathProtocolGuid, (VOID**)&HdaCodecDevicePath,
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR (Status))
@@ -689,13 +690,6 @@ HdaCodecDriverBindingStart(
     HdaCodecDev->HdaIo = HdaIo;
     HdaCodecDev->DevicePath = HdaCodecDevicePath;
     HdaCodecDev->ControllerHandle = ControllerHandle;
-
-    // Get address of codec.
-    UINT8 CodecAddress;
-    Status = HdaIo->GetAddress(HdaIo, &CodecAddress);
-    
-    if (CodecAddress > 0)
-        return EFI_SUCCESS;
 
     // Probe codec.
     Status = HdaCodecProbeCodec(HdaCodecDev);
