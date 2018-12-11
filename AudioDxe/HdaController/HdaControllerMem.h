@@ -27,9 +27,6 @@
 
 #include "HdaController.h"
 
-#define HDA_CORB_ENTRY_SIZE sizeof(UINT32)
-#define HDA_RIRB_ENTRY_SIZE sizeof(UINT64)
-
 HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
     IN EFI_PCI_IO_PROTOCOL *PciIo,
     IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,

@@ -467,6 +467,13 @@ HdaControllerInitStreams(
         // Set parent controller and index.
         HdaStream->HdaDev = HdaDev;
         HdaStream->Index = i;
+        HdaStream->Output = (HdaStream->Type == HDA_STREAM_TYPE_OUT);
+
+        // Initialize polling timer.
+        Status = gBS->CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_NOTIFY,
+            HdaControllerStreamPollTimerHandler, HdaStream, &HdaStream->PollTimer);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
 
         // Allocate buffer descriptor list.
         Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(HDA_BDL_SIZE),
@@ -560,17 +567,21 @@ HdaControllerInitStreams(
         }
 
         // Fill buffer list.
-        UINTN half = HDA_NUM_OF_BDL_ENTRIES / 2;
-        for (UINTN b = 0; b < HDA_NUM_OF_BDL_ENTRIES; b++) {
+        for (UINTN b = 0; b < HDA_BDL_ENTRY_COUNT; b++) {
+            // Set address and length of entry.
             DataBlockAddr = HdaStream->BufferDataPhysAddr + (b * HDA_BDL_BLOCKSIZE);
             HdaStream->BufferList[b].Address = (UINT32)DataBlockAddr;
             HdaStream->BufferList[b].AddressHigh = (UINT32)(DataBlockAddr >> 32);
             HdaStream->BufferList[b].Length = HDA_BDL_BLOCKSIZE;
-            HdaStream->BufferList[b].InterruptOnCompletion = ((b == (HDA_NUM_OF_BDL_ENTRIES - 1) || (b == (half - 1))) ? HDA_BDL_IOC_BIT : 0);
+
+            // We want the stream to signal when its completed either half of the
+            // buffer so it can be refilled with fresh data.
+            HdaStream->BufferList[b].InterruptOnCompletion =
+                (((b == HDA_BDL_ENTRY_HALF) || (b == HDA_BDL_ENTRY_LAST)) ? HDA_BDL_ENTRY_IOC : 0);
         }
 
         // Set last valid index (LVI).
-        StreamLvi = HDA_NUM_OF_BDL_ENTRIES - 1;
+        StreamLvi = HDA_BDL_ENTRY_LAST;
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDNLVI(HdaStream->Index), 1, &StreamLvi);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;

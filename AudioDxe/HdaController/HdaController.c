@@ -35,6 +35,51 @@
 // HDA I/O Device Path GUID.
 EFI_GUID gEfiHdaIoDevicePathGuid = EFI_HDA_IO_DEVICE_PATH_GUID;
 
+VOID
+HdaControllerStreamPollTimerHandler(
+    IN EFI_EVENT Event,
+    IN VOID *Context) {
+    
+    // Create variables.
+    EFI_STATUS Status;
+    HDA_STREAM *HdaStream = (HDA_STREAM*)Context;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
+    UINT8 HdaStreamSts = 0;
+
+    // Get stream status.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthFifoUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
+    ASSERT_EFI_ERROR(Status);
+
+    // Has the completion bit been set?
+    if (HdaStreamSts & HDA_REG_SDNSTS_BCIS) {
+        // Is this an output stream (copy data to)?
+        if (HdaStream->Output) {
+            // Copy data to DMA buffer.
+            if (HdaStream->DoUpperHalf)
+                CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+            else
+                CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+            
+        } else { // Input stream (copy data from).
+            // Copy data from DMA buffer.
+            if (HdaStream->DoUpperHalf)
+                CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
+            else
+                CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
+        }
+
+        // Increase position and flip upper half variable.
+        HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
+        HdaStream->DoUpperHalf = !HdaStream->DoUpperHalf;
+
+        // Reset completion bit.
+        HdaStreamSts = HDA_REG_SDNSTS_BCIS;
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
+        ASSERT_EFI_ERROR(Status);
+        DEBUG((DEBUG_INFO, "Bit set %u!\n", HdaStream->DoUpperHalf));
+    }
+}
+
 /**                                                                 
   Retrieves this codec's address.
 
@@ -677,7 +722,7 @@ HdaControllerDriverBindingStart(
     HdaDev->dmaList = dmaList;
 
     // Set buffer lower base address.
-    UINT32 dmaListLowerBaseAddr = (UINT32)dmaListAddr;
+   /* UINT32 dmaListLowerBaseAddr = (UINT32)dmaListAddr;
     dmaListLowerBaseAddr |= 0x1;
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x70, 1, &dmaListLowerBaseAddr);
     if (EFI_ERROR(Status))
@@ -689,7 +734,7 @@ HdaControllerDriverBindingStart(
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, 0x74, 1, &dmaListUpperBaseAddr);
         if (EFI_ERROR(Status))
            ASSERT_EFI_ERROR(Status);
-    }
+    }*/
 
     // Initialize CORB and RIRB.
     Status = HdaControllerInitCorb(HdaDev);
@@ -755,30 +800,27 @@ HdaControllerDriverBindingStart(
 
    // UINTN blocklength = 2000000;
 
-        // Get stream.
+    // Get stream.
     HDA_STREAM *HdaOutStream = HdaDev->OutputStreams + 0;
 
-        // Get size.
-        EFI_FILE_INFO FileInfo;
-        UINTN FileInfoSize;
-        Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, &FileInfo);
-        ASSERT_EFI_ERROR(Status);
+    // Get size.
+    EFI_FILE_INFO FileInfo;
+    UINTN FileInfoSize;
+    Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, &FileInfo);
+    ASSERT_EFI_ERROR(Status);
 
-        HdaDev->filebuffer = AllocatePool(FileInfo.FileSize);
-     
-        // copy le data.
-        UINTN bufferLengthActual = FileInfo.FileSize;
-        Status = token->Read(token, &bufferLengthActual, HdaDev->filebuffer);
-        //HdaDev->position += bufferLengthActual;
-        //token->SetPosition(token, HdaDev->position);
-       // DEBUG((DEBUG_INFO, "%u bytes\n", bufferLengthActual));
-        ASSERT_EFI_ERROR(Status);
-        //Status = token->SetPosition(token, 4096);
+    HdaOutStream->BufferSource = AllocatePool(FileInfo.FileSize);
+    HdaOutStream->BufferSourceLength = FileInfo.FileSize;
 
-        // copy.
-        CopyMem(HdaOutStream->BufferData, HdaDev->filebuffer + HdaDev->position, HDA_STREAM_BUF_SIZE);
-        HdaDev->position += HDA_STREAM_BUF_SIZE;
-        HdaDev->uphalf = FALSE;
+    // Read file data.
+    Status = token->Read(token, &HdaOutStream->BufferSourceLength, HdaOutStream->BufferSource);
+    ASSERT_EFI_ERROR(Status);
+    ASSERT(HdaOutStream->BufferSourceLength == FileInfo.FileSize);
+
+    // Fill buffer initially
+    CopyMem(HdaOutStream->BufferData, HdaOutStream->BufferSource, HDA_STREAM_BUF_SIZE);
+    HdaOutStream->BufferSourcePosition = HDA_STREAM_BUF_SIZE;
+    HdaOutStream->DoUpperHalf = FALSE;
 
 
 
@@ -786,8 +828,8 @@ HdaControllerDriverBindingStart(
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDNFMT(HdaOutStream->Index), 1, &stmFormat);
     ASSERT_EFI_ERROR(Status);
 
-        // Setup response ring buffer poll timer.
-    Status = gBS->SetTimer(HdaDev->ResponsePollTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(10));
+    // poll timer
+    Status = gBS->SetTimer(HdaOutStream->PollTimer, TimerPeriodic, EFI_TIMER_PERIOD_MILLISECONDS(100));
     if (EFI_ERROR(Status))
         goto CLEANUP_CORB_RIRB;
 

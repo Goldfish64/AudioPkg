@@ -34,6 +34,9 @@
 #include <Protocol/PciIo.h>
 #include <IndustryStandard/Pci.h>
 
+//
+// PCI support.
+//
 // Structure used for PCI class code parsing.
 #pragma pack(1)
 typedef struct {
@@ -43,8 +46,8 @@ typedef struct {
 } HDA_PCI_CLASSREG;
 #pragma pack()
 
+// HDA controller subclass.
 #define PCI_CLASS_MEDIA_HDA 0x3
-
 
 // HDA controller is accessed via MMIO on BAR #0.
 #define PCI_HDA_BAR 0
@@ -52,7 +55,6 @@ typedef struct {
 // Min supported version.
 #define HDA_VERSION_MIN_MAJOR   0x1
 #define HDA_VERSION_MIN_MINOR   0x0
-
 #define HDA_MAX_CODECS 15
 
 #define PCI_HDA_TCSEL_OFFSET    0x44
@@ -60,8 +62,15 @@ typedef struct {
 #define PCI_HDA_DEVC_OFFSET     0x78
 #define PCI_HDA_DEVC_NOSNOOPEN  BIT11
 
-#define HDA_CORB_VERB(Cad, Nid, Verb) ((((UINT32)Cad) << 28) | (((UINT32)Nid) << 20) | (Verb & 0xFFFFF))
+//
+// CORB and RIRB.
+//
+// Entry sizes.
+#define HDA_CORB_ENTRY_SIZE sizeof(UINT32)
+#define HDA_RIRB_ENTRY_SIZE sizeof(UINT64)
 
+// Misc.
+#define HDA_CORB_VERB(Cad, Nid, Verb) ((((UINT32)Cad) << 28) | (((UINT32)Nid) << 20) | (Verb & 0xFFFFF))
 #define HDA_RIRB_RESP(Response)     ((UINT32)Response)
 #define HDA_RIRB_CAD(Response)      ((Response >> 32) & 0xF)
 #define HDA_RIRB_UNSOL(Response)    ((Response >> 36) & 0x1)
@@ -79,14 +88,17 @@ typedef struct {
 } HDA_BDL_ENTRY;
 #pragma pack()
 
-#define HDA_BDL_IOC_BIT     BIT0
+// Buffer Descriptor List sizes. Max number of entries is 256, min is 2.
+#define HDA_BDL_ENTRY_IOC       BIT0
+#define HDA_BDL_ENTRY_COUNT  8
+#define HDA_BDL_SIZE            (sizeof(HDA_BDL_ENTRY) * HDA_BDL_ENTRY_COUNT)
+#define HDA_BDL_ENTRY_HALF      ((HDA_BDL_ENTRY_COUNT / 2) - 1)
+#define HDA_BDL_ENTRY_LAST      (HDA_BDL_ENTRY_COUNT - 1)
 
-//#define HDA_NUM_OF_BDL_ENTRIES  256
-#define HDA_NUM_OF_BDL_ENTRIES  8//2
-#define HDA_BDL_SIZE            (sizeof(HDA_BDL_ENTRY) * HDA_NUM_OF_BDL_ENTRIES)
-
-#define HDA_STREAM_BUF_SIZE     524288//262144// 524288//
-#define HDA_BDL_BLOCKSIZE       (HDA_STREAM_BUF_SIZE / HDA_NUM_OF_BDL_ENTRIES)
+// Buffer size and block size.
+#define HDA_STREAM_BUF_SIZE         BASE_512KB
+#define HDA_STREAM_BUF_SIZE_HALF    (HDA_STREAM_BUF_SIZE / 2)
+#define HDA_BDL_BLOCKSIZE           (HDA_STREAM_BUF_SIZE / HDA_BDL_ENTRY_COUNT)
 
 typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
 
@@ -94,22 +106,32 @@ typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
 #define HDA_STREAM_TYPE_IN      1
 #define HDA_STREAM_TYPE_OUT     2
 
-// Stream.
+// Stream structure.
 typedef struct {
+    // Parent controller, type, and index.
     HDA_CONTROLLER_DEV *HdaDev;
-
     UINT8 Type;
     UINT8 Index;
+    BOOLEAN Output;
 
-    // Buffer blocks.
+    // Buffer Descriptor List.
     HDA_BDL_ENTRY *BufferList;
     VOID *BufferListMapping;
     EFI_PHYSICAL_ADDRESS BufferListPhysAddr;
 
-    // Buffer fed into BDL.
+    // DMA data buffer fed into BDL.
     UINT8 *BufferData;
     VOID *BufferDataMapping;
     EFI_PHYSICAL_ADDRESS BufferDataPhysAddr;
+
+    // Source buffer.
+    UINT8 *BufferSource;
+    UINTN BufferSourceLength;
+    UINTN BufferSourcePosition;
+
+    // Timing elements for buffer filling.
+    EFI_EVENT PollTimer;
+    BOOLEAN DoUpperHalf;
 } HDA_STREAM;
 
 typedef struct _HDA_CONTROLLER_INFO_PRIVATE_DATA HDA_CONTROLLER_INFO_PRIVATE_DATA;
@@ -198,6 +220,11 @@ struct _HDA_CONTROLLER_PRIVATE_DATA {
 };
 
 #define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CONTROLLER_PRIVATE_DATA, HdaCodec, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
+
+VOID
+HdaControllerStreamPollTimerHandler(
+    IN EFI_EVENT Event,
+    IN VOID *Context);
 
 EFI_STATUS
 EFIAPI
