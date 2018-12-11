@@ -62,10 +62,10 @@
     HdaCodec/HdaCodec.c
     HdaController/HdaControllerComponentName.h
     HdaController/HdaControllerComponentName.c
-    HdaController/HdaRegisters.h
     HdaController/HdaControllerMem.h
     HdaController/HdaControllerMem.c
     HdaController/HdaControllerInfo.c
+    HdaController/HdaControllerHdaIo.c
     HdaController/HdaController.h
     HdaController/HdaController.c
     AudioDxe.h

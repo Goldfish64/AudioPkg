@@ -24,14 +24,14 @@
 
 #include "HdaControllerMem.h"
 #include "HdaController.h"
-#include "HdaRegisters.h"
+#include <Library/HdaRegisters.h>
 
 HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
     IN EFI_PCI_IO_PROTOCOL *PciIo,
     IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
     IN UINT64 OriginalPciAttributes) {
     HDA_CONTROLLER_DEV *HdaDev;
-    EFI_STATUS Status;
+   // EFI_STATUS Status;
 
     // Allocate memory.
     HdaDev = (HDA_CONTROLLER_DEV*)AllocateZeroPool(sizeof(HDA_CONTROLLER_DEV));
@@ -39,17 +39,10 @@ HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
         return NULL;
 
     // Initialize fields.
-    //HdaDev->Signature = HDA_CONTROLLER_DEV_SIGNATURE;
     HdaDev->PciIo = PciIo;
     HdaDev->DevicePath = DevicePath;
     HdaDev->OriginalPciAttributes = OriginalPciAttributes;
     InitializeSpinLock(&HdaDev->SpinLock);
-
-    // Initialize events.
-    Status = gBS->CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_NOTIFY,
-        HdaControllerResponsePollTimerHandler, HdaDev, &HdaDev->ResponsePollTimer);
-    if (EFI_ERROR(Status))
-        return NULL;
 
     return HdaDev;
 }

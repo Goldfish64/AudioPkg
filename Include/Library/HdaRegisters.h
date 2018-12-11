@@ -25,7 +25,7 @@
 #ifndef _EFI_HDA_REGS_H__
 #define _EFI_HDA_REGS_H__
 
-#include "AudioDxe.h"
+#include <Uefi.h>
 
 //
 // Global Capabilities, Status, and Control.
@@ -62,6 +62,7 @@
 // State Change Status; 2 bytes.
 #define HDA_REG_STATESTS            0x0E
 #define HDA_REG_STATESTS_INDEX(i)   ((UINT16)(1 << (i)))
+#define HDA_REG_STATESTS_CLEAR      0xEFFF
 
 // Global Status; 2 bytes
 #define HDA_REG_GSTS        0x10

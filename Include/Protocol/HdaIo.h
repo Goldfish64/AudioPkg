@@ -39,6 +39,41 @@
 extern EFI_GUID gEfiHdaIoProtocolGuid;
 typedef struct _EFI_HDA_IO_PROTOCOL EFI_HDA_IO_PROTOCOL;
 
+// Type of stream
+typedef enum {
+    EfiHdaIoTypeInput = 0,
+    EfiHdaIoTypeOutput,
+    EfiHdaIoTypeMaximum
+} EFI_HDA_IO_PROTOCOL_TYPE;
+
+// Size in bits of each sample.
+typedef enum {
+    EfiHdaIoBits8 = 0,
+    EfiHdaIoBits16,
+    EfiHdaIoBits20,
+    EfiHdaIoBits24,
+    EfiHdaIoBits32,
+    EfiHdaIoBitsMaximum
+} EFI_HDA_IO_PROTOCOL_BITS;
+
+// Frequency of each sample.
+typedef enum {
+    EfiHdaIoFreq8kHz = 0,
+    EfiHdaIoFreq11kHz,
+    EfiHdaIoFreq16kHz,
+    EfiHdaIoFreq22kHz,
+    EfiHdaIoFreq32kHz,
+    EfiHdaIoFreq44kHz,
+    EfiHdaIoFreq48kHz,
+    EfiHdaIoFreq88kHz,
+    EfiHdaIoFreq96kHz,
+    EfiHdaIoFreq192kHz,
+    EfiHdaIoFreqMaximum
+} EFI_HDA_IO_PROTOCOL_FREQ;
+
+// Maximum number of channels.
+#define EFI_HDA_IO_PROTOCOL_MAX_CHANNELS 16
+
 // Verb list structure.
 typedef struct {
     UINT32 Count;
@@ -49,8 +84,8 @@ typedef struct {
 /**                                                                 
   Retrieves this codec's address.
 
-  @param  This                  A pointer to the HDA_IO_PROTOCOL instance.
-  @param  CodecAddress          The codec's address.
+  @param[in]  This              A pointer to the HDA_IO_PROTOCOL instance.
+  @param[out] CodecAddress      The codec's address.
 
   @retval EFI_SUCCESS           The codec's address was returned.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
@@ -58,16 +93,16 @@ typedef struct {
 typedef
 EFI_STATUS
 (EFIAPI *EFI_HDA_IO_GET_ADDRESS)(
-    IN EFI_HDA_IO_PROTOCOL *This,
+    IN  EFI_HDA_IO_PROTOCOL *This,
     OUT UINT8 *CodecAddress);
 
 /**                                                                 
   Sends a single command to the codec.
 
-  @param  This                  A pointer to the HDA_IO_PROTOCOL instance.
-  @param  Node                  The destination node.
-  @param  Verb                  The verb to send.
-  @param  Response              The response received.
+  @param[in]  This              A pointer to the HDA_IO_PROTOCOL instance.
+  @param[in]  Node              The destination node.
+  @param[in]  Verb              The verb to send.
+  @param[out] Response          The response received.
 
   @retval EFI_SUCCESS           The verb was sent successfully and a response received.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
@@ -75,17 +110,17 @@ EFI_STATUS
 typedef
 EFI_STATUS
 (EFIAPI *EFI_HDA_IO_SEND_COMMAND)(
-    IN EFI_HDA_IO_PROTOCOL *This,
-    IN UINT8 Node,
-    IN UINT32 Verb,
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    IN  UINT8 Node,
+    IN  UINT32 Verb,
     OUT UINT32 *Response);
 
 /**                                                                 
   Sends a set of commands to the codec.
 
-  @param  This                  A pointer to the HDA_IO_PROTOCOL instance.
-  @param  Node                  The destination node.
-  @param  Verbs                 The verbs to send. Responses will be delievered in the same list.
+  @param[in] This               A pointer to the HDA_IO_PROTOCOL instance.
+  @param[in] Node               The destination node.
+  @param[in] Verbs              The verbs to send. Responses will be delievered in the same list.
 
   @retval EFI_SUCCESS           The verbs were sent successfully and all responses received.
   @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
@@ -97,11 +132,38 @@ EFI_STATUS
     IN UINT8 Node,
     IN EFI_HDA_IO_VERB_LIST *Verbs);
 
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_IO_GET_STREAM)(
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
+    OUT UINT8 *StreamId);
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_IO_START_STREAM)(
+    IN EFI_HDA_IO_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type,
+    IN EFI_HDA_IO_PROTOCOL_FREQ Freq,
+    IN EFI_HDA_IO_PROTOCOL_BITS Bits,
+    IN UINT8 Channels,
+    IN VOID *Buffer,
+    IN UINTN BufferLength);
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_IO_STOP_STREAM)(
+    IN EFI_HDA_IO_PROTOCOL *This,
+    IN BOOLEAN Output);
+
 // HDA I/O protocol structure.
 struct _EFI_HDA_IO_PROTOCOL {
-    EFI_HDA_IO_GET_ADDRESS GetAddress;
-    EFI_HDA_IO_SEND_COMMAND SendCommand;
-    EFI_HDA_IO_SEND_COMMANDS SendCommands;
+    EFI_HDA_IO_GET_ADDRESS      GetAddress;
+    EFI_HDA_IO_SEND_COMMAND     SendCommand;
+    EFI_HDA_IO_SEND_COMMANDS    SendCommands;
+    EFI_HDA_IO_GET_STREAM       GetStream;
+    EFI_HDA_IO_START_STREAM     StartStream;
+    EFI_HDA_IO_STOP_STREAM      StopStream;
 };
 
 //

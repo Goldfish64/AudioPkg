@@ -26,13 +26,19 @@
 #define _EFI_HDA_CONTROLLER_H_
 
 #include "AudioDxe.h"
-#include "HdaRegisters.h"
 
 //
 // Consumed protocols.
 //
 #include <Protocol/PciIo.h>
 #include <IndustryStandard/Pci.h>
+
+//
+// Structs.
+//
+typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
+typedef struct _HDA_IO_PRIVATE_DATA HDA_IO_PRIVATE_DATA;
+typedef struct _HDA_CONTROLLER_INFO_PRIVATE_DATA HDA_CONTROLLER_INFO_PRIVATE_DATA;
 
 //
 // PCI support.
@@ -99,9 +105,9 @@ typedef struct {
 #define HDA_STREAM_BUF_SIZE         BASE_512KB
 #define HDA_STREAM_BUF_SIZE_HALF    (HDA_STREAM_BUF_SIZE / 2)
 #define HDA_BDL_BLOCKSIZE           (HDA_STREAM_BUF_SIZE / HDA_BDL_ENTRY_COUNT)
+#define HDA_STREAM_POLL_TIME        (EFI_TIMER_PERIOD_MILLISECONDS(100))
 
-typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
-
+// Stream types.
 #define HDA_STREAM_TYPE_BIDIR   0
 #define HDA_STREAM_TYPE_IN      1
 #define HDA_STREAM_TYPE_OUT     2
@@ -134,9 +140,6 @@ typedef struct {
     BOOLEAN DoUpperHalf;
 } HDA_STREAM;
 
-typedef struct _HDA_CONTROLLER_INFO_PRIVATE_DATA HDA_CONTROLLER_INFO_PRIVATE_DATA;
-
-typedef struct _HDA_CONTROLLER_PRIVATE_DATA HDA_CONTROLLER_PRIVATE_DATA;
 struct _HDA_CONTROLLER_DEV {
     // PCI protocol.
     EFI_PCI_IO_PROTOCOL *PciIo;
@@ -183,55 +186,65 @@ struct _HDA_CONTROLLER_DEV {
     EFI_EVENT ResponsePollTimer;
     EFI_EVENT ExitBootServiceEvent;
     SPIN_LOCK SpinLock;
-    HDA_CONTROLLER_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
-
-    UINT32 *dmaList;
-    EFI_FILE_PROTOCOL *token;
-    UINT8 *filebuffer;
-    UINTN position;
-    UINTN size;
-    BOOLEAN uphalf;
+    HDA_IO_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
 };
 
-// HDA Codec Info private data.
+// Signature for private data structures.
 #define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')
+
+// HDA I/O private data.
+struct _HDA_IO_PRIVATE_DATA {
+    // Signature.
+    UINTN Signature;
+
+    // HDA I/O protocol.
+    EFI_HDA_IO_PROTOCOL HdaIo;
+    UINT8 HdaCodecAddress;
+
+    // Assigned streams.
+    HDA_STREAM *HdaOutputStream;
+    HDA_STREAM *HdaInputStream;
+
+    // HDA controller device.
+    HDA_CONTROLLER_DEV *HdaControllerDev;
+};
+#define HDA_IO_PRIVATE_DATA_FROM_THIS(This) \
+    CR(This, HDA_IO_PRIVATE_DATA, HdaIo, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
+
+// HDA Codec Info private data.
 struct _HDA_CONTROLLER_INFO_PRIVATE_DATA {
     // Signature.
     UINTN Signature;
 
-    // HDA Codec Info protocol and codec device.
+    // HDA Codec Info protocol.
     EFI_HDA_CONTROLLER_INFO_PROTOCOL HdaControllerInfo;
+
+    // HDA controller device.
     HDA_CONTROLLER_DEV *HdaControllerDev;
 };
-
 #define HDA_CONTROLLER_INFO_PRIVATE_DATA_FROM_THIS(This) \
     CR(This, HDA_CONTROLLER_INFO_PRIVATE_DATA, HdaControllerInfo, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
-
-struct _HDA_CONTROLLER_PRIVATE_DATA {
-    // Signature.
-    UINTN Signature;
-
-    // HDA Codec protocol and address.
-    EFI_HDA_IO_PROTOCOL HdaCodec;
-    UINT8 HdaCodecAddress;
-
-    // HDA controller.
-    HDA_CONTROLLER_DEV *HdaDev;
-};
-
-#define HDA_CONTROLLER_PRIVATE_DATA_FROM_THIS(This) CR(This, HDA_CONTROLLER_PRIVATE_DATA, HdaCodec, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
 
 VOID
 HdaControllerStreamPollTimerHandler(
     IN EFI_EVENT Event,
     IN VOID *Context);
 
+//
+// HDA I/O protocol functions.
+//
+EFI_STATUS
+EFIAPI
+HdaControllerCodecProtocolGetAddress(
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    OUT UINT8 *CodecAddress);
+
 EFI_STATUS
 EFIAPI
 HdaControllerCodecProtocolSendCommand(
-    IN EFI_HDA_IO_PROTOCOL *This,
-    IN UINT8 Node,
-    IN UINT32 Verb,
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    IN  UINT8 Node,
+    IN  UINT32 Verb,
     OUT UINT32 *Response);
 
 EFI_STATUS
@@ -243,17 +256,36 @@ HdaControllerCodecProtocolSendCommands(
 
 EFI_STATUS
 EFIAPI
+HdaControllerHdaIoGetStream(
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
+    OUT UINT8 *StreamId);
+
+//
+// HDA Controller Info protcol functions.
+//
+EFI_STATUS
+EFIAPI
+HdaControllerInfoGetName(
+    IN  EFI_HDA_CONTROLLER_INFO_PROTOCOL *This,
+    OUT CHAR16 **ControllerName);
+
+//
+// HDA controller internal functions.
+//
+EFI_STATUS
+EFIAPI
 HdaControllerSendCommands(
     IN HDA_CONTROLLER_DEV *HdaDev,
     IN UINT8 CodecAddress,
     IN UINT8 Node,
     IN EFI_HDA_IO_VERB_LIST *Verbs);
 
-VOID
-HdaControllerResponsePollTimerHandler(
-    IN EFI_EVENT Event,
-    IN VOID *Context);
 
+
+//
+// Driver Binding protocol functions.
+//
 EFI_STATUS
 EFIAPI
 HdaControllerDriverBindingSupported(
@@ -275,11 +307,5 @@ HdaControllerDriverBindingStop(
     IN EFI_HANDLE ControllerHandle,
     IN UINTN NumberOfChildren,
     IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
-
-EFI_STATUS
-EFIAPI
-HdaControllerInfoGetName(
-    IN  EFI_HDA_CONTROLLER_INFO_PROTOCOL *This,
-    OUT CHAR16 **ControllerName);
 
 #endif
