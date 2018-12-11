@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-#include "HdaControllerMem.h"
 #include "HdaController.h"
 #include <Library/HdaRegisters.h>
 
@@ -428,6 +427,9 @@ HdaControllerInitStreams(
     UINT16 StreamLvi;
     UINT32 StreamCbl;
 
+    // Reset stream ID bitmap so stream 0 is allocated (reserved).
+    HdaDev->StreamIdMapping = BIT0;
+
     // Determine number of streams.
     HdaDev->BidirStreamsCount = HDA_REG_GCAP_BSS(HdaDev->Capabilities);
     HdaDev->InputStreamsCount = HDA_REG_GCAP_ISS(HdaDev->Capabilities);
@@ -487,7 +489,7 @@ HdaControllerInitStreams(
         }
 
         // Disable stream.
-        Status = HdaControllerSetStream(HdaStream, FALSE, 0);
+        Status = HdaControllerSetStreamId(HdaStream, 0);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
 
@@ -599,25 +601,44 @@ FREE_BUFFER:
 
 EFI_STATUS
 EFIAPI
-HdaControllerSetStream(
-    IN HDA_STREAM *HdaStream,
-    IN BOOLEAN Run,
-    IN UINT8 Index) {
-    if (HdaStream == NULL)
+HdaControllerGetStream(
+    IN  HDA_STREAM *HdaStream,
+    OUT BOOLEAN *Run) {
+    if ((HdaStream == NULL) || (Run == NULL))
         return EFI_INVALID_PARAMETER;
-    DEBUG((DEBUG_INFO, "HdaControllerSetStream(%u, %u, %u): start\n", HdaStream->Index, Run, Index));
+    DEBUG((DEBUG_INFO, "HdaControllerGetStream(%u): start\n", HdaStream->Index));
 
     // Create variables.
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
     UINT8 HdaStreamCtl1;
-    UINT8 HdaStreamCtl3;
 
-    // Get current value of registers.
+    // Get current value of register.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL1(HdaStream->Index), 1, &HdaStreamCtl1);
     if (EFI_ERROR(Status))
         return Status;
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL3(HdaStream->Index), 1, &HdaStreamCtl3);
+
+    // Success.
+    *Run = HdaStreamCtl1 & HDA_REG_SDNCTL1_RUN;
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetStream(
+    IN HDA_STREAM *HdaStream,
+    IN BOOLEAN Run) {
+    if (HdaStream == NULL)
+        return EFI_INVALID_PARAMETER;
+    DEBUG((DEBUG_INFO, "HdaControllerSetStream(%u, %u): start\n", HdaStream->Index, Run));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
+    UINT8 HdaStreamCtl1;
+
+    // Get current value of register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL1(HdaStream->Index), 1, &HdaStreamCtl1);
     if (EFI_ERROR(Status))
         return Status;
     
@@ -627,13 +648,67 @@ HdaControllerSetStream(
     else
         HdaStreamCtl1 &= ~HDA_REG_SDNCTL1_RUN;
 
-    // Update stream index.
-    HdaStreamCtl3 = HDA_REG_SDNCTL3_STRM_SET(HdaStreamCtl3, Index);
-
     // Write register.
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL1(HdaStream->Index), 1, &HdaStreamCtl1);
     if (EFI_ERROR(Status))
         return Status;
+
+    // Success.
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerGetStreamId(
+    IN  HDA_STREAM *HdaStream,
+    OUT UINT8 *Index) {
+    if ((HdaStream == NULL) || (Index == NULL))
+        return EFI_INVALID_PARAMETER;
+    DEBUG((DEBUG_INFO, "HdaControllerSetStreamId(%u): start\n", HdaStream->Index));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
+    UINT8 HdaStreamCtl3;
+
+    // Get current value of register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL3(HdaStream->Index), 1, &HdaStreamCtl3);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Update stream index.
+    *Index = HDA_REG_SDNCTL3_STRM_GET(HdaStreamCtl3);
+    return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetStreamId(
+    IN HDA_STREAM *HdaStream,
+    IN UINT8 Index) {
+    if (HdaStream == NULL)
+        return EFI_INVALID_PARAMETER;
+    DEBUG((DEBUG_INFO, "HdaControllerSetStreamId(%u, %u): start\n", HdaStream->Index, Index));
+
+    // Create variables.
+    EFI_STATUS Status;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
+    UINT8 HdaStreamCtl3;
+
+    // Stop stream.
+    Status = HdaControllerSetStream(HdaStream, FALSE);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Get current value of register.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL3(HdaStream->Index), 1, &HdaStreamCtl3);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Update stream index.
+    HdaStreamCtl3 = HDA_REG_SDNCTL3_STRM_SET(HdaStreamCtl3, Index);
+
+    // Write register.
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL3(HdaStream->Index), 1, &HdaStreamCtl3);
     if (EFI_ERROR(Status))
         return Status;

@@ -23,7 +23,6 @@
  */
 
 #include "HdaController.h"
-#include "HdaControllerMem.h"
 #include <Library/HdaRegisters.h>
 #include "HdaControllerComponentName.h"
 
@@ -52,7 +51,7 @@ HdaControllerStreamPollTimerHandler(
         // Have we reached the end of the source buffer? If so we need to stop the stream.
         if (HdaStream->BufferSourcePosition >= HdaStream->BufferSourceLength) {
             // Stop stream.
-            Status = HdaControllerSetStream(HdaStream, FALSE, 0);
+            Status = HdaControllerSetStream(HdaStream, FALSE);
             ASSERT_EFI_ERROR(Status);
 
             // Stop timer.
@@ -201,10 +200,16 @@ HdaControllerScanCodecs(
             HdaIoPrivateData->Signature = HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE;
             HdaIoPrivateData->HdaCodecAddress = i;
             HdaIoPrivateData->HdaControllerDev = HdaControllerDev;
-            HdaIoPrivateData->HdaIo.GetAddress = HdaControllerCodecProtocolGetAddress;
-            HdaIoPrivateData->HdaIo.SendCommand = HdaControllerCodecProtocolSendCommand;
+            HdaIoPrivateData->HdaIo.GetAddress = HdaControllerHdaIoGetAddress;
+            HdaIoPrivateData->HdaIo.SendCommand = HdaControllerHdaIoSendCommand;
+            HdaIoPrivateData->HdaIo.SetupStream = HdaControllerHdaIoSetupStream;
+            HdaIoPrivateData->HdaIo.CloseStream = HdaControllerHdaIoCloseStream;
+            HdaIoPrivateData->HdaIo.GetStream = HdaControllerHdaIoGetStream;
+            HdaIoPrivateData->HdaIo.SetStream = HdaControllerHdaIoSetStream;
 
-            // Allocate streams.
+            // Assign streams.
+            DEBUG((DEBUG_INFO, "Assigning output stream %u and input stream %u to codec\n",
+                CurrentOutputStreamIndex, CurrentInputStreamIndex));
             HdaIoPrivateData->HdaOutputStream = HdaControllerDev->OutputStreams + CurrentOutputStreamIndex;
             HdaIoPrivateData->HdaInputStream = HdaControllerDev->InputStreams + CurrentInputStreamIndex;
             CurrentOutputStreamIndex++;
@@ -254,9 +259,6 @@ HdaControllerScanCodecs(
 FREE_CODECS:
     //DEBUG((DEBUG_INFO, "HdaControllerScanCodecs(): failed to load driver for codec @ 0x%X\n", i));
 
-    
-
-
     return Status;
 }
 
@@ -304,16 +306,12 @@ HdaControllerSendCommands(
                 goto DONE;
 
             // Add verbs to CORB until all of them are added or the CORB becomes full.
-            //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current CORB W: %u R: %u\n", HdaDev->CorbWritePointer, HdaCorbReadPointer));
             while (RemainingVerbs && ((HdaDev->CorbWritePointer + 1 % HdaDev->CorbEntryCount) != HdaCorbReadPointer)) {
-                //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): %u verbs remaining\n", RemainingVerbs));
-
                 // Move write pointer and write verb to CORB.
                 HdaDev->CorbWritePointer++;
                 HdaDev->CorbWritePointer %= HdaDev->CorbEntryCount;
                 VerbCommand = HDA_CORB_VERB(CodecAddress, Node, Verbs->Verbs[Verbs->Count - RemainingVerbs]);
                 HdaCorb[HdaDev->CorbWritePointer] = VerbCommand;
-                //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): 0x%8X verb written\n", VerbCommand));
 
                 // Move to next verb.
                 RemainingVerbs--;
@@ -325,15 +323,6 @@ HdaControllerSendCommands(
                 goto DONE;
         }
 
-       // UINT16 corpwrite;
-       // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBWP, 1, &corpwrite);
-        //    if (EFI_ERROR(Status))
-        //        goto Done;
-       // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointer);
-       // if (EFI_ERROR(Status))
-        //    goto Done;
-        //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current CORB W: %u R: %u\n", corpwrite, HdaCorbReadPointer));
-
         // Get responses from RIRB.
         ResponseReceived = FALSE;
         ResponseTimeout = 10;
@@ -344,17 +333,13 @@ HdaControllerSendCommands(
                 goto DONE;
 
             // If the read and write pointers differ, there are responses waiting.
-            //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): current RIRB W: %u R: %u\n", HdaRirbWritePointer, HdaDev->RirbReadPointer));
             while (HdaDev->RirbReadPointer != HdaRirbWritePointer) {
-               // DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): %u responses remaining\n", RemainingResponses));
-                
                 // Increment RIRB read pointer.
                 HdaDev->RirbReadPointer++;
                 HdaDev->RirbReadPointer %= HdaDev->RirbEntryCount;
 
                 // Get response and ensure it belongs to the current codec.
                 RirbResponse = HdaRirb[HdaDev->RirbReadPointer];
-                //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): 0x%16llX response read\n", RirbResponse));
                 if (HDA_RIRB_CAD(RirbResponse) != CodecAddress || HDA_RIRB_UNSOL(RirbResponse))
                     continue;
 
@@ -380,7 +365,6 @@ HdaControllerSendCommands(
         }
 
     } while (RemainingVerbs || RemainingResponses);
-    //DEBUG((DEBUG_INFO, "HdaControllerSendCommands(): done\n"));
 
     Status = EFI_SUCCESS;
 DONE:
@@ -709,7 +693,8 @@ HdaControllerDriverBindingStart(
         goto CLEANUP_CORB_RIRB;
 
     // Update stream.
-    Status = HdaControllerSetStream(HdaOutStream, TRUE, 6);
+    Status = HdaControllerSetStreamId(HdaOutStream, 6);
+    Status = HdaControllerSetStream(HdaOutStream, TRUE);
     ASSERT_EFI_ERROR(Status);
     
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));

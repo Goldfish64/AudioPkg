@@ -223,7 +223,20 @@
 #define HDA_REG_SDNFIFOS(n)     (0x90 + (0x20 * (n)))
 
 // Input/Output/Bidirectional Stream Descriptor n Format; 2 bytes.
-#define HDA_REG_SDNFMT(n)       (0x92 + (0x20 * (n)))
+#define HDA_REG_SDNFMT(n)           (0x92 + (0x20 * (n)))
+#define HDA_REG_SDNFMT_CHAN(a)      ((UINT8)((a) & 0xF))
+#define HDA_REG_SDNFMT_BITS(a)      ((UINT8)(((a) >> 4) & 0x3))
+#define HDA_REG_SDNFMT_BITS_8       0x0
+#define HDA_REG_SDNFMT_BITS_16      0x1
+#define HDA_REG_SDNFMT_BITS_20      0x2
+#define HDA_REG_SDNFMT_BITS_24      0x3
+#define HDA_REG_SDNFMT_BITS_32      0x4
+#define HDA_REG_SDNFMT_DIV(a)       ((UINT8)(((a) >> 8) & 0x3))
+#define HDA_REG_SDNFMT_MULT(a)      ((UINT8)(((a) >> 11) & 0x3))
+#define HDA_REG_SDNFMT_BASE_44KHZ   BIT14
+#define HDA_REG_SDNFMT_SET(chan, bits, div, mult, base) \
+    ((UINT16)(((chan) & 0xF) | (((bits) & 0x3) << 4) | (((div) & 0x3) << 8) | \
+    (((mult) & 0x3) << 11) | ((base) ? BIT0 : 0)))
 
 // Input/Output/Bidirectional Stream Descriptor n BDL Pointer Lower Base Address; 4 bytes.
 #define HDA_REG_SDNBDPL(n)      (0x98 + (0x20 * (n)))

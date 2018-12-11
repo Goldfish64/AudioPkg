@@ -62,7 +62,6 @@
     HdaCodec/HdaCodec.c
     HdaController/HdaControllerComponentName.h
     HdaController/HdaControllerComponentName.c
-    HdaController/HdaControllerMem.h
     HdaController/HdaControllerMem.c
     HdaController/HdaControllerInfo.c
     HdaController/HdaControllerHdaIo.c

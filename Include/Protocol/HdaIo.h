@@ -134,36 +134,45 @@ EFI_STATUS
 
 typedef
 EFI_STATUS
-(EFIAPI *EFI_HDA_IO_GET_STREAM)(
+(EFIAPI *EFI_HDA_IO_SETUP_STREAM)(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
+    IN  EFI_HDA_IO_PROTOCOL_FREQ Freq,
+    IN  EFI_HDA_IO_PROTOCOL_BITS Bits,
+    IN  UINT8 Channels,
+    IN  VOID *Buffer,
+    IN  UINTN BufferLength,
     OUT UINT8 *StreamId);
 
 typedef
 EFI_STATUS
-(EFIAPI *EFI_HDA_IO_START_STREAM)(
+(EFIAPI *EFI_HDA_IO_CLOSE_STREAM)(
     IN EFI_HDA_IO_PROTOCOL *This,
-    IN EFI_HDA_IO_PROTOCOL_TYPE Type,
-    IN EFI_HDA_IO_PROTOCOL_FREQ Freq,
-    IN EFI_HDA_IO_PROTOCOL_BITS Bits,
-    IN UINT8 Channels,
-    IN VOID *Buffer,
-    IN UINTN BufferLength);
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type);
 
 typedef
 EFI_STATUS
-(EFIAPI *EFI_HDA_IO_STOP_STREAM)(
+(EFIAPI *EFI_HDA_IO_GET_STREAM)(
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
+    OUT BOOLEAN *State);
+
+typedef
+EFI_STATUS
+(EFIAPI *EFI_HDA_IO_SET_STREAM)(
     IN EFI_HDA_IO_PROTOCOL *This,
-    IN BOOLEAN Output);
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type,
+    IN BOOLEAN State);
 
 // HDA I/O protocol structure.
 struct _EFI_HDA_IO_PROTOCOL {
     EFI_HDA_IO_GET_ADDRESS      GetAddress;
     EFI_HDA_IO_SEND_COMMAND     SendCommand;
     EFI_HDA_IO_SEND_COMMANDS    SendCommands;
+    EFI_HDA_IO_SETUP_STREAM     SetupStream;
+    EFI_HDA_IO_CLOSE_STREAM     CloseStream;
     EFI_HDA_IO_GET_STREAM       GetStream;
-    EFI_HDA_IO_START_STREAM     StartStream;
-    EFI_HDA_IO_STOP_STREAM      StopStream;
+    EFI_HDA_IO_SET_STREAM       SetStream;
 };
 
 //

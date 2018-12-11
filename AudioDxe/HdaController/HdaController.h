@@ -112,6 +112,9 @@ typedef struct {
 #define HDA_STREAM_TYPE_IN      1
 #define HDA_STREAM_TYPE_OUT     2
 
+#define HDA_STREAM_ID_MIN       1
+#define HDA_STREAM_ID_MAX       15
+
 // Stream structure.
 typedef struct {
     // Parent controller, type, and index.
@@ -180,7 +183,9 @@ struct _HDA_CONTROLLER_DEV {
     HDA_STREAM *BidirStreams;
     HDA_STREAM *InputStreams;
     HDA_STREAM *OutputStreams;
-    
+
+    // Bitmap for stream ID allocation.
+    UINT16 StreamIdMapping;
 
     // Events.
     EFI_EVENT ResponsePollTimer;
@@ -235,13 +240,13 @@ HdaControllerStreamPollTimerHandler(
 //
 EFI_STATUS
 EFIAPI
-HdaControllerCodecProtocolGetAddress(
+HdaControllerHdaIoGetAddress(
     IN  EFI_HDA_IO_PROTOCOL *This,
     OUT UINT8 *CodecAddress);
 
 EFI_STATUS
 EFIAPI
-HdaControllerCodecProtocolSendCommand(
+HdaControllerHdaIoSendCommand(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  UINT8 Node,
     IN  UINT32 Verb,
@@ -249,17 +254,42 @@ HdaControllerCodecProtocolSendCommand(
 
 EFI_STATUS
 EFIAPI
-HdaControllerCodecProtocolSendCommands(
+HdaControllerHdaIoSendCommands(
     IN EFI_HDA_IO_PROTOCOL *This,
     IN UINT8 Node,
     IN EFI_HDA_IO_VERB_LIST *Verbs);
 
 EFI_STATUS
 EFIAPI
+HdaControllerHdaIoSetupStream(
+    IN  EFI_HDA_IO_PROTOCOL *This,
+    IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
+    IN  EFI_HDA_IO_PROTOCOL_FREQ Freq,
+    IN  EFI_HDA_IO_PROTOCOL_BITS Bits,
+    IN  UINT8 Channels,
+    IN  VOID *Buffer,
+    IN  UINTN BufferLength,
+    OUT UINT8 *StreamId);
+
+EFI_STATUS
+EFIAPI
+HdaControllerHdaIoCloseStream(
+    IN EFI_HDA_IO_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type);
+
+EFI_STATUS
+EFIAPI
 HdaControllerHdaIoGetStream(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
-    OUT UINT8 *StreamId);
+    OUT BOOLEAN *State);
+
+EFI_STATUS
+EFIAPI
+HdaControllerHdaIoSetStream(
+    IN EFI_HDA_IO_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type,
+    IN BOOLEAN State);
 
 //
 // HDA Controller Info protcol functions.
@@ -281,7 +311,71 @@ HdaControllerSendCommands(
     IN UINT8 Node,
     IN EFI_HDA_IO_VERB_LIST *Verbs);
 
+HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
+    IN EFI_PCI_IO_PROTOCOL *PciIo,
+    IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
+    IN UINT64 OriginalPciAttributes);
 
+EFI_STATUS
+EFIAPI
+HdaControllerInitCorb(
+    IN HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerCleanupCorb(
+    IN HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetCorb(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN BOOLEAN Enable);
+
+EFI_STATUS
+EFIAPI
+HdaControllerInitRirb(
+    IN HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerCleanupRirb(
+    IN HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetRirb(
+    IN HDA_CONTROLLER_DEV *HdaDev,
+    IN BOOLEAN Enable);
+
+EFI_STATUS
+EFIAPI
+HdaControllerInitStreams(
+    IN HDA_CONTROLLER_DEV *HdaDev);
+
+EFI_STATUS
+EFIAPI
+HdaControllerGetStream(
+    IN  HDA_STREAM *HdaStream,
+    OUT BOOLEAN *Run);
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetStream(
+    IN HDA_STREAM *HdaStream,
+    IN BOOLEAN Run);
+
+EFI_STATUS
+EFIAPI
+HdaControllerGetStreamId(
+    IN  HDA_STREAM *HdaStream,
+    OUT UINT8 *Index);
+
+EFI_STATUS
+EFIAPI
+HdaControllerSetStreamId(
+    IN HDA_STREAM *HdaStream,
+    IN UINT8 Index);
 
 //
 // Driver Binding protocol functions.
