@@ -189,6 +189,7 @@ HdaControllerHdaIoSetupStream(
     Status = HdaControllerSetStreamId(HdaIoPrivateData->HdaOutputStream, HdaStreamId);
     if (EFI_ERROR(Status))
         goto DONE;
+    *StreamId = HdaStreamId;
 
     // Determine bitness of samples.
     switch (Bits) {
@@ -304,6 +305,7 @@ HdaControllerHdaIoSetupStream(
     // Set stream format.
     HdaStreamFmt = HDA_REG_SDNFMT_SET(Channels - 1, StreamBits,
         StreamDiv - 1, StreamMult - 1, StreamBase44kHz);
+    DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): format 0x%X\n", HdaStreamFmt));
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR,
         HDA_REG_SDNFMT(HdaStream->Index), 1, &HdaStreamFmt);
     if (EFI_ERROR(Status))
@@ -312,8 +314,12 @@ HdaControllerHdaIoSetupStream(
     // Save pointer to buffer.
     HdaStream->BufferSource = Buffer;
     HdaStream->BufferSourceLength = BufferLength;
-    HdaStream->BufferSourcePosition = 0;
-    
+
+    // Fill initial buffer.
+    CopyMem(HdaStream->BufferData, HdaStream->BufferSource, HDA_STREAM_BUF_SIZE);
+    HdaStream->BufferSourcePosition = HDA_STREAM_BUF_SIZE;
+    HdaStream->DoUpperHalf = FALSE;
+
     // Stream is ready.
     Status = EFI_SUCCESS;
 
@@ -369,6 +375,11 @@ HdaControllerHdaIoCloseStream(
 
     // Raise TPL so we can't be messed with.
     OldTpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+
+    // Stop stream.
+    Status = HdaControllerHdaIoSetStream(This, Type, FALSE);
+    if (EFI_ERROR(Status))
+        goto DONE;
 
     // Set stream ID to zero.
     Status = HdaControllerSetStreamId(HdaStream, 0);
@@ -477,6 +488,14 @@ HdaControllerHdaIoSetStream(
     // Is a stream ID zero? If so that means the stream is not setup yet.
     if (HdaStreamId == 0)
         return EFI_NOT_READY;
+
+    // Setup or cancel polling timer.
+    if (State)
+        Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);
+    else
+        Status = gBS->SetTimer(HdaStream->PollTimer, TimerCancel, 0);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Change stream state.
     return HdaControllerSetStream(HdaStream, State);

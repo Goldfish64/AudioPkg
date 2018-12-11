@@ -29,8 +29,6 @@
 #include "HdaCodec/HdaCodec.h"
 #include "HdaCodec/HdaCodecComponentName.h"
 
-#include <Guid/FileInfo.h>
-
 VOID
 HdaControllerStreamPollTimerHandler(
     IN EFI_EVENT Event,
@@ -629,72 +627,6 @@ HdaControllerDriverBindingStart(
 
     // Scan for codecs.
     Status = HdaControllerScanCodecs(HdaDev);
-    ASSERT_EFI_ERROR(Status);
-
-    EFI_HANDLE* handles = NULL;   
-    UINTN handleCount = 0;
-
-    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
-    ASSERT_EFI_ERROR(Status);
-    
-    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
-    DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
-    EFI_FILE_PROTOCOL* root = NULL;
-
-    // opewn file.
-    EFI_FILE_PROTOCOL* token = NULL;
-    for (UINTN handle = 0; handle < handleCount; handle++) {
-        Status = gBS->HandleProtocol(handles[handle], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
-        ASSERT_EFI_ERROR(Status);
-
-        Status = fs->OpenVolume(fs, &root);
-        ASSERT_EFI_ERROR(Status);
-
-        Status = root->Open(root, &token, L"welcome.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
-        if (!(EFI_ERROR(Status)))
-            break;
-    }
-
-    // Get stream.
-    HDA_STREAM *HdaOutStream = HdaDev->OutputStreams + 0;
-
-    // Get size.
-    EFI_FILE_INFO *FileInfo;
-
-    VOID *fileinfo = AllocateZeroPool(1000);
-    UINTN FileInfoSize = 1000;
-    Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, fileinfo);
-    ASSERT_EFI_ERROR(Status);
-
-    FileInfo = (EFI_FILE_INFO*)fileinfo;
-
-    HdaOutStream->BufferSource = AllocatePool(FileInfo->FileSize);
-    HdaOutStream->BufferSourceLength = FileInfo->FileSize;
-
-    // Read file data.
-    Status = token->Read(token, &HdaOutStream->BufferSourceLength, HdaOutStream->BufferSource);
-    ASSERT_EFI_ERROR(Status);
-    ASSERT(HdaOutStream->BufferSourceLength == FileInfo->FileSize);
-
-    // Fill buffer initially
-    CopyMem(HdaOutStream->BufferData, HdaOutStream->BufferSource, HDA_STREAM_BUF_SIZE);
-    HdaOutStream->BufferSourcePosition = HDA_STREAM_BUF_SIZE;
-    HdaOutStream->DoUpperHalf = FALSE;
-
-
-
-    UINT16 stmFormat = 0x4011;
-    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_SDNFMT(HdaOutStream->Index), 1, &stmFormat);
-    ASSERT_EFI_ERROR(Status);
-
-    // poll timer
-    Status = gBS->SetTimer(HdaOutStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);
-    if (EFI_ERROR(Status))
-        goto CLEANUP_CORB_RIRB;
-
-    // Update stream.
-    Status = HdaControllerSetStreamId(HdaOutStream, 6);
-    Status = HdaControllerSetStream(HdaOutStream, TRUE);
     ASSERT_EFI_ERROR(Status);
     
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));

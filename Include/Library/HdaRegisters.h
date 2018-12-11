@@ -236,7 +236,7 @@
 #define HDA_REG_SDNFMT_BASE_44KHZ   BIT14
 #define HDA_REG_SDNFMT_SET(chan, bits, div, mult, base) \
     ((UINT16)(((chan) & 0xF) | (((bits) & 0x3) << 4) | (((div) & 0x3) << 8) | \
-    (((mult) & 0x3) << 11) | ((base) ? BIT0 : 0)))
+    (((mult) & 0x3) << 11) | ((base) ? HDA_REG_SDNFMT_BASE_44KHZ : 0)))
 
 // Input/Output/Bidirectional Stream Descriptor n BDL Pointer Lower Base Address; 4 bytes.
 #define HDA_REG_SDNBDPL(n)      (0x98 + (0x20 * (n)))
