@@ -24,6 +24,12 @@
 
 #include "AudioDemo.h"
 
+VOID callback(
+    IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
+    IN VOID *Context) {
+    Print(L"audio complete\n");
+}
+
 EFI_STATUS
 EFIAPI
 AudioDemoMain(
@@ -92,5 +98,11 @@ AudioDemoMain(
 
     Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);
     ASSERT_EFI_ERROR(Status);
+
+    // play async.
+    Status = AudioIo->StartPlaybackAsync(AudioIo, bytes, bytesLength, 0, callback, NULL);
+    ASSERT_EFI_ERROR(Status);
+
+    while(TRUE);
     return EFI_SUCCESS;
 }
