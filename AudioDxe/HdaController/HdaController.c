@@ -61,32 +61,31 @@ HdaControllerStreamPollTimerHandler(
             if (HdaStream->Callback)
                 HdaStream->Callback(HdaStream->Output ? EfiHdaIoTypeOutput : EfiHdaIoTypeInput,
                     HdaStream->CallbackContext1, HdaStream->CallbackContext2, HdaStream->CallbackContext3);
-            return;
+        } else {
+            // Get stream DMA position.
+            HdaStreamDmaPos = HdaStream->HdaDev->DmaPositions[HdaStream->Index].Position;
+
+            // Is this an output stream (copy data to)?
+            if (HdaStream->Output) {
+                // Copy data to DMA buffer.
+                if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
+                    CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+                else
+                    CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+                
+            } else { // Input stream (copy data from).
+                // Copy data from DMA buffer.
+                if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
+                    CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
+                else
+                    CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
+            }
+
+            // Increase source position.
+            HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
+            DEBUG((DEBUG_INFO, "%s half filled! (current position 0x%X)\n",
+                (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) ? L"Upper" : L"Lower", HdaStreamDmaPos));
         }
-
-        // Get stream DMA position.
-        HdaStreamDmaPos = HdaStream->HdaDev->DmaPositions[HdaStream->Index].Position;
-
-        // Is this an output stream (copy data to)?
-        if (HdaStream->Output) {
-            // Copy data to DMA buffer.
-            if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
-                CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-            else
-                CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-            
-        } else { // Input stream (copy data from).
-            // Copy data from DMA buffer.
-            if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
-                CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
-            else
-                CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
-        }
-
-        // Increase position and flip upper half variable.
-        HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
-        DEBUG((DEBUG_INFO, "%s half filled! (current position 0x%X)\n",
-            (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) ? L"Upper" : L"Lower", HdaStreamDmaPos));
 
         // Reset completion bit.
         HdaStreamSts = HDA_REG_SDNSTS_BCIS;

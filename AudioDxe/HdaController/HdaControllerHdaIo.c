@@ -316,10 +316,12 @@ HdaControllerHdaIoStartStream(
     EFI_STATUS Status;
     HDA_IO_PRIVATE_DATA *HdaIoPrivateData;
     HDA_CONTROLLER_DEV *HdaControllerDev;
+    EFI_PCI_IO_PROTOCOL *PciIo;
 
     // Stream.
     HDA_STREAM *HdaStream;
     UINT8 HdaStreamId;
+    UINT16 HdaStreamSts;
     UINT32 HdaStreamDmaPos;
     UINTN HdaStreamDmaRemainingLength;
 
@@ -331,6 +333,7 @@ HdaControllerHdaIoStartStream(
     // Get private data.
     HdaIoPrivateData = HDA_IO_PRIVATE_DATA_FROM_THIS(This);
     HdaControllerDev = HdaIoPrivateData->HdaControllerDev;
+    PciIo = HdaControllerDev->PciIo;
 
     // Get stream.
     if (Type == EfiHdaIoTypeOutput)
@@ -347,9 +350,16 @@ HdaControllerHdaIoStartStream(
     if (HdaStreamId == 0)
         return EFI_NOT_READY;
 
+    // Reset completion bit.
+    HdaStreamSts = HDA_REG_SDNSTS_BCIS;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
+    if (EFI_ERROR(Status))
+        return Status;
+
     // Get current DMA position.
     HdaStreamDmaPos = HdaControllerDev->DmaPositions[HdaStream->Index].Position;
-    DEBUG((DEBUG_INFO, "DMA position for stream %u: 0x%X\n", HdaStream->Index, HdaStreamDmaPos));
+    DEBUG((DEBUG_INFO, "HdaControllerHdaIoStartStream(): stream %u DMA pos 0x%X\n",
+        HdaStream->Index, HdaStreamDmaPos));
 
     // Save pointer to buffer.
     HdaStream->BufferSource = Buffer;
@@ -360,32 +370,13 @@ HdaControllerHdaIoStartStream(
     HdaStream->CallbackContext2 = Context2;
     HdaStream->CallbackContext3 = Context3;
 
-    // Fill stream buffer.
+    // Determine number of bytes to write. If the stream has never run before (LPIB is 0), fill the whole buffer.
     HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE - HdaStreamDmaPos;
+
+    // Fill stream buffer.
     CopyMem(HdaStream->BufferData + HdaStreamDmaPos, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
     HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
-
-    // If the current position is in the upper half of the buffer, also fill the lower half.
-    if (HdaStreamDmaPos >= HDA_STREAM_BUF_SIZE_HALF) {
-        CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-        HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
-    }
-
-/*    // Determine starting half based on current position.
-    if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) {
-        // Fill lower half with zeroes and upper half with audio data.
-        ZeroMem(HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
-        CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF,
-            HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-    } else {
-        // Fill upper half with zeroes and lower half with audio data.
-        ZeroMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
-        CopyMem(HdaStream->BufferData,
-            HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-    }
-
-    // Increase position as half the buffer is now filled with audio data.
-    HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE;*/
+    DEBUG((DEBUG_INFO, "%u bytes remained in buffer\n", HdaStreamDmaRemainingLength));
 
     // Setup polling timer.
     Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);

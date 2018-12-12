@@ -96,7 +96,7 @@ AudioDemoMain(
     Status = AudioIo->SetupPlayback(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
     ASSERT_EFI_ERROR(Status);
 
-    Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);
+    Status = AudioIo->StartPlayback(AudioIo, bytes, (SIZE_1MB * 4) + 0x40000, 0);
     ASSERT_EFI_ERROR(Status);
 
     // play async.
