@@ -275,16 +275,11 @@ HdaControllerHdaIoGetStream(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
     OUT BOOLEAN *State) {
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoGetStream(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaControllerHdaIoGetStream(): start\n"));
 
     // Create variables.
-    EFI_STATUS Status;
     HDA_IO_PRIVATE_DATA *HdaIoPrivateData;
-    HDA_CONTROLLER_DEV *HdaControllerDev;
-
-    // Stream.
     HDA_STREAM *HdaStream;
-    UINT8 HdaStreamId;
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) || (State == NULL))
@@ -292,22 +287,12 @@ HdaControllerHdaIoGetStream(
 
     // Get private data.
     HdaIoPrivateData = HDA_IO_PRIVATE_DATA_FROM_THIS(This);
-    HdaControllerDev = HdaIoPrivateData->HdaControllerDev;
 
     // Get stream.
     if (Type == EfiHdaIoTypeOutput)
         HdaStream = HdaIoPrivateData->HdaOutputStream;
     else
         HdaStream = HdaIoPrivateData->HdaInputStream;
-
-    // Get current stream ID.
-    Status = HdaControllerGetStreamId(HdaStream, &HdaStreamId);
-    if (EFI_ERROR(Status))
-        return Status;
-
-    // Is a stream ID zero? If so that means the stream is not setup yet.
-    if (HdaStreamId == 0)
-        return EFI_NOT_READY;
 
     // Get stream state.
     return HdaControllerGetStream(HdaStream, State);

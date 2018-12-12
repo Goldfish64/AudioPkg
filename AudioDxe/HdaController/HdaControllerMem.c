@@ -606,7 +606,7 @@ HdaControllerGetStream(
     OUT BOOLEAN *Run) {
     if ((HdaStream == NULL) || (Run == NULL))
         return EFI_INVALID_PARAMETER;
-    DEBUG((DEBUG_INFO, "HdaControllerGetStream(%u): start\n", HdaStream->Index));
+    //DEBUG((DEBUG_INFO, "HdaControllerGetStream(%u): start\n", HdaStream->Index));
 
     // Create variables.
     EFI_STATUS Status;
@@ -664,7 +664,7 @@ HdaControllerGetStreamId(
     OUT UINT8 *Index) {
     if ((HdaStream == NULL) || (Index == NULL))
         return EFI_INVALID_PARAMETER;
-    DEBUG((DEBUG_INFO, "HdaControllerSetStreamId(%u): start\n", HdaStream->Index));
+    //DEBUG((DEBUG_INFO, "HdaControllerGetStreamId(%u): start\n", HdaStream->Index));
 
     // Create variables.
     EFI_STATUS Status;
