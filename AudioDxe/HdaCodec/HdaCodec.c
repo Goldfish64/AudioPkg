@@ -628,6 +628,7 @@ HdaCodecInstallProtocols(
     // Populate I/O protocol data.
     AudioIoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
     AudioIoData->HdaCodecDev = HdaCodecDev;
+    AudioIoData->AudioIo.GetOutputs = HdaCodecAudioIoGetOutputs;
     AudioIoData->AudioIo.SetupPlayback = HdaCodecAudioIoSetupPlayback;
     AudioIoData->AudioIo.StartPlayback = HdaCodecAudioIoStartPlayback;
     AudioIoData->AudioIo.StartPlaybackAsync = HdaCodecAudioIoStartPlaybackAsync;

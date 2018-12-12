@@ -47,6 +47,133 @@ HdaCodecHdaIoStreamCallback(
 }
 
 /**                                                                 
+  Gets the collection of output ports.
+
+  @param[in]  This              A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+  @param[out] OutputPorts       A pointer to a buffer where the output ports will be placed.
+  @param[out] OutputPortsCount  The number of ports in OutputPorts.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+EFI_STATUS
+EFIAPI
+HdaCodecAudioIoGetOutputs(
+    IN  EFI_AUDIO_IO_PROTOCOL *This,
+    OUT EFI_AUDIO_IO_PORT **OutputPorts,
+    OUT UINTN *OutputPortsCount) {
+    DEBUG((DEBUG_INFO, "HdaCodecAudioIoGetOutputs(): start\n"));
+
+    // Create variables.
+    AUDIO_IO_PRIVATE_DATA *AudioIoPrivateData;
+    HDA_CODEC_DEV *HdaCodecDev;
+
+    // Widgets.
+    EFI_AUDIO_IO_PORT *HdaOutputPorts;
+
+    // If a parameter is invalid, return error.
+    if ((This == NULL) || (OutputPorts == NULL) ||
+        (OutputPortsCount == NULL))
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data.
+    AudioIoPrivateData = AUDIO_IO_PRIVATE_DATA_FROM_THIS(This);
+    HdaCodecDev = AudioIoPrivateData->HdaCodecDev;
+
+    // Allocate buffer.
+    HdaOutputPorts = AllocateZeroPool(sizeof(EFI_AUDIO_IO_PORT) * HdaCodecDev->OutputPortsCount);
+    if (HdaOutputPorts == NULL)
+        return EFI_OUT_OF_RESOURCES;
+
+    // Get output ports.
+    for (UINTN i = 0; i < HdaCodecDev->OutputPortsCount; i++) {
+        // Port is an output.
+        HdaOutputPorts[i].Type = EfiAudioIoTypeOutput;
+
+        // Get device type.
+        switch (HDA_VERB_GET_CONFIGURATION_DEFAULT_DEVICE(HdaCodecDev->OutputPorts[i]->DefaultConfiguration)) {
+            case HDA_CONFIG_DEFAULT_DEVICE_LINE_OUT:
+            case HDA_CONFIG_DEFAULT_DEVICE_LINE_IN:
+                HdaOutputPorts[i].Device = EfiAudioIoDeviceLine;
+                break;
+
+            case HDA_CONFIG_DEFAULT_DEVICE_SPEAKER:
+                HdaOutputPorts[i].Device = EfiAudioIoDeviceSpeaker;
+                break;
+
+            case HDA_CONFIG_DEFAULT_DEVICE_HEADPHONE_OUT:
+                HdaOutputPorts[i].Device = EfiAudioIoDeviceHeadphones;
+                break;
+
+            case HDA_CONFIG_DEFAULT_DEVICE_SPDIF_OUT:
+            case HDA_CONFIG_DEFAULT_DEVICE_SPDIF_IN:
+                HdaOutputPorts[i].Device = EfiAudioIoDeviceSpdif;
+                break;
+
+            case HDA_CONFIG_DEFAULT_DEVICE_MIC_IN:
+                HdaOutputPorts[i].Device = EfiAudioIoDeviceMic;
+                break;
+
+            default:
+                HdaOutputPorts[i].Device = EfiAudioIoDeviceOther;
+        }
+
+        // Get location.
+        switch (HDA_VERB_GET_CONFIGURATION_DEFAULT_LOC(HdaCodecDev->OutputPorts[i]->DefaultConfiguration)) {
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_NA:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationNone;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_REAR:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationRear;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_FRONT:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationFront;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_LEFT:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationLeft;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_RIGHT:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationRight;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_TOP:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationTop;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SPEC_BOTTOM:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationBottom;
+                break;
+
+            default:
+                HdaOutputPorts[i].Location = EfiAudioIoLocationOther;
+        }
+
+        // Get surface.
+        switch (HDA_VERB_GET_CONFIGURATION_DEFAULT_SURF(HdaCodecDev->OutputPorts[i]->DefaultConfiguration)) {
+            case HDA_CONFIG_DEFAULT_LOC_SURF_EXTERNAL:
+                HdaOutputPorts[i].Surface = EfiAudioIoSurfaceExternal;
+                break;
+
+            case HDA_CONFIG_DEFAULT_LOC_SURF_INTERNAL:
+                HdaOutputPorts[i].Surface = EfiAudioIoSurfaceInternal;
+                break;
+
+            default:
+                HdaOutputPorts[i].Surface = EfiAudioIoSurfaceOther;
+        }
+    }
+
+    // Ports gotten successfully.
+    *OutputPorts = HdaOutputPorts;
+    *OutputPortsCount = HdaCodecDev->OutputPortsCount;
+    return EFI_SUCCESS;
+}
+
+/**                                                                 
   Sets up the device to play audio data.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -255,6 +382,11 @@ HdaCodecAudioIoSetupPlayback(
         if (EFI_ERROR(Status))
             return Status;
     }
+
+    // Close stream first.
+    Status = HdaIo->CloseStream(HdaIo, EfiHdaIoTypeOutput);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Calculate stream format and setup stream.
     StreamFmt = HDA_CONVERTER_FORMAT_SET(Channels - 1, StreamBits,

@@ -28,6 +28,9 @@ VOID callback(
     IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
     IN VOID *Context) {
     Print(L"audio complete\n");
+    EFI_HANDLE ImageHandle = (EFI_HANDLE)Context;
+
+    gBS->Exit(ImageHandle, EFI_SUCCESS, 0, NULL);
 }
 
 EFI_STATUS
@@ -92,15 +95,39 @@ AudioDemoMain(
     Status = token->Read(token, &bytesLength, bytes);
     ASSERT_EFI_ERROR(Status);
 
-    // Play audio.
-    Status = AudioIo->SetupPlayback(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+    // Get outputs.
+    EFI_AUDIO_IO_PORT *Outputs;
+    UINTN OutputsCount;
+    Status = AudioIo->GetOutputs(AudioIo, &Outputs, &OutputsCount);
     ASSERT_EFI_ERROR(Status);
 
-    Status = AudioIo->StartPlayback(AudioIo, bytes, (SIZE_1MB * 4) + 0x40000, 0);
-    ASSERT_EFI_ERROR(Status);
+    CHAR16 *Devices[EfiAudioIoDeviceMaximum] = { L"Line", L"Speaker", L"Headphones", L"SPDIF", L"Mic", L"Other" };
+    CHAR16 *Locations[EfiAudioIoLocationMaximum] = { L"N/A", L"rear", L"front", L"left", L"right", L"top", L"bottom", L"other" };
+    CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
+
+    for (UINTN i = 0; i < OutputsCount; i++) {
+        Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
+            Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
+    }
+
+    for (UINTN i = 0; i < OutputsCount; i++) {
+        Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
+            Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
+
+            // Play audio.
+        Status = AudioIo->SetupPlayback(AudioIo, i, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        ASSERT_EFI_ERROR(Status);
+
+        Status = AudioIo->StartPlayback(AudioIo, bytes, (SIZE_1MB * 4) + 0x40000, 0);
+        ASSERT_EFI_ERROR(Status);
+    }
+
+    // Play audio.
+        Status = AudioIo->SetupPlayback(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        ASSERT_EFI_ERROR(Status);
 
     // play async.
-    Status = AudioIo->StartPlaybackAsync(AudioIo, bytes, bytesLength, 0, callback, NULL);
+    Status = AudioIo->StartPlaybackAsync(AudioIo, bytes, bytesLength, 0, callback, ImageHandle);
     ASSERT_EFI_ERROR(Status);
 
     while(TRUE);

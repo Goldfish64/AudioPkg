@@ -216,6 +216,13 @@ HdaCodecInfoFreeWidgetsBuffer(
 //
 EFI_STATUS
 EFIAPI
+HdaCodecAudioIoGetOutputs(
+    IN  EFI_AUDIO_IO_PROTOCOL *This,
+    OUT EFI_AUDIO_IO_PORT **OutputPorts,
+    OUT UINTN *OutputPortsCount);
+
+EFI_STATUS
+EFIAPI
 HdaCodecAudioIoSetupPlayback(
     IN EFI_AUDIO_IO_PROTOCOL *This,
     IN UINT32 OutputIndex,

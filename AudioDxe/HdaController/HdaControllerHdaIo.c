@@ -327,7 +327,7 @@ HdaControllerHdaIoStartStream(
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) ||
-        (Buffer == NULL) || (BufferLength == 0))
+        (Buffer == NULL) || (BufferLength == 0) || (BufferPosition >= BufferLength))
         return EFI_INVALID_PARAMETER;
 
     // Get private data.
@@ -370,13 +370,27 @@ HdaControllerHdaIoStartStream(
     HdaStream->CallbackContext2 = Context2;
     HdaStream->CallbackContext3 = Context3;
 
+    // Zero out buffer.
+    ZeroMem(HdaStream->BufferData, HDA_STREAM_BUF_SIZE);
+
     // Determine number of bytes to write. If the stream has never run before (LPIB is 0), fill the whole buffer.
     HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE - HdaStreamDmaPos;
+    if ((HdaStream->BufferSourcePosition + HdaStreamDmaRemainingLength) > BufferLength)
+        HdaStreamDmaRemainingLength = BufferLength;
 
     // Fill stream buffer.
     CopyMem(HdaStream->BufferData + HdaStreamDmaPos, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
     HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
-    DEBUG((DEBUG_INFO, "%u bytes remained in buffer\n", HdaStreamDmaRemainingLength));
+    DEBUG((DEBUG_INFO, "%u (0x%X) bytes written\n", HdaStreamDmaRemainingLength, HdaStreamDmaRemainingLength));
+
+    // If we are starting in the upper half, fill the lower half as well.
+    if ((HdaStreamDmaPos >= HDA_STREAM_BUF_SIZE_HALF) && (HdaStreamDmaRemainingLength <= HDA_STREAM_BUF_SIZE_HALF)) {
+        HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE_HALF;
+        if ((HdaStream->BufferSourcePosition + HdaStreamDmaRemainingLength) > BufferLength)
+            HdaStreamDmaRemainingLength = BufferLength;
+        CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
+        HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
+    }
 
     // Setup polling timer.
     Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);

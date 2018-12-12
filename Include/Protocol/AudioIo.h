@@ -34,6 +34,53 @@
 extern EFI_GUID gEfiAudioIoProtocolGuid;
 typedef struct _EFI_AUDIO_IO_PROTOCOL EFI_AUDIO_IO_PROTOCOL;
 
+// Port type.
+typedef enum {
+    EfiAudioIoTypeOutput = 0,
+    EfiAudioIoTypeInput,
+    EfiAudioIoTypeMaximum
+} EFI_AUDIO_IO_TYPE;
+
+// Device type.
+typedef enum {
+    EfiAudioIoDeviceLine = 0,
+    EfiAudioIoDeviceSpeaker,
+    EfiAudioIoDeviceHeadphones,
+    EfiAudioIoDeviceSpdif,
+    EfiAudioIoDeviceMic,
+    EfiAudioIoDeviceOther,
+    EfiAudioIoDeviceMaximum
+} EFI_AUDIO_IO_DEVICE;
+
+// Port location.
+typedef enum {
+    EfiAudioIoLocationNone = 0,
+    EfiAudioIoLocationRear,
+    EfiAudioIoLocationFront,
+    EfiAudioIoLocationLeft,
+    EfiAudioIoLocationRight,
+    EfiAudioIoLocationTop,
+    EfiAudioIoLocationBottom,
+    EfiAudioIoLocationOther,
+    EfiAudioIoLocationMaximum
+} EFI_AUDIO_IO_LOCATION;
+
+// Port surface.
+typedef enum {
+    EfiAudioIoSurfaceExternal = 0,
+    EfiAudioIoSurfaceInternal,
+    EfiAudioIoSurfaceOther,
+    EfiAudioIoSurfaceMaximum
+} EFI_AUDIO_IO_SURFACE;
+
+// Audio input/output structure.
+typedef struct {
+    EFI_AUDIO_IO_TYPE Type;
+    EFI_AUDIO_IO_DEVICE Device;
+    EFI_AUDIO_IO_LOCATION Location;
+    EFI_AUDIO_IO_SURFACE Surface;
+} EFI_AUDIO_IO_PORT;
+
 // Size in bits of each sample.
 typedef enum {
     EfiAudioIoBits8 = 0,
@@ -68,6 +115,23 @@ VOID
 (EFIAPI* EFI_AUDIO_IO_CALLBACK)(
     IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
     IN VOID *Context);
+
+/**                                                                 
+  Gets the collection of output ports.
+
+  @param[in]  This              A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+  @param[out] OutputPorts       A pointer to a buffer where the output ports will be placed.
+  @param[out] OutputPortsCount  The number of ports in OutputPorts.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_AUDIO_IO_GET_OUTPUTS)(
+    IN  EFI_AUDIO_IO_PROTOCOL *This,
+    OUT EFI_AUDIO_IO_PORT **OutputPorts,
+    OUT UINTN *OutputPortsCount);
 
 /**                                                                 
   Sets up the device to play audio data.
@@ -147,6 +211,7 @@ EFI_STATUS
 
 // Protocol struct.
 struct _EFI_AUDIO_IO_PROTOCOL {
+    EFI_AUDIO_IO_GET_OUTPUTS            GetOutputs;
     EFI_AUDIO_IO_SETUP_PLAYBACK         SetupPlayback;
     EFI_AUDIO_IO_START_PLAYBACK         StartPlayback;
     EFI_AUDIO_IO_START_PLAYBACK_ASYNC   StartPlaybackAsync;
