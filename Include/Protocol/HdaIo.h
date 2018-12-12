@@ -46,34 +46,6 @@ typedef enum {
     EfiHdaIoTypeMaximum
 } EFI_HDA_IO_PROTOCOL_TYPE;
 
-// Size in bits of each sample.
-typedef enum {
-    EfiHdaIoBits8 = 0,
-    EfiHdaIoBits16,
-    EfiHdaIoBits20,
-    EfiHdaIoBits24,
-    EfiHdaIoBits32,
-    EfiHdaIoBitsMaximum
-} EFI_HDA_IO_PROTOCOL_BITS;
-
-// Frequency of each sample.
-typedef enum {
-    EfiHdaIoFreq8kHz = 0,
-    EfiHdaIoFreq11kHz,
-    EfiHdaIoFreq16kHz,
-    EfiHdaIoFreq22kHz,
-    EfiHdaIoFreq32kHz,
-    EfiHdaIoFreq44kHz,
-    EfiHdaIoFreq48kHz,
-    EfiHdaIoFreq88kHz,
-    EfiHdaIoFreq96kHz,
-    EfiHdaIoFreq192kHz,
-    EfiHdaIoFreqMaximum
-} EFI_HDA_IO_PROTOCOL_FREQ;
-
-// Maximum number of channels.
-#define EFI_HDA_IO_PROTOCOL_MAX_CHANNELS 16
-
 // Verb list structure.
 typedef struct {
     UINT32 Count;
@@ -137,9 +109,7 @@ EFI_STATUS
 (EFIAPI *EFI_HDA_IO_SETUP_STREAM)(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
-    IN  EFI_HDA_IO_PROTOCOL_FREQ Freq,
-    IN  EFI_HDA_IO_PROTOCOL_BITS Bits,
-    IN  UINT8 Channels,
+    IN  UINT16 Format,
     IN  VOID *Buffer,
     IN  UINTN BufferLength,
     OUT UINT8 *StreamId);

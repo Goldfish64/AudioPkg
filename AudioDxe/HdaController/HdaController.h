@@ -264,9 +264,7 @@ EFIAPI
 HdaControllerHdaIoSetupStream(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
-    IN  EFI_HDA_IO_PROTOCOL_FREQ Freq,
-    IN  EFI_HDA_IO_PROTOCOL_BITS Bits,
-    IN  UINT8 Channels,
+    IN  UINT16 Format,
     IN  VOID *Buffer,
     IN  UINTN BufferLength,
     OUT UINT8 *StreamId);

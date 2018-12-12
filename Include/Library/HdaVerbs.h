@@ -33,8 +33,21 @@
 #define HDA_CODEC_VERB_12BIT(Verb, Payload) ((((UINT32)Verb) << 8) | (Payload & 0xFF))
 
 // Get/Set Converter Format.
-#define HDA_VERB_GET_CONVERTER_FORMAT 0xA
-#define HDA_VERB_SET_CONVERTER_FORMAT 0x2
+#define HDA_VERB_GET_CONVERTER_FORMAT       0xA
+#define HDA_VERB_SET_CONVERTER_FORMAT       0x2
+#define HDA_CONVERTER_FORMAT_CHAN(a)        ((UINT8)((a) & 0xF))
+#define HDA_CONVERTER_FORMAT_BITS(a)        ((UINT8)(((a) >> 4) & 0x3))
+#define HDA_CONVERTER_FORMAT_BITS_8         0x0
+#define HDA_CONVERTER_FORMAT_BITS_16        0x1
+#define HDA_CONVERTER_FORMAT_BITS_20        0x2
+#define HDA_CONVERTER_FORMAT_BITS_24        0x3
+#define HDA_CONVERTER_FORMAT_BITS_32        0x4
+#define HDA_CONVERTER_FORMAT_DIV(a)         ((UINT8)(((a) >> 8) & 0x3))
+#define HDA_CONVERTER_FORMAT_MULT(a)        ((UINT8)(((a) >> 11) & 0x3))
+#define HDA_CONVERTER_FORMAT_BASE_44KHZ     BIT14
+#define HDA_CONVERTER_FORMAT_SET(chan, bits, div, mult, base) \
+    ((UINT16)(((chan) & 0xF) | (((bits) & 0x3) << 4) | (((div) & 0x3) << 8) | \
+    (((mult) & 0x3) << 11) | ((base) ? HDA_CONVERTER_FORMAT_BASE_44KHZ : 0)))
 
 // Get Amplifier Gain/Mute.
 #define HDA_VERB_GET_AMP_GAIN_MUTE                              0xB

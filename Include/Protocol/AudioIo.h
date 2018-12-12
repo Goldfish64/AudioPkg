@@ -34,6 +34,34 @@
 extern EFI_GUID gEfiAudioIoProtocolGuid;
 typedef struct _EFI_AUDIO_IO_PROTOCOL EFI_AUDIO_IO_PROTOCOL;
 
+// Size in bits of each sample.
+typedef enum {
+    EfiAudioIoBits8 = 0,
+    EfiAudioIoBits16,
+    EfiAudioIoBits20,
+    EfiAudioIoBits24,
+    EfiAudioIoBits32,
+    EfiAudioIoBitsMaximum
+} EFI_AUDIO_IO_PROTOCOL_BITS;
+
+// Frequency of each sample.
+typedef enum {
+    EfiAudioIoFreq8kHz = 0,
+    EfiAudioIoFreq11kHz,
+    EfiAudioIoFreq16kHz,
+    EfiAudioIoFreq22kHz,
+    EfiAudioIoFreq32kHz,
+    EfiAudioIoFreq44kHz,
+    EfiAudioIoFreq48kHz,
+    EfiAudioIoFreq88kHz,
+    EfiAudioIoFreq96kHz,
+    EfiAudioIoFreq192kHz,
+    EfiAudioIoFreqMaximum
+} EFI_AUDIO_IO_PROTOCOL_FREQ;
+
+// Maximum number of channels.
+#define EFI_AUDIO_IO_PROTOCOL_MAX_CHANNELS 16
+
 /**                                                                 
   Plays the specified audio data.
 
@@ -50,6 +78,9 @@ EFI_STATUS
 (EFIAPI *EFI_AUDIO_IO_PLAY)(
     IN  EFI_AUDIO_IO_PROTOCOL *This,
     IN  UINT32 OutputIndex,
+    IN  EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
+    IN  EFI_AUDIO_IO_PROTOCOL_BITS Bits,
+    IN  UINT8 Channels,
     IN  VOID *Data,
     IN  UINTN DataLength);
 

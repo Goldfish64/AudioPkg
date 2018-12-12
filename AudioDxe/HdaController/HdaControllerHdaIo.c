@@ -116,9 +116,7 @@ EFIAPI
 HdaControllerHdaIoSetupStream(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
-    IN  EFI_HDA_IO_PROTOCOL_FREQ Freq,
-    IN  EFI_HDA_IO_PROTOCOL_BITS Bits,
-    IN  UINT8 Channels,
+    IN  UINT16 Format,
     IN  VOID *Buffer,
     IN  UINTN BufferLength,
     OUT UINT8 *StreamId) {
@@ -134,13 +132,9 @@ HdaControllerHdaIoSetupStream(
     HDA_STREAM *HdaStream;
     UINT8 HdaStreamId;
     EFI_TPL OldTpl = 0;
-    UINT8 StreamBits, StreamDiv, StreamMult = 0;
-    BOOLEAN StreamBase44kHz = FALSE;
-    UINT16 HdaStreamFmt;
 
     // If a parameter is invalid, return error.
-    if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) || (Freq >= EfiHdaIoFreqMaximum) ||
-        (Bits >= EfiHdaIoBitsMaximum) || (Channels == 0) || (Channels > EFI_HDA_IO_PROTOCOL_MAX_CHANNELS) ||
+    if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) ||
         (Buffer == NULL) || (BufferLength == 0) || (StreamId == NULL))
         return EFI_INVALID_PARAMETER;
 
@@ -191,123 +185,10 @@ HdaControllerHdaIoSetupStream(
         goto DONE;
     *StreamId = HdaStreamId;
 
-    // Determine bitness of samples.
-    switch (Bits) {
-        // 8-bit.
-        case EfiHdaIoBits8:
-            StreamBits = HDA_REG_SDNFMT_BITS_8;
-            break;
-        
-        // 16-bit.
-        case EfiHdaIoBits16:
-            StreamBits = HDA_REG_SDNFMT_BITS_16;
-            break;
-
-        // 20-bit.
-        case EfiHdaIoBits20:
-            StreamBits = HDA_REG_SDNFMT_BITS_20;
-            break;
-
-        // 24-bit.
-        case EfiHdaIoBits24:
-            StreamBits = HDA_REG_SDNFMT_BITS_24;
-            break;
-
-        // 32-bit.
-        case EfiHdaIoBits32:
-            StreamBits = HDA_REG_SDNFMT_BITS_32;
-            break;
-
-        // Others.
-        default:
-            Status = EFI_INVALID_PARAMETER;
-            goto DONE;
-    }
-
-    // Determine base, divisor, and multipler.
-    switch (Freq) {
-        // 8 kHz.
-        case EfiHdaIoFreq8kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 6;
-            StreamMult = 1;
-            break;
-
-        // 11.025 kHz.
-        case EfiHdaIoFreq11kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 4;
-            StreamMult = 1;
-            break;
-
-        // 16 kHz.
-        case EfiHdaIoFreq16kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 3;
-            StreamMult = 1;
-            break;
-
-        // 22.05 kHz.
-        case EfiHdaIoFreq22kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 2;
-            StreamMult = 1;
-            break;
-
-        // 32 kHz.
-        case EfiHdaIoFreq32kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 3;
-            StreamMult = 2;
-            break;
-
-        // 44.1 kHz.
-        case EfiHdaIoFreq44kHz:
-            StreamBase44kHz = TRUE;
-            StreamDiv = 1;
-            StreamMult = 1;
-            break;
-
-        // 48 kHz.
-        case EfiHdaIoFreq48kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 1;
-            StreamMult = 1;
-            break;
-
-        // 88 kHz.
-        case EfiHdaIoFreq88kHz:
-            StreamBase44kHz = TRUE;
-            StreamDiv = 1;
-            StreamMult = 2;
-            break;
-
-        // 96 kHz.
-        case EfiHdaIoFreq96kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 1;
-            StreamMult = 2;
-            break;
-
-        // 192 kHz.
-        case EfiHdaIoFreq192kHz:
-            StreamBase44kHz = FALSE;
-            StreamDiv = 1;
-            StreamMult = 4;
-            break;
-
-        // Others.
-        default:
-            Status = EFI_INVALID_PARAMETER;
-            goto DONE;
-    }
-
     // Set stream format.
-    HdaStreamFmt = HDA_REG_SDNFMT_SET(Channels - 1, StreamBits,
-        StreamDiv - 1, StreamMult - 1, StreamBase44kHz);
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): format 0x%X\n", HdaStreamFmt));
+    DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): setting format 0x%X\n", Format));
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR,
-        HDA_REG_SDNFMT(HdaStream->Index), 1, &HdaStreamFmt);
+        HDA_REG_SDNFMT(HdaStream->Index), 1, &Format);
     if (EFI_ERROR(Status))
         goto DONE;
 

@@ -152,33 +152,9 @@ struct _AUDIO_IO_PRIVATE_DATA {
 
 #define AUDIO_IO_PRIVATE_DATA_FROM_THIS(This) CR(This, AUDIO_IO_PRIVATE_DATA, AudioIo, HDA_CODEC_PRIVATE_DATA_SIGNATURE)
 
-EFI_STATUS
-EFIAPI
-HdaCodecPrintDefaults(
-    HDA_CODEC_DEV *HdaCodecDev);
-
-EFI_STATUS
-EFIAPI
-HdaCodecDriverBindingSupported(
-    IN EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN EFI_HANDLE ControllerHandle,
-    IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL);
-
-EFI_STATUS
-EFIAPI
-HdaCodecDriverBindingStart(
-    IN EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN EFI_HANDLE ControllerHandle,
-    IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL);
-
-EFI_STATUS
-EFIAPI
-HdaCodecDriverBindingStop(
-    IN EFI_DRIVER_BINDING_PROTOCOL *This,
-    IN EFI_HANDLE ControllerHandle,
-    IN UINTN NumberOfChildren,
-    IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
-
+//
+// HDA Codec Info protocol functions.
+//
 EFI_STATUS
 EFIAPI
 HdaCodecInfoGetCodecName(
@@ -231,12 +207,76 @@ HdaCodecInfoFreeWidgetsBuffer(
     IN  HDA_WIDGET *Widgets,
     IN  UINTN WidgetCount);
 
+//
+// Audio I/O protocol functions.
+//
 EFI_STATUS
 EFIAPI
 HdaCodecAudioIoPlay(
     IN  EFI_AUDIO_IO_PROTOCOL *This,
     IN  UINT32 OutputIndex,
+    IN  EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
+    IN  EFI_AUDIO_IO_PROTOCOL_BITS Bits,
+    IN  UINT8 Channels,
     IN  VOID *Data,
     IN  UINTN DataLength);
+
+//
+// HDA Codec internal functions.
+//
+EFI_STATUS
+EFIAPI
+HdaCodecPrintDefaults(
+    HDA_CODEC_DEV *HdaCodecDev);
+
+EFI_STATUS
+EFIAPI
+HdaCodecGetOutputDac(
+    IN  HDA_WIDGET_DEV *HdaWidget,
+    OUT HDA_WIDGET_DEV **HdaOutputWidget);
+
+EFI_STATUS
+EFIAPI
+HdaCodecGetSupportedPcmRates(
+    IN  HDA_WIDGET_DEV *HdaOutputWidget,
+    OUT UINT32 *SupportedRates);
+
+EFI_STATUS
+EFIAPI
+HdaCodecDisableWidgetPath(
+    IN HDA_WIDGET_DEV *HdaWidget);
+
+EFI_STATUS
+EFIAPI
+HdaCodecEnableWidgetPath(
+    IN HDA_WIDGET_DEV *HdaWidget,
+    IN UINT8 Volume,
+    IN UINT8 StreamId,
+    IN UINT16 StreamFormat);
+
+//
+// Driver Binding protocol functions.
+//
+EFI_STATUS
+EFIAPI
+HdaCodecDriverBindingSupported(
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaCodecDriverBindingStart(
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN EFI_DEVICE_PATH_PROTOCOL *RemainingDevicePath OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaCodecDriverBindingStop(
+    IN EFI_DRIVER_BINDING_PROTOCOL *This,
+    IN EFI_HANDLE ControllerHandle,
+    IN UINTN NumberOfChildren,
+    IN EFI_HANDLE *ChildHandleBuffer OPTIONAL);
 
 #endif

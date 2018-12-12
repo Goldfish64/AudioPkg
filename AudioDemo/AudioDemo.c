@@ -39,6 +39,7 @@ AudioDemoMain(
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
     ASSERT_EFI_ERROR(Status);
+    DEBUG((DEBUG_INFO, "audio handles %u\n", AudioIoHandleCount));
 
     Status = gBS->OpenProtocol(AudioIoHandles[0], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
     ASSERT_EFI_ERROR(Status);
@@ -62,25 +63,31 @@ AudioDemoMain(
         Status = fs->OpenVolume(fs, &root);
         ASSERT_EFI_ERROR(Status);
 
-        Status = root->Open(root, &token, L"quadra.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        Status = root->Open(root, &token, L"welcome.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if (!(EFI_ERROR(Status)))
             break;
     }
 
     // Get size.
-    EFI_FILE_INFO FileInfo;
-    UINTN FileInfoSize;
-    Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, &FileInfo);
+    EFI_FILE_INFO *FileInfo;
+
+    UINTN FileInfoSize = 512;
+    VOID *fileinfobuf = AllocateZeroPool(FileInfoSize);
+    Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, fileinfobuf);
     ASSERT_EFI_ERROR(Status);
 
-    Print(L"File size: %u bytes\n", FileInfo.FileSize);
+    FileInfo = (EFI_FILE_INFO*)fileinfobuf;
+
+    Print(L"File size: %u bytes\n", FileInfo->FileSize);
     
     // Read file into buffer.
-    UINTN bytesLength = FileInfo.FileSize;
+    UINTN bytesLength = FileInfo->FileSize;
     UINT8 *bytes = AllocateZeroPool(bytesLength);
     Status = token->Read(token, &bytesLength, bytes);
     ASSERT_EFI_ERROR(Status);
 
-
+    // Play audio.
+    Status = AudioIo->AudioPlay(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2, bytes, bytesLength);
+    ASSERT_EFI_ERROR(Status);
     return EFI_SUCCESS;
 }
