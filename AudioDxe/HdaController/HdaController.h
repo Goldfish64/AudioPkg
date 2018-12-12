@@ -265,8 +265,6 @@ HdaControllerHdaIoSetupStream(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
     IN  UINT16 Format,
-    IN  VOID *Buffer,
-    IN  UINTN BufferLength,
     OUT UINT8 *StreamId);
 
 EFI_STATUS
@@ -284,10 +282,18 @@ HdaControllerHdaIoGetStream(
 
 EFI_STATUS
 EFIAPI
-HdaControllerHdaIoSetStream(
+HdaControllerHdaIoStartStream(
     IN EFI_HDA_IO_PROTOCOL *This,
     IN EFI_HDA_IO_PROTOCOL_TYPE Type,
-    IN BOOLEAN State);
+    IN VOID *Buffer,
+    IN UINTN BufferLength,
+    IN UINTN BufferPosition);
+
+EFI_STATUS
+EFIAPI
+HdaControllerHdaIoStopStream(
+    IN EFI_HDA_IO_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type);
 
 //
 // HDA Controller Info protcol functions.

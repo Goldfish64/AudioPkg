@@ -25,8 +25,6 @@
 #include "HdaCodec.h"
 #include "HdaCodecComponentName.h"
 
-#include <Guid/FileInfo.h>
-
 EFI_STATUS
 EFIAPI
 HdaCodecProbeWidget(
@@ -630,7 +628,9 @@ HdaCodecInstallProtocols(
     // Populate I/O protocol data.
     AudioIoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
     AudioIoData->HdaCodecDev = HdaCodecDev;
-    AudioIoData->AudioIo.AudioPlay = HdaCodecAudioIoPlay;
+    AudioIoData->AudioIo.SetupPlayback = HdaCodecAudioIoSetupPlayback;
+    AudioIoData->AudioIo.StartPlayback = HdaCodecAudioIoStartPlayback;
+    AudioIoData->AudioIo.StopPlayback = HdaCodecAudioIoStopPlayback;
     HdaCodecDev->AudioIoData = AudioIoData;
 
     // Install protocols.
@@ -936,85 +936,13 @@ HdaCodecDriverBindingStart(
     if (EFI_ERROR (Status))
         goto CLOSE_HDA;
 
-    UINT8 addr;
-    Status = HdaIo->GetAddress(HdaIo, &addr);
-    if (addr > 0)
-        return EFI_SUCCESS;
-
     // Publish protocols.
     Status = HdaCodecInstallProtocols(HdaCodecDev);
     if (EFI_ERROR (Status))
         goto CLOSE_HDA;
 
-    
-
-    // Demo.
-  //  HDA_WIDGET_DEV *HdaWidgetOutPort = HdaCodecDev->OutputPorts[0];
-  //  DEBUG((DEBUG_INFO, "Ensure widget 0x%X is hooked up!\n", HdaWidgetOutPort->NodeId));
-
-    //HDA_WIDGET_DEV *HdaWidget = HdaWidgetOutPort;
-    
-
-  // stream
- // DEBUG((DEBUG_INFO, "Set data\n"));
-
-
-    // open file.
-   /* EFI_HANDLE* handles = NULL;   
-    UINTN handleCount = 0;
-
-    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
-    ASSERT_EFI_ERROR(Status);
-    
-    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
-    DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
-    EFI_FILE_PROTOCOL* root = NULL;
-
-    // opewn file.
-    EFI_FILE_PROTOCOL* token = NULL;
-    for (UINTN handle = 0; handle < handleCount; handle++) {
-        Status = gBS->HandleProtocol(handles[handle], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
-        ASSERT_EFI_ERROR(Status);
-
-        Status = fs->OpenVolume(fs, &root);
-        ASSERT_EFI_ERROR(Status);
-
-        Status = root->Open(root, &token, L"welcome.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
-        if (!(EFI_ERROR(Status)))
-            break;
-    }
-
-    // Get size.
-    EFI_FILE_INFO *FileInfo;
-
-    VOID *fileinfo = AllocateZeroPool(1000);
-    UINTN FileInfoSize = 1000;
-    Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, fileinfo);
-    ASSERT_EFI_ERROR(Status);
-
-    FileInfo = (EFI_FILE_INFO*)fileinfo;
-
-    // Read file data.
-    UINT8 *buffer = AllocatePool(FileInfo->FileSize);
-    UINTN length = FileInfo->FileSize;
-    Status = token->Read(token, &length, buffer);
-    ASSERT_EFI_ERROR(Status);
-    ASSERT(length == FileInfo->FileSize);*/
-
-    // Setup stream.
-    //UINT8 streamId = 0;
-  //  Status = HdaIo->SetupStream(HdaIo, EfiHdaIoTypeOutput, EfiHdaIoFreq44kHz, EfiHdaIoBits16, 2, buffer, length, &streamId);
-   // ASSERT_EFI_ERROR(Status);
-
-    
-
-    // Start stream.
-    //Status = HdaIo->SetStream(HdaIo, EfiHdaIoTypeOutput, TRUE);
-   // ASSERT_EFI_ERROR(Status);
-
     // Success.
     return EFI_SUCCESS;
-
 
 //FREE_DEVICE:
     // Free device.
@@ -1023,7 +951,6 @@ HdaCodecDriverBindingStart(
 CLOSE_HDA:
     // Close protocols.
     gBS->CloseProtocol(ControllerHandle, &gEfiHdaIoProtocolGuid, This->DriverBindingHandle, ControllerHandle);
-    //gBS->CloseProtocol(ControllerHandle, &gEfiHdaCodecProtocolGuid, This->DriverBindingHandle, ControllerHandle);
     return Status;
 }
 

@@ -117,8 +117,6 @@ HdaControllerHdaIoSetupStream(
     IN  EFI_HDA_IO_PROTOCOL *This,
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
     IN  UINT16 Format,
-    IN  VOID *Buffer,
-    IN  UINTN BufferLength,
     OUT UINT8 *StreamId) {
     DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): start\n"));
 
@@ -134,8 +132,7 @@ HdaControllerHdaIoSetupStream(
     EFI_TPL OldTpl = 0;
 
     // If a parameter is invalid, return error.
-    if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) ||
-        (Buffer == NULL) || (BufferLength == 0) || (StreamId == NULL))
+    if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) || (StreamId == NULL))
         return EFI_INVALID_PARAMETER;
 
     // Get private data.
@@ -191,15 +188,6 @@ HdaControllerHdaIoSetupStream(
         HDA_REG_SDNFMT(HdaStream->Index), 1, &Format);
     if (EFI_ERROR(Status))
         goto DONE;
-
-    // Save pointer to buffer.
-    HdaStream->BufferSource = Buffer;
-    HdaStream->BufferSourceLength = BufferLength;
-
-    // Fill initial buffer.
-    CopyMem(HdaStream->BufferData, HdaStream->BufferSource, HDA_STREAM_BUF_SIZE);
-    HdaStream->BufferSourcePosition = HDA_STREAM_BUF_SIZE;
-    HdaStream->DoUpperHalf = FALSE;
 
     // Stream is ready.
     Status = EFI_SUCCESS;
@@ -258,7 +246,7 @@ HdaControllerHdaIoCloseStream(
     OldTpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
 
     // Stop stream.
-    Status = HdaControllerHdaIoSetStream(This, Type, FALSE);
+    Status = HdaControllerHdaIoStopStream(This, Type);
     if (EFI_ERROR(Status))
         goto DONE;
 
@@ -269,11 +257,6 @@ HdaControllerHdaIoCloseStream(
 
     // De-allocate stream ID from bitmap.
     HdaControllerDev->StreamIdMapping &= ~(1 << HdaStreamId);
-
-    // Remove source buffer pointer.
-    HdaStream->BufferSource = NULL;
-    HdaStream->BufferSourceLength = 0;
-    HdaStream->BufferSourcePosition = 0;
 
     // Stream closed successfully.
     Status = EFI_SUCCESS;
@@ -332,11 +315,73 @@ HdaControllerHdaIoGetStream(
 
 EFI_STATUS
 EFIAPI
-HdaControllerHdaIoSetStream(
+HdaControllerHdaIoStartStream(
     IN EFI_HDA_IO_PROTOCOL *This,
     IN EFI_HDA_IO_PROTOCOL_TYPE Type,
-    IN BOOLEAN State) {
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetStream(): start\n"));
+    IN VOID *Buffer,
+    IN UINTN BufferLength,
+    IN UINTN BufferPosition) {
+    DEBUG((DEBUG_INFO, "HdaControllerHdaIoStartStream(): start\n"));
+
+    // Create variables.
+    EFI_STATUS Status;
+    HDA_IO_PRIVATE_DATA *HdaIoPrivateData;
+    HDA_CONTROLLER_DEV *HdaControllerDev;
+
+    // Stream.
+    HDA_STREAM *HdaStream;
+    UINT8 HdaStreamId;
+
+    // If a parameter is invalid, return error.
+    if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) ||
+        (Buffer == NULL) || (BufferLength == 0))
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data.
+    HdaIoPrivateData = HDA_IO_PRIVATE_DATA_FROM_THIS(This);
+    HdaControllerDev = HdaIoPrivateData->HdaControllerDev;
+
+    // Get stream.
+    if (Type == EfiHdaIoTypeOutput)
+        HdaStream = HdaIoPrivateData->HdaOutputStream;
+    else
+        HdaStream = HdaIoPrivateData->HdaInputStream;
+
+    // Get current stream ID.
+    Status = HdaControllerGetStreamId(HdaStream, &HdaStreamId);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Is a stream ID zero? If so that means the stream is not setup yet.
+    if (HdaStreamId == 0)
+        return EFI_NOT_READY;
+
+    // Save pointer to buffer.
+    HdaStream->BufferSource = Buffer;
+    HdaStream->BufferSourceLength = BufferLength;
+    HdaStream->BufferSourcePosition = BufferPosition;
+
+    // Fill initial buffer.
+    CopyMem(HdaStream->BufferData,
+        HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE);
+    HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE;
+    HdaStream->DoUpperHalf = FALSE;
+
+    // Setup polling timer.
+    Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Change stream state.
+    return HdaControllerSetStream(HdaStream, TRUE);
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerHdaIoStopStream(
+    IN EFI_HDA_IO_PROTOCOL *This,
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type) {
+    DEBUG((DEBUG_INFO, "HdaControllerHdaIoStopStream(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -366,18 +411,23 @@ HdaControllerHdaIoSetStream(
     if (EFI_ERROR(Status))
         return Status;
 
-    // Is a stream ID zero? If so that means the stream is not setup yet.
+    // Is the stream ID zero? If so that means the stream is not setup yet.
     if (HdaStreamId == 0)
         return EFI_NOT_READY;
 
-    // Setup or cancel polling timer.
-    if (State)
-        Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);
-    else
-        Status = gBS->SetTimer(HdaStream->PollTimer, TimerCancel, 0);
+    // Cancel polling timer.
+    Status = gBS->SetTimer(HdaStream->PollTimer, TimerCancel, 0);
     if (EFI_ERROR(Status))
         return Status;
 
-    // Change stream state.
-    return HdaControllerSetStream(HdaStream, State);
+    // Stop stream.
+    Status = HdaControllerSetStream(HdaStream, FALSE);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Remove source buffer pointer.
+    HdaStream->BufferSource = NULL;
+    HdaStream->BufferSourceLength = 0;
+    HdaStream->BufferSourcePosition = 0;
+    return EFI_SUCCESS;
 }

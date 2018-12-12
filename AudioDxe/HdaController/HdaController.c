@@ -203,7 +203,8 @@ HdaControllerScanCodecs(
             HdaIoPrivateData->HdaIo.SetupStream = HdaControllerHdaIoSetupStream;
             HdaIoPrivateData->HdaIo.CloseStream = HdaControllerHdaIoCloseStream;
             HdaIoPrivateData->HdaIo.GetStream = HdaControllerHdaIoGetStream;
-            HdaIoPrivateData->HdaIo.SetStream = HdaControllerHdaIoSetStream;
+            HdaIoPrivateData->HdaIo.StartStream = HdaControllerHdaIoStartStream;
+            HdaIoPrivateData->HdaIo.StopStream = HdaControllerHdaIoStopStream;
 
             // Assign streams.
             DEBUG((DEBUG_INFO, "Assigning output stream %u and input stream %u to codec\n",

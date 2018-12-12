@@ -25,27 +25,26 @@
 #include "HdaCodec.h"
 
 /**                                                                 
-  Plays the specified audio data.
+  Sets up the device to play audio data.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
-  @param[in] OutputIndex        The desired audio output index.
-  @param[in] Data               A pointer to the buffer containing the audio data to play.
-  @param[in] DataLength         The size, in bytes, of the data buffer specified by Data.
+  @param[in] OutputIndex        The zero-based index of the desired output.
+  @param[in] Bits               The width in bits of the source data.
+  @param[in] Freq               The frequency of the source data.
+  @param[in] Channels           The number of channels the source data contains.
 
   @retval EFI_SUCCESS           The audio data was played successfully.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI
-HdaCodecAudioIoPlay(
-    IN  EFI_AUDIO_IO_PROTOCOL *This,
-    IN  UINT32 OutputIndex,
-    IN  EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
-    IN  EFI_AUDIO_IO_PROTOCOL_BITS Bits,
-    IN  UINT8 Channels,
-    IN  VOID *Data,
-    IN  UINTN DataLength) {
-    DEBUG((DEBUG_INFO, "HdaCodecAudioIoPlay(): start\n"));
+HdaCodecAudioIoSetupPlayback(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN UINT32 OutputIndex,
+    IN EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
+    IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,
+    IN UINT8 Channels) {
+    DEBUG((DEBUG_INFO, "HdaCodecAudioIoSetupPlayback(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -66,7 +65,7 @@ HdaCodecAudioIoPlay(
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (Freq >= EfiAudioIoFreqMaximum) ||
-        (Bits >= EfiAudioIoBitsMaximum) || (Data == NULL) || (DataLength == 0))
+        (Bits >= EfiAudioIoBitsMaximum))
         return EFI_INVALID_PARAMETER;
 
     // Get private data.
@@ -235,31 +234,89 @@ HdaCodecAudioIoPlay(
             return Status;
     }
 
-    // Calculte stream format and setup stream.
+    // Calculate stream format and setup stream.
     StreamFmt = HDA_CONVERTER_FORMAT_SET(Channels - 1, StreamBits,
         StreamDiv - 1, StreamMult - 1, StreamBase44kHz);
     DEBUG((DEBUG_INFO, "HdaCodecAudioIoPlay(): Stream format 0x%X\n", StreamFmt));
-    Status = HdaIo->SetupStream(HdaIo, EfiHdaIoTypeOutput, StreamFmt, Data, DataLength, &HdaStreamId);
+    Status = HdaIo->SetupStream(HdaIo, EfiHdaIoTypeOutput, StreamFmt, &HdaStreamId);
     if (EFI_ERROR(Status))
         return Status;
 
     // Setup widget path for desired output.
+    AudioIoPrivateData->SelectedOutputIndex = OutputIndex;
     Status = HdaCodecEnableWidgetPath(PinWidget, 100, HdaStreamId, StreamFmt);
     if (EFI_ERROR(Status))
         goto CLOSE_STREAM;
-
-    // Start stream.
-    Status = HdaIo->SetStream(HdaIo, EfiHdaIoTypeOutput, TRUE);
-    if (EFI_ERROR(Status))
-        goto DISABLE_PATH;
     return EFI_SUCCESS;
-
-DISABLE_PATH:
-    // Disable path.
-    HdaCodecDisableWidgetPath(PinWidget);
 
 CLOSE_STREAM:
     // Close stream.
     HdaIo->CloseStream(HdaIo, EfiHdaIoTypeOutput);
     return Status;
+}
+
+/**                                                                 
+  Begins playback on the device.
+
+  @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+  @param[in] Data               A pointer to the buffer containing the audio data to play.
+  @param[in] DataLength         The size, in bytes, of the data buffer specified by Data.
+  @param[in] Position           The position in the buffer to start at.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+EFI_STATUS
+EFIAPI
+HdaCodecAudioIoStartPlayback(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN VOID *Data,
+    IN UINTN DataLength,
+    IN UINTN Position OPTIONAL) {
+    DEBUG((DEBUG_INFO, "HdaCodecAudioIoStartPlayback(): start\n"));
+
+    // Create variables.
+    AUDIO_IO_PRIVATE_DATA *AudioIoPrivateData;
+    EFI_HDA_IO_PROTOCOL *HdaIo;
+
+    // If a parameter is invalid, return error.
+    if ((This == NULL) || (Data == NULL) || (DataLength == 0))
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data.
+    AudioIoPrivateData = AUDIO_IO_PRIVATE_DATA_FROM_THIS(This);
+    HdaIo = AudioIoPrivateData->HdaCodecDev->HdaIo;
+
+    // Start stream.
+    return HdaIo->StartStream(HdaIo, EfiHdaIoTypeOutput, Data, DataLength, Position);
+}
+
+/**                                                                 
+  Stops playback on the device.
+
+  @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+EFI_STATUS
+EFIAPI
+HdaCodecAudioIoStopPlayback(
+    IN EFI_AUDIO_IO_PROTOCOL *This) {
+    DEBUG((DEBUG_INFO, "HdaCodecAudioIoStopPlayback(): start\n"));
+    
+    // Create variables.
+    AUDIO_IO_PRIVATE_DATA *AudioIoPrivateData;
+    EFI_HDA_IO_PROTOCOL *HdaIo;
+
+    // If a parameter is invalid, return error.
+    if (This == NULL)
+        return EFI_INVALID_PARAMETER;
+
+    // Get private data.
+    AudioIoPrivateData = AUDIO_IO_PRIVATE_DATA_FROM_THIS(This);
+    HdaIo = AudioIoPrivateData->HdaCodecDev->HdaIo;
+
+    // Stop stream.
+    return HdaIo->StopStream(HdaIo, EfiHdaIoTypeOutput);
 }

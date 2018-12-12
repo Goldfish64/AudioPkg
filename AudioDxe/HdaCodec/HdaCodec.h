@@ -145,8 +145,12 @@ struct _AUDIO_IO_PRIVATE_DATA {
     // Signature.
     UINTN Signature;
 
-    // Audio I/O protocol and codec device.
+    // Audio I/O protocol.
     EFI_AUDIO_IO_PROTOCOL AudioIo;
+    UINT8 SelectedOutputIndex;
+    UINT8 SelectedInputIndex;
+
+    // Codec device.
     HDA_CODEC_DEV *HdaCodecDev;
 };
 
@@ -212,14 +216,25 @@ HdaCodecInfoFreeWidgetsBuffer(
 //
 EFI_STATUS
 EFIAPI
-HdaCodecAudioIoPlay(
-    IN  EFI_AUDIO_IO_PROTOCOL *This,
-    IN  UINT32 OutputIndex,
-    IN  EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
-    IN  EFI_AUDIO_IO_PROTOCOL_BITS Bits,
-    IN  UINT8 Channels,
-    IN  VOID *Data,
-    IN  UINTN DataLength);
+HdaCodecAudioIoSetupPlayback(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN UINT32 OutputIndex,
+    IN EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
+    IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,
+    IN UINT8 Channels);
+
+EFI_STATUS
+EFIAPI
+HdaCodecAudioIoStartPlayback(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN VOID *Data,
+    IN UINTN DataLength,
+    IN UINTN Position OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+HdaCodecAudioIoStopPlayback(
+    IN EFI_AUDIO_IO_PROTOCOL *This);
 
 //
 // HDA Codec internal functions.

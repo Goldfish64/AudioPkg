@@ -87,7 +87,10 @@ AudioDemoMain(
     ASSERT_EFI_ERROR(Status);
 
     // Play audio.
-    Status = AudioIo->AudioPlay(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2, bytes, bytesLength);
+    Status = AudioIo->SetupPlayback(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+    ASSERT_EFI_ERROR(Status);
+
+    Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);
     ASSERT_EFI_ERROR(Status);
     return EFI_SUCCESS;
 }

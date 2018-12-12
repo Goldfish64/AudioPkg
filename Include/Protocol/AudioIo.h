@@ -63,30 +63,63 @@ typedef enum {
 #define EFI_AUDIO_IO_PROTOCOL_MAX_CHANNELS 16
 
 /**                                                                 
-  Plays the specified audio data.
+  Sets up the device to play audio data.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
-  @param[in] OutputIndex        The desired audio output index.
-  @param[in] Data               A pointer to the buffer containing the audio data to play.
-  @param[in] DataLength         The size, in bytes, of the data buffer specified by Data.
+  @param[in] OutputIndex        The zero-based index of the desired output.
+  @param[in] Bits               The width in bits of the source data.
+  @param[in] Freq               The frequency of the source data.
+  @param[in] Channels           The number of channels the source data contains.
 
   @retval EFI_SUCCESS           The audio data was played successfully.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
-(EFIAPI *EFI_AUDIO_IO_PLAY)(
-    IN  EFI_AUDIO_IO_PROTOCOL *This,
-    IN  UINT32 OutputIndex,
-    IN  EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
-    IN  EFI_AUDIO_IO_PROTOCOL_BITS Bits,
-    IN  UINT8 Channels,
-    IN  VOID *Data,
-    IN  UINTN DataLength);
+(EFIAPI *EFI_AUDIO_IO_SETUP_PLAYBACK)(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN UINT32 OutputIndex,
+    IN EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
+    IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,
+    IN UINT8 Channels);
+
+/**                                                                 
+  Begins playback on the device.
+
+  @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+  @param[in] Data               A pointer to the buffer containing the audio data to play.
+  @param[in] DataLength         The size, in bytes, of the data buffer specified by Data.
+  @param[in] Position           The position in the buffer to start at.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_AUDIO_IO_START_PLAYBACK)(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN VOID *Data,
+    IN UINTN DataLength,
+    IN UINTN Position OPTIONAL);
+
+/**                                                                 
+  Stops playback on the device.
+
+  @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_AUDIO_IO_STOP_PLAYBACK)(
+    IN EFI_AUDIO_IO_PROTOCOL *This);
 
 // Protocol struct.
 struct _EFI_AUDIO_IO_PROTOCOL {
-    EFI_AUDIO_IO_PLAY       AudioPlay;
+    EFI_AUDIO_IO_SETUP_PLAYBACK         SetupPlayback;
+    EFI_AUDIO_IO_START_PLAYBACK         StartPlayback;
+    EFI_AUDIO_IO_STOP_PLAYBACK          StopPlayback;
 };
 
 #endif
