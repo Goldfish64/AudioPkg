@@ -40,6 +40,7 @@ HdaControllerStreamPollTimerHandler(
     EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
     UINT8 HdaStreamSts = 0;
     UINT32 HdaStreamDmaPos;
+    UINTN HdaSourceLength;
 
     // Get stream status.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthFifoUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
@@ -65,24 +66,34 @@ HdaControllerStreamPollTimerHandler(
             // Get stream DMA position.
             HdaStreamDmaPos = HdaStream->HdaDev->DmaPositions[HdaStream->Index].Position;
 
+            // Determine number of bytes to pull from or push to source data.
+            HdaSourceLength = HDA_STREAM_BUF_SIZE_HALF;
+            if ((HdaStream->BufferSourcePosition + HdaSourceLength) > HdaStream->BufferSourceLength)
+                HdaSourceLength = HdaStream->BufferSourceLength - HdaStream->BufferSourcePosition;
+
             // Is this an output stream (copy data to)?
             if (HdaStream->Output) {
-                // Copy data to DMA buffer.
-                if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
-                    CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-                else
-                    CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
-                
+                // Copy data to DMA buffer, zeroing first if we are at the end of the source buffer.
+                if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) {
+                    if (HdaSourceLength < HDA_STREAM_BUF_SIZE_HALF)
+                        ZeroMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
+                    CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaSourceLength);
+                }
+                else {
+                    if (HdaSourceLength < HDA_STREAM_BUF_SIZE_HALF)
+                        ZeroMem(HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
+                    CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaSourceLength);
+                }
             } else { // Input stream (copy data from).
                 // Copy data from DMA buffer.
                 if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
-                    CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
+                    CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaSourceLength);
                 else
-                    CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
+                    CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData, HdaSourceLength);
             }
 
             // Increase source position.
-            HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
+            HdaStream->BufferSourcePosition += HdaSourceLength;
             DEBUG((DEBUG_INFO, "%s half filled! (current position 0x%X)\n",
                 (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) ? L"Upper" : L"Lower", HdaStreamDmaPos));
         }
