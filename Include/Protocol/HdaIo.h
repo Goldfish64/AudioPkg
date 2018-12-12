@@ -53,6 +53,15 @@ typedef struct {
     UINT32 *Responses;
 } EFI_HDA_IO_VERB_LIST;
 
+// Callback function.
+typedef
+VOID
+(EFIAPI* EFI_HDA_IO_STREAM_CALLBACK)(
+    IN EFI_HDA_IO_PROTOCOL_TYPE Type,
+    IN VOID *Context1,
+    IN VOID *Context2,
+    IN VOID *Context3);
+
 /**                                                                 
   Retrieves this codec's address.
 
@@ -132,7 +141,11 @@ EFI_STATUS
     IN EFI_HDA_IO_PROTOCOL_TYPE Type,
     IN VOID *Buffer,
     IN UINTN BufferLength,
-    IN UINTN BufferPosition);
+    IN UINTN BufferPosition OPTIONAL,
+    IN EFI_HDA_IO_STREAM_CALLBACK Callback OPTIONAL,
+    IN VOID *Context1 OPTIONAL,
+    IN VOID *Context2 OPTIONAL,
+    IN VOID *Context3 OPTIONAL);
 
 typedef
 EFI_STATUS

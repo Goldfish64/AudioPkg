@@ -630,6 +630,7 @@ HdaCodecInstallProtocols(
     AudioIoData->HdaCodecDev = HdaCodecDev;
     AudioIoData->AudioIo.SetupPlayback = HdaCodecAudioIoSetupPlayback;
     AudioIoData->AudioIo.StartPlayback = HdaCodecAudioIoStartPlayback;
+    AudioIoData->AudioIo.StartPlaybackAsync = HdaCodecAudioIoStartPlaybackAsync;
     AudioIoData->AudioIo.StopPlayback = HdaCodecAudioIoStopPlayback;
     HdaCodecDev->AudioIoData = AudioIoData;
 

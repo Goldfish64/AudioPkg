@@ -62,6 +62,13 @@ typedef enum {
 // Maximum number of channels.
 #define EFI_AUDIO_IO_PROTOCOL_MAX_CHANNELS 16
 
+// Callback function.
+typedef
+VOID
+(EFIAPI* EFI_AUDIO_IO_CALLBACK)(
+    IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
+    IN VOID *Context);
+
 /**                                                                 
   Sets up the device to play audio data.
 
@@ -103,6 +110,29 @@ EFI_STATUS
     IN UINTN Position OPTIONAL);
 
 /**                                                                 
+  Begins playback on the device asynchronously.
+
+  @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
+  @param[in] Data               A pointer to the buffer containing the audio data to play.
+  @param[in] DataLength         The size, in bytes, of the data buffer specified by Data.
+  @param[in] Position           The position in the buffer to start at.
+  @param[in] Callback           A pointer to an optional callback to be invoked when playback is complete.
+  @param[in] Context            A pointer to data to be passed to the callback function.
+
+  @retval EFI_SUCCESS           The audio data was played successfully.
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
+**/
+typedef
+EFI_STATUS
+(EFIAPI *EFI_AUDIO_IO_START_PLAYBACK_ASYNC)(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN VOID *Data,
+    IN UINTN DataLength,
+    IN UINTN Position OPTIONAL,
+    IN EFI_AUDIO_IO_CALLBACK Callback OPTIONAL,
+    IN VOID *Context OPTIONAL);
+
+/**                                                                 
   Stops playback on the device.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -119,6 +149,7 @@ EFI_STATUS
 struct _EFI_AUDIO_IO_PROTOCOL {
     EFI_AUDIO_IO_SETUP_PLAYBACK         SetupPlayback;
     EFI_AUDIO_IO_START_PLAYBACK         StartPlayback;
+    EFI_AUDIO_IO_START_PLAYBACK_ASYNC   StartPlaybackAsync;
     EFI_AUDIO_IO_STOP_PLAYBACK          StopPlayback;
 };
 

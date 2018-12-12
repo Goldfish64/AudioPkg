@@ -305,7 +305,11 @@ HdaControllerHdaIoStartStream(
     IN EFI_HDA_IO_PROTOCOL_TYPE Type,
     IN VOID *Buffer,
     IN UINTN BufferLength,
-    IN UINTN BufferPosition) {
+    IN UINTN BufferPosition OPTIONAL,
+    IN EFI_HDA_IO_STREAM_CALLBACK Callback OPTIONAL,
+    IN VOID *Context1 OPTIONAL,
+    IN VOID *Context2 OPTIONAL,
+    IN VOID *Context3 OPTIONAL) {
     DEBUG((DEBUG_INFO, "HdaControllerHdaIoStartStream(): start\n"));
 
     // Create variables.
@@ -316,6 +320,8 @@ HdaControllerHdaIoStartStream(
     // Stream.
     HDA_STREAM *HdaStream;
     UINT8 HdaStreamId;
+    UINT32 HdaStreamDmaPos;
+    UINTN HdaStreamDmaRemainingLength;
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) ||
@@ -341,24 +347,61 @@ HdaControllerHdaIoStartStream(
     if (HdaStreamId == 0)
         return EFI_NOT_READY;
 
+    // Get current DMA position.
+    HdaStreamDmaPos = HdaControllerDev->DmaPositions[HdaStream->Index].Position;
+    DEBUG((DEBUG_INFO, "DMA position for stream %u: 0x%X\n", HdaStream->Index, HdaStreamDmaPos));
+
     // Save pointer to buffer.
     HdaStream->BufferSource = Buffer;
     HdaStream->BufferSourceLength = BufferLength;
     HdaStream->BufferSourcePosition = BufferPosition;
+    HdaStream->Callback = Callback;
+    HdaStream->CallbackContext1 = Context1;
+    HdaStream->CallbackContext2 = Context2;
+    HdaStream->CallbackContext3 = Context3;
 
-    // Fill initial buffer.
-    CopyMem(HdaStream->BufferData,
-        HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE);
-    HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE;
-    HdaStream->DoUpperHalf = FALSE;
+    // Fill stream buffer.
+    HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE - HdaStreamDmaPos;
+    CopyMem(HdaStream->BufferData + HdaStreamDmaPos, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
+    HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
+
+    // If the current position is in the upper half of the buffer, also fill the lower half.
+    if (HdaStreamDmaPos >= HDA_STREAM_BUF_SIZE_HALF) {
+        CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+        HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
+    }
+
+/*    // Determine starting half based on current position.
+    if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) {
+        // Fill lower half with zeroes and upper half with audio data.
+        ZeroMem(HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
+        CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF,
+            HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+    } else {
+        // Fill upper half with zeroes and lower half with audio data.
+        ZeroMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
+        CopyMem(HdaStream->BufferData,
+            HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
+    }
+
+    // Increase position as half the buffer is now filled with audio data.
+    HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE;*/
 
     // Setup polling timer.
     Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);
     if (EFI_ERROR(Status))
-        return Status;
+        goto STOP_STREAM;
 
     // Change stream state.
-    return HdaControllerSetStream(HdaStream, TRUE);
+    Status = HdaControllerSetStream(HdaStream, TRUE);
+    if (EFI_ERROR(Status))
+        goto STOP_STREAM;
+    return EFI_SUCCESS;
+
+STOP_STREAM:
+    // Stop stream.
+    HdaControllerHdaIoStopStream(This, Type);
+    return Status;
 }
 
 EFI_STATUS
@@ -414,5 +457,9 @@ HdaControllerHdaIoStopStream(
     HdaStream->BufferSource = NULL;
     HdaStream->BufferSourceLength = 0;
     HdaStream->BufferSourcePosition = 0;
+    HdaStream->Callback = NULL;
+    HdaStream->CallbackContext1 = NULL;
+    HdaStream->CallbackContext2 = NULL;
+    HdaStream->CallbackContext3 = NULL;
     return EFI_SUCCESS;
 }

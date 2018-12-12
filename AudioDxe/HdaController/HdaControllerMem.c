@@ -422,6 +422,7 @@ HdaControllerInitStreams(
     // Buffers.
     UINTN BdlLengthActual;
     UINTN DataLengthActual;
+    UINTN DmaPositionsLengthActual;
 
     // Stream regs.
     UINT16 StreamLvi;
@@ -588,6 +589,39 @@ HdaControllerInitStreams(
             goto FREE_BUFFER;
     }
 
+    // Allocate space for DMA positions structure.
+    HdaDev->DmaPositionsSize = sizeof(HDA_DMA_POS_ENTRY) * HdaDev->TotalStreamsCount;
+    Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData,
+        EFI_SIZE_TO_PAGES(HdaDev->DmaPositionsSize), (VOID**)&HdaDev->DmaPositions, 0);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    ZeroMem(HdaDev->DmaPositions, HdaDev->DmaPositionsSize);
+
+    // Map buffer descriptor list.
+    DmaPositionsLengthActual = HdaDev->DmaPositionsSize;
+    Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, HdaDev->DmaPositions,
+        &DmaPositionsLengthActual, &HdaDev->DmaPositionsPhysAddr, &HdaDev->DmaPositionsMapping);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+    if (DmaPositionsLengthActual != HdaDev->DmaPositionsSize) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto FREE_BUFFER;
+    }
+
+    // Set DMA positions lower base address.
+    LowerBaseAddr = ((UINT32)HdaDev->DmaPositionsPhysAddr) | HDA_REG_DPLBASE_EN;
+    Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_DPLBASE, 1, &LowerBaseAddr);
+    if (EFI_ERROR(Status))
+        goto FREE_BUFFER;
+
+    // If 64-bit supported, set DMA positions upper base address.
+    if (HdaDev->Capabilities & HDA_REG_GCAP_64OK) {
+        UpperBaseAddr = (UINT32)(HdaDev->DmaPositionsPhysAddr >> 32);
+        Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_DPUBASE, 1, &UpperBaseAddr);
+        if (EFI_ERROR(Status))
+            goto FREE_BUFFER;
+    }
+
     // Success.
     return EFI_SUCCESS;
 
@@ -655,6 +689,20 @@ HdaControllerSetStream(
 
     // Success.
     return EFI_SUCCESS;
+}
+
+EFI_STATUS
+EFIAPI
+HdaControllerGetStreamLinkPos(
+    IN  HDA_STREAM *HdaStream,
+    OUT UINT32 *Position) {
+    if ((HdaStream == NULL) || (Position == NULL))
+        return EFI_INVALID_PARAMETER;
+    //DEBUG((DEBUG_INFO, "HdaControllerGetStreamLinkPos(%u): start\n", HdaStream->Index));
+
+    // Get current value of register.
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
+    return PciIo->Mem.Read(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_SDNLPIB(HdaStream->Index), 1, Position);
 }
 
 EFI_STATUS

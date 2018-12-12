@@ -107,6 +107,14 @@ typedef struct {
 #define HDA_BDL_BLOCKSIZE           (HDA_STREAM_BUF_SIZE / HDA_BDL_ENTRY_COUNT)
 #define HDA_STREAM_POLL_TIME        (EFI_TIMER_PERIOD_MILLISECONDS(100))
 
+// DMA position structure.
+#pragma pack(1)
+typedef struct {
+    UINT32 Position;
+    UINT32 Reserved;
+} HDA_DMA_POS_ENTRY;
+#pragma pack()
+
 // Stream types.
 #define HDA_STREAM_TYPE_BIDIR   0
 #define HDA_STREAM_TYPE_IN      1
@@ -140,7 +148,10 @@ typedef struct {
 
     // Timing elements for buffer filling.
     EFI_EVENT PollTimer;
-    BOOLEAN DoUpperHalf;
+    EFI_HDA_IO_STREAM_CALLBACK Callback;
+    VOID *CallbackContext1;
+    VOID *CallbackContext2;
+    VOID *CallbackContext3;
 } HDA_STREAM;
 
 struct _HDA_CONTROLLER_DEV {
@@ -183,6 +194,12 @@ struct _HDA_CONTROLLER_DEV {
     HDA_STREAM *BidirStreams;
     HDA_STREAM *InputStreams;
     HDA_STREAM *OutputStreams;
+
+    // DMA positions.
+    HDA_DMA_POS_ENTRY *DmaPositions;
+    UINTN DmaPositionsSize;
+    VOID *DmaPositionsMapping;
+    EFI_PHYSICAL_ADDRESS DmaPositionsPhysAddr;
 
     // Bitmap for stream ID allocation.
     UINT16 StreamIdMapping;
@@ -287,7 +304,11 @@ HdaControllerHdaIoStartStream(
     IN EFI_HDA_IO_PROTOCOL_TYPE Type,
     IN VOID *Buffer,
     IN UINTN BufferLength,
-    IN UINTN BufferPosition);
+    IN UINTN BufferPosition OPTIONAL,
+    IN EFI_HDA_IO_STREAM_CALLBACK Callback OPTIONAL,
+    IN VOID *Context1 OPTIONAL,
+    IN VOID *Context2 OPTIONAL,
+    IN VOID *Context3 OPTIONAL);
 
 EFI_STATUS
 EFIAPI
@@ -368,6 +389,12 @@ EFIAPI
 HdaControllerSetStream(
     IN HDA_STREAM *HdaStream,
     IN BOOLEAN Run);
+
+EFI_STATUS
+EFIAPI
+HdaControllerGetStreamLinkPos(
+    IN  HDA_STREAM *HdaStream,
+    OUT UINT32 *Position);
 
 EFI_STATUS
 EFIAPI

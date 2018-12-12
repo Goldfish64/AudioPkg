@@ -233,6 +233,16 @@ HdaCodecAudioIoStartPlayback(
 
 EFI_STATUS
 EFIAPI
+HdaCodecAudioIoStartPlaybackAsync(
+    IN EFI_AUDIO_IO_PROTOCOL *This,
+    IN VOID *Data,
+    IN UINTN DataLength,
+    IN UINTN Position OPTIONAL,
+    IN EFI_AUDIO_IO_CALLBACK Callback OPTIONAL,
+    IN VOID *Context OPTIONAL);
+
+EFI_STATUS
+EFIAPI
 HdaCodecAudioIoStopPlayback(
     IN EFI_AUDIO_IO_PROTOCOL *This);
 

@@ -39,6 +39,7 @@ HdaControllerStreamPollTimerHandler(
     HDA_STREAM *HdaStream = (HDA_STREAM*)Context;
     EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
     UINT8 HdaStreamSts = 0;
+    UINT32 HdaStreamDmaPos;
 
     // Get stream status.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthFifoUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
@@ -56,20 +57,27 @@ HdaControllerStreamPollTimerHandler(
             Status = gBS->SetTimer(HdaStream->PollTimer, TimerCancel, 0);
             ASSERT_EFI_ERROR(Status);
 
-            // Trigger callback if required?
+            // Trigger callback.
+            if (HdaStream->Callback)
+                HdaStream->Callback(HdaStream->Output ? EfiHdaIoTypeOutput : EfiHdaIoTypeInput,
+                    HdaStream->CallbackContext1, HdaStream->CallbackContext2, HdaStream->CallbackContext3);
+            return;
         }
+
+        // Get stream DMA position.
+        HdaStreamDmaPos = HdaStream->HdaDev->DmaPositions[HdaStream->Index].Position;
 
         // Is this an output stream (copy data to)?
         if (HdaStream->Output) {
             // Copy data to DMA buffer.
-            if (HdaStream->DoUpperHalf)
+            if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
                 CopyMem(HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
             else
                 CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HDA_STREAM_BUF_SIZE_HALF);
             
         } else { // Input stream (copy data from).
             // Copy data from DMA buffer.
-            if (HdaStream->DoUpperHalf)
+            if (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF)
                 CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData + HDA_STREAM_BUF_SIZE_HALF, HDA_STREAM_BUF_SIZE_HALF);
             else
                 CopyMem(HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStream->BufferData, HDA_STREAM_BUF_SIZE_HALF);
@@ -77,13 +85,13 @@ HdaControllerStreamPollTimerHandler(
 
         // Increase position and flip upper half variable.
         HdaStream->BufferSourcePosition += HDA_STREAM_BUF_SIZE_HALF;
-        HdaStream->DoUpperHalf = !HdaStream->DoUpperHalf;
+        DEBUG((DEBUG_INFO, "%s half filled! (current position 0x%X)\n",
+            (HdaStreamDmaPos < HDA_STREAM_BUF_SIZE_HALF) ? L"Upper" : L"Lower", HdaStreamDmaPos));
 
         // Reset completion bit.
         HdaStreamSts = HDA_REG_SDNSTS_BCIS;
         Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
         ASSERT_EFI_ERROR(Status);
-        DEBUG((DEBUG_INFO, "Bit set %u!\n", HdaStream->DoUpperHalf));
     }
 }
 
