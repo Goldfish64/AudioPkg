@@ -256,7 +256,7 @@ CLOSE_STREAM:
 }
 
 /**                                                                 
-  Begins playback on the device.
+  Begins playback on the device and waits for playback to complete.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
   @param[in] Data               A pointer to the buffer containing the audio data to play.
@@ -276,8 +276,10 @@ HdaCodecAudioIoStartPlayback(
     DEBUG((DEBUG_INFO, "HdaCodecAudioIoStartPlayback(): start\n"));
 
     // Create variables.
+    EFI_STATUS Status;
     AUDIO_IO_PRIVATE_DATA *AudioIoPrivateData;
     EFI_HDA_IO_PROTOCOL *HdaIo;
+    BOOLEAN StreamRunning;
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (Data == NULL) || (DataLength == 0))
@@ -288,7 +290,23 @@ HdaCodecAudioIoStartPlayback(
     HdaIo = AudioIoPrivateData->HdaCodecDev->HdaIo;
 
     // Start stream.
-    return HdaIo->StartStream(HdaIo, EfiHdaIoTypeOutput, Data, DataLength, Position);
+    Status = HdaIo->StartStream(HdaIo, EfiHdaIoTypeOutput, Data, DataLength, Position);
+    if (EFI_ERROR(Status))
+        return Status;
+
+    // Wait for stream to stop.
+    StreamRunning = TRUE;
+    while (StreamRunning) {
+        Status = HdaIo->GetStream(HdaIo, EfiHdaIoTypeOutput, &StreamRunning);
+        if (EFI_ERROR(Status)) {
+            HdaIo->StopStream(HdaIo, EfiHdaIoTypeOutput);
+            return Status;
+        }
+
+        // Wait 100ms.
+        gBS->Stall(MS_TO_MICROSECOND(100));
+    }
+    return EFI_SUCCESS;
 }
 
 /**                                                                 

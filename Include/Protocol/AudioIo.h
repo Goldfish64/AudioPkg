@@ -84,7 +84,7 @@ EFI_STATUS
     IN UINT8 Channels);
 
 /**                                                                 
-  Begins playback on the device.
+  Begins playback on the device and waits for playback to complete.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
   @param[in] Data               A pointer to the buffer containing the audio data to play.
