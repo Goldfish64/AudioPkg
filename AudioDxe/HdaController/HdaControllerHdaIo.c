@@ -118,7 +118,7 @@ HdaControllerHdaIoSetupStream(
     IN  EFI_HDA_IO_PROTOCOL_TYPE Type,
     IN  UINT16 Format,
     OUT UINT8 *StreamId) {
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -183,7 +183,7 @@ HdaControllerHdaIoSetupStream(
     *StreamId = HdaStreamId;
 
     // Set stream format.
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): setting format 0x%X\n", Format));
+    //DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): setting format 0x%X\n", Format));
     Status = PciIo->Mem.Write(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR,
         HDA_REG_SDNFMT(HdaStream->Index), 1, &Format);
     if (EFI_ERROR(Status))
@@ -205,7 +205,7 @@ EFIAPI
 HdaControllerHdaIoCloseStream(
     IN EFI_HDA_IO_PROTOCOL *This,
     IN EFI_HDA_IO_PROTOCOL_TYPE Type) {
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoCloseStream(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaControllerHdaIoCloseStream(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -310,7 +310,7 @@ HdaControllerHdaIoStartStream(
     IN VOID *Context1 OPTIONAL,
     IN VOID *Context2 OPTIONAL,
     IN VOID *Context3 OPTIONAL) {
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoStartStream(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaControllerHdaIoStartStream(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -414,7 +414,7 @@ EFIAPI
 HdaControllerHdaIoStopStream(
     IN EFI_HDA_IO_PROTOCOL *This,
     IN EFI_HDA_IO_PROTOCOL_TYPE Type) {
-    DEBUG((DEBUG_INFO, "HdaControllerHdaIoStopStream(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaControllerHdaIoStopStream(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;

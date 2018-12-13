@@ -708,7 +708,7 @@ EFI_STATUS
 EFIAPI
 HdaCodecDisableWidgetPath(
     IN HDA_WIDGET_DEV *HdaWidget) {
-    DEBUG((DEBUG_INFO, "HdaCodecDisableWidgetPath(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaCodecDisableWidgetPath(): start\n"));
 
     // Check if widget is valid.
     if (HdaWidget == NULL)
@@ -760,7 +760,7 @@ HdaCodecEnableWidgetPath(
     IN UINT8 Volume,
     IN UINT8 StreamId,
     IN UINT16 StreamFormat) {
-    DEBUG((DEBUG_INFO, "HdaCodecEnableWidgetPath(): start\n"));
+    //DEBUG((DEBUG_INFO, "HdaCodecEnableWidgetPath(): start\n"));
 
     // Check if widget is valid.
     if ((HdaWidget == NULL) || (Volume > EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME))
@@ -810,6 +810,7 @@ HdaCodecEnableWidgetPath(
 
             // Calculate offset.
             offset = (offset * Volume) / EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME;
+            DEBUG((DEBUG_INFO, "HdaCodecEnableWidgetPath(): Amp out offset 0x%X\n", offset));
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
                 HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, offset, FALSE, TRUE, TRUE, FALSE, TRUE)), &Response);
             if (EFI_ERROR(Status))
@@ -825,10 +826,10 @@ HdaCodecEnableWidgetPath(
                     // If there are no overriden amp capabilities, check function group.
                     if (!(HdaWidget->AmpOverride))
                         offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpInCapabilities);
-                        Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
-                            HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, offset, FALSE, TRUE, TRUE, TRUE, FALSE)), &Response);
-                        if (EFI_ERROR(Status))
-                            return Status;
+                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+                        HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, offset, FALSE, TRUE, TRUE, TRUE, FALSE)), &Response);
+                    if (EFI_ERROR(Status))
+                        return Status;
                 } else {
                     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
                         HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, 0, TRUE, TRUE, TRUE, TRUE, FALSE)), &Response);

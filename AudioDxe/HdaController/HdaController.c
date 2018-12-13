@@ -46,6 +46,9 @@ HdaControllerStreamPollTimerHandler(
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthFifoUint8, PCI_HDA_BAR, HDA_REG_SDNSTS(HdaStream->Index), 1, &HdaStreamSts);
     ASSERT_EFI_ERROR(Status);
 
+    // If there was a FIFO error or DESC error, halt.
+    ASSERT ((HdaStreamSts & (HDA_REG_SDNSTS_FIFOE | HDA_REG_SDNSTS_DESE)) == 0);
+
     // Has the completion bit been set?
     if (HdaStreamSts & HDA_REG_SDNSTS_BCIS) {
         // Have we reached the end of the source buffer? If so we need to stop the stream.
@@ -201,10 +204,6 @@ HdaControllerScanCodecs(
             if ((EFI_ERROR(Status)) || (VendorResponse == 0))
                 continue;
 
-            // Ensure we have enough streams left. If not we can't support any more codecs.
-            if ((CurrentOutputStreamIndex >= HdaControllerDev->OutputStreamsCount) || (CurrentInputStreamIndex >= HdaControllerDev->InputStreamsCount))
-                break;
-
             // Create HDA I/O protocol private data structure.
             HdaIoPrivateData = AllocateZeroPool(sizeof(HDA_IO_PRIVATE_DATA));
             if (HdaIoPrivateData == NULL) {
@@ -223,14 +222,20 @@ HdaControllerScanCodecs(
             HdaIoPrivateData->HdaIo.GetStream = HdaControllerHdaIoGetStream;
             HdaIoPrivateData->HdaIo.StartStream = HdaControllerHdaIoStartStream;
             HdaIoPrivateData->HdaIo.StopStream = HdaControllerHdaIoStopStream;
+            
+            // Assign output stream.
+            if (CurrentOutputStreamIndex < HdaControllerDev->OutputStreamsCount) {
+                DEBUG((DEBUG_INFO, "Assigning output stream %u to codec\n", CurrentOutputStreamIndex));
+                HdaIoPrivateData->HdaOutputStream = HdaControllerDev->OutputStreams + CurrentOutputStreamIndex;
+                CurrentOutputStreamIndex++;
+            }
 
-            // Assign streams.
-            DEBUG((DEBUG_INFO, "Assigning output stream %u and input stream %u to codec\n",
-                CurrentOutputStreamIndex, CurrentInputStreamIndex));
-            HdaIoPrivateData->HdaOutputStream = HdaControllerDev->OutputStreams + CurrentOutputStreamIndex;
-            HdaIoPrivateData->HdaInputStream = HdaControllerDev->InputStreams + CurrentInputStreamIndex;
-            CurrentOutputStreamIndex++;
-            CurrentInputStreamIndex++;
+            // Assign input stream.
+            if (CurrentInputStreamIndex < HdaControllerDev->InputStreamsCount) {
+                DEBUG((DEBUG_INFO, "Assigning input stream %u to codec\n", CurrentInputStreamIndex));
+                HdaIoPrivateData->HdaInputStream = HdaControllerDev->InputStreams + CurrentInputStreamIndex;
+                CurrentInputStreamIndex++;
+            }
 
             // Add to array.
             HdaControllerDev->PrivateDatas[i] = HdaIoPrivateData;

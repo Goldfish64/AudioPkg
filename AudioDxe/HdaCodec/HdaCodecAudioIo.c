@@ -400,7 +400,7 @@ HdaCodecAudioIoSetupPlayback(
 
     // Setup widget path for desired output.
     AudioIoPrivateData->SelectedOutputIndex = OutputIndex;
-    Status = HdaCodecEnableWidgetPath(PinWidget, 100, HdaStreamId, StreamFmt);
+    Status = HdaCodecEnableWidgetPath(PinWidget, Volume, HdaStreamId, StreamFmt);
     if (EFI_ERROR(Status))
         goto CLOSE_STREAM;
     return EFI_SUCCESS;

@@ -50,10 +50,7 @@ AudioDemoMain(
     ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "audio handles %u\n", AudioIoHandleCount));
 
-    Status = gBS->OpenProtocol(AudioIoHandles[0], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-    ASSERT_EFI_ERROR(Status);
-
-        EFI_HANDLE* handles = NULL;   
+            EFI_HANDLE* handles = NULL;   
     UINTN handleCount = 0;
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
@@ -95,6 +92,13 @@ AudioDemoMain(
     Status = token->Read(token, &bytesLength, bytes);
     ASSERT_EFI_ERROR(Status);
 
+    for (UINT8 a = 0; a < AudioIoHandleCount; a++) {
+
+    Status = gBS->OpenProtocol(AudioIoHandles[a], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    ASSERT_EFI_ERROR(Status);
+
+
+
     // Get outputs.
     EFI_AUDIO_IO_PORT *Outputs;
     UINTN OutputsCount;
@@ -105,38 +109,47 @@ AudioDemoMain(
     CHAR16 *Locations[EfiAudioIoLocationMaximum] = { L"N/A", L"rear", L"front", L"left", L"right", L"top", L"bottom", L"other" };
     CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
 
+    BOOLEAN hasHP = FALSE;
     for (UINTN i = 0; i < OutputsCount; i++) {
         Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
+        if (Outputs[i].Device == EfiAudioIoDeviceHeadphones)
+            hasHP = TRUE;
     }
+
+    if (!hasHP)
+        continue;
 
     for (UINTN i = 0; i < OutputsCount; i++) {
         Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
 
         // Play audio.
+        Print(L"Now playing audio at 100%% volume...\n");
         Status = AudioIo->SetupPlayback(AudioIo, i, 100, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
         ASSERT_EFI_ERROR(Status);
 
         Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
         ASSERT_EFI_ERROR(Status);
 
-        // Play audio.
-        Status = AudioIo->SetupPlayback(AudioIo, i, 50, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        // Play audio at 80%.
+        Print(L"Now playing audio at 80%% volume...\n");
+        Status = AudioIo->SetupPlayback(AudioIo, i, 80, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
         ASSERT_EFI_ERROR(Status);
 
         Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
         ASSERT_EFI_ERROR(Status);
     }
+    }
 
     // Play audio.
-        Status = AudioIo->SetupPlayback(AudioIo, 0, 75, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
-        ASSERT_EFI_ERROR(Status);
+      //  Status = AudioIo->SetupPlayback(AudioIo, 0, 75, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+    //    ASSERT_EFI_ERROR(Status);
 
     // play async.
-    Status = AudioIo->StartPlaybackAsync(AudioIo, bytes, bytesLength, 0, callback, ImageHandle);
-    ASSERT_EFI_ERROR(Status);
+  //  Status = AudioIo->StartPlaybackAsync(AudioIo, bytes, bytesLength, 0, callback, ImageHandle);
+  //  ASSERT_EFI_ERROR(Status);
 
-    while(TRUE);
+   // while(TRUE);
     return EFI_SUCCESS;
 }
