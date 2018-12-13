@@ -33,6 +33,7 @@ typedef struct _HDA_FUNC_GROUP HDA_FUNC_GROUP;
 typedef struct _HDA_WIDGET_DEV HDA_WIDGET_DEV;
 typedef struct _HDA_CODEC_INFO_PRIVATE_DATA HDA_CODEC_INFO_PRIVATE_DATA;
 typedef struct _AUDIO_IO_PRIVATE_DATA AUDIO_IO_PRIVATE_DATA;
+#define HDA_CODEC_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','D','C','O')
 
 struct _HDA_WIDGET_DEV {
     HDA_FUNC_GROUP *FuncGroup;
@@ -41,8 +42,7 @@ struct _HDA_WIDGET_DEV {
 
     // General widgets.
     UINT32 Capabilities;
-    UINT8 DefaultUnSol;
-    UINT8 DefaultEapd;
+    UINT8 DefaultUnSol;    
 
     // Connections.
     UINT32 ConnectionListLength;
@@ -74,6 +74,7 @@ struct _HDA_WIDGET_DEV {
 
     // Pin Complex.
     UINT32 PinCapabilities;
+    UINT8 DefaultEapd;
     UINT8 DefaultPinControl;
     UINT32 DefaultConfiguration;
 
@@ -102,6 +103,9 @@ struct _HDA_FUNC_GROUP {
 };
 
 struct _HDA_CODEC_DEV {
+    // Signature.
+    UINTN Signature;
+
     // Protocols.
     EFI_HDA_IO_PROTOCOL *HdaIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
@@ -128,7 +132,6 @@ struct _HDA_CODEC_DEV {
 };
 
 // HDA Codec Info private data.
-#define HDA_CODEC_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','D','C','O')
 struct _HDA_CODEC_INFO_PRIVATE_DATA {
     // Signature.
     UINTN Signature;
@@ -286,6 +289,11 @@ HdaCodecEnableWidgetPath(
     IN UINT8 Volume,
     IN UINT8 StreamId,
     IN UINT16 StreamFormat);
+
+VOID
+EFIAPI
+HdaCodecCleanup(
+    IN HDA_CODEC_DEV *HdaCodecDev);
 
 //
 // Driver Binding protocol functions.

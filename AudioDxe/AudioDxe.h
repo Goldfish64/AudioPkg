@@ -71,10 +71,6 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
 #define GET_CODEC_DEVICE_ID(a)  (a & 0xFFFF)
 #define GET_CODEC_GENERIC_ID(a) (a | 0xFFFF)
 
-// Vendor strings.
-#define VEN_INTEL_CONTROLLER_STR    L"Intel HDA Controller"
-#define VEN_NVIDIA_CONTROLLER_STR   L"NVIDIA HDA Controller"
-#define VEN_AMD_CONTROLLER_STR      L"AMD HDA Controller"
-#define VEN_INVALID_CONTROLLER_STR  L"HDA Controller"
+#define EFI_NON_TIMEOUT_ERROR(a) ((EFI_ERROR(a)) && ((a) != EFI_TIMEOUT))
 
 #endif
