@@ -30,6 +30,10 @@
 
 #include <Uefi.h>
 
+// Generic names.
+#define HDA_CONTROLLER_MODEL_GENERIC    L"HD Audio Controller"
+#define HDA_CODEC_MODEL_GENERIC    L"Unknown Codec"
+
 // Vendor IDs.
 #define VEN_AMD_ID              0x1002
 #define VEN_ANALOGDEVICES_ID    0x11D4

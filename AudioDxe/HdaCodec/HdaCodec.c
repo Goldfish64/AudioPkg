@@ -483,7 +483,7 @@ HdaCodecProbeCodec(
 
     // If match still wasn't found, codec is unknown.
     if (HdaCodecDev->Name == NULL)
-        HdaCodecDev->Name = L"Unknown";
+        HdaCodecDev->Name = HDA_CODEC_MODEL_GENERIC;
     DEBUG((DEBUG_INFO, "Codec name: %s\n", HdaCodecDev->Name));
     
     // Get function group count.
@@ -1037,8 +1037,14 @@ HdaCodecDriverBindingStart(
     if (EFI_ERROR (Status))
         goto CLOSE_CODEC;
 
-    // Create codec device.
+    // Allocate codec device.
     HdaCodecDev = AllocateZeroPool(sizeof(HDA_CODEC_DEV));
+    if (HdaCodecDev == NULL) {
+        Status = EFI_OUT_OF_RESOURCES;
+        goto CLOSE_CODEC;
+    }
+
+    // Fill codec device data.
     HdaCodecDev->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
     HdaCodecDev->HdaIo = HdaIo;
     HdaCodecDev->DevicePath = HdaCodecDevicePath;

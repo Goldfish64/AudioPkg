@@ -26,6 +26,8 @@
 #define _EFI_HDA_CONTROLLER_H_
 
 #include "AudioDxe.h"
+#include <Library/HdaRegisters.h>
+#include <Library/HdaModels.h>
 
 //
 // Consumed protocols.
@@ -39,6 +41,9 @@
 typedef struct _HDA_CONTROLLER_DEV HDA_CONTROLLER_DEV;
 typedef struct _HDA_IO_PRIVATE_DATA HDA_IO_PRIVATE_DATA;
 typedef struct _HDA_CONTROLLER_INFO_PRIVATE_DATA HDA_CONTROLLER_INFO_PRIVATE_DATA;
+
+// Signature for private data structures.
+#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')
 
 //
 // PCI support.
@@ -154,16 +159,29 @@ typedef struct {
     VOID *CallbackContext3;
 } HDA_STREAM;
 
+typedef struct {
+    EFI_HANDLE Handle;
+    HDA_IO_PRIVATE_DATA *PrivateData;
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+} HDA_IO_CHILD;
+
 struct _HDA_CONTROLLER_DEV {
-    // PCI protocol.
+    // Signature.
+    UINTN Signature;
+
+    // Consumed protocols and handles.
     EFI_PCI_IO_PROTOCOL *PciIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
-    UINT64 OriginalPciAttributes;
-    EFI_HANDLE ControllerHandle;
     EFI_DRIVER_BINDING_PROTOCOL *DriverBinding;
+    EFI_HANDLE ControllerHandle;
+
+    // PCI.
+    UINT64 OriginalPciAttributes;
+    BOOLEAN OriginalPciAttributesSaved;
 
     // Published info protocol.
     HDA_CONTROLLER_INFO_PRIVATE_DATA *HdaControllerInfoData;
+    HDA_IO_CHILD HdaIoChildren[HDA_MAX_CODECS];
 
     // Capabilites.
     UINT32 VendorId;
@@ -208,11 +226,8 @@ struct _HDA_CONTROLLER_DEV {
     EFI_EVENT ResponsePollTimer;
     EFI_EVENT ExitBootServiceEvent;
     SPIN_LOCK SpinLock;
-    HDA_IO_PRIVATE_DATA *PrivateDatas[HDA_MAX_CODECS];
+    
 };
-
-// Signature for private data structures.
-#define HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE SIGNATURE_32('H','d','a','C')
 
 // HDA I/O private data.
 struct _HDA_IO_PRIVATE_DATA {
@@ -330,16 +345,16 @@ HdaControllerInfoGetName(
 //
 EFI_STATUS
 EFIAPI
+HdaControllerReset(
+    IN HDA_CONTROLLER_DEV *HdaControllerDev);
+
+EFI_STATUS
+EFIAPI
 HdaControllerSendCommands(
     IN HDA_CONTROLLER_DEV *HdaDev,
     IN UINT8 CodecAddress,
     IN UINT8 Node,
     IN EFI_HDA_IO_VERB_LIST *Verbs);
-
-HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
-    IN EFI_PCI_IO_PROTOCOL *PciIo,
-    IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
-    IN UINT64 OriginalPciAttributes);
 
 EFI_STATUS
 EFIAPI
@@ -377,6 +392,11 @@ EFI_STATUS
 EFIAPI
 HdaControllerInitStreams(
     IN HDA_CONTROLLER_DEV *HdaDev);
+
+VOID
+EFIAPI
+HdaControllerCleanupStreams(
+    IN HDA_CONTROLLER_DEV *HdaControllerDev);
 
 EFI_STATUS
 EFIAPI

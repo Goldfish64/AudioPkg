@@ -25,27 +25,6 @@
 #include "HdaController.h"
 #include <Library/HdaRegisters.h>
 
-HDA_CONTROLLER_DEV *HdaControllerAllocDevice(
-    IN EFI_PCI_IO_PROTOCOL *PciIo,
-    IN EFI_DEVICE_PATH_PROTOCOL *DevicePath,
-    IN UINT64 OriginalPciAttributes) {
-    HDA_CONTROLLER_DEV *HdaDev;
-   // EFI_STATUS Status;
-
-    // Allocate memory.
-    HdaDev = (HDA_CONTROLLER_DEV*)AllocateZeroPool(sizeof(HDA_CONTROLLER_DEV));
-    if (HdaDev == NULL)
-        return NULL;
-
-    // Initialize fields.
-    HdaDev->PciIo = PciIo;
-    HdaDev->DevicePath = DevicePath;
-    HdaDev->OriginalPciAttributes = OriginalPciAttributes;
-    InitializeSpinLock(&HdaDev->SpinLock);
-
-    return HdaDev;
-}
-
 EFI_STATUS
 EFIAPI
 HdaControllerInitCorb(
@@ -631,6 +610,67 @@ FREE_BUFFER:
     FreePool(HdaDev->InputStreams);
     FreePool(HdaDev->OutputStreams);
     return Status;
+}
+
+VOID
+EFIAPI
+HdaControllerCleanupStreams(
+    IN HDA_CONTROLLER_DEV *HdaControllerDev) {
+    DEBUG((DEBUG_INFO, "HdaControllerInitStreams(): start\n"));
+
+    // Status and PCI I/O protocol.
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaControllerDev->PciIo;
+     UINT8 InputStreamsOffset = HdaControllerDev->BidirStreamsCount;
+    UINT8 OutputStreamsOffset = InputStreamsOffset + HdaControllerDev->InputStreamsCount;
+    HDA_STREAM *HdaStream;
+    UINT32 Tmp;
+
+    // Clean streams.
+    for (UINT8 i = 0; i < HdaControllerDev->TotalStreamsCount; i++) {
+        // Get pointer to stream and set type.
+        if (i < InputStreamsOffset) {
+            HdaStream = HdaControllerDev->BidirStreams + i;
+            HdaStream->Type = HDA_STREAM_TYPE_BIDIR;
+        } else if (i < OutputStreamsOffset) {
+            HdaStream = HdaControllerDev->InputStreams + (i - InputStreamsOffset);
+            HdaStream->Type = HDA_STREAM_TYPE_IN;
+        } else {
+            HdaStream = HdaControllerDev->OutputStreams + (i - OutputStreamsOffset);
+            HdaStream->Type = HDA_STREAM_TYPE_OUT;
+        }
+
+        // Close polling timer.
+        gBS->CloseEvent(HdaStream->PollTimer);
+
+        // Stop stream.
+        HdaControllerSetStreamId(HdaStream, 0);
+
+        // Unmap and free buffer descriptor list.
+        if (HdaStream->BufferListMapping != NULL)
+            PciIo->Unmap(PciIo, HdaStream->BufferListMapping);
+        if (HdaStream->BufferList != NULL)
+            PciIo->FreeBuffer(PciIo, EFI_SIZE_TO_PAGES(HDA_BDL_SIZE), HdaStream->BufferList);
+
+        // Unmap and free data buffer.
+        if (HdaStream->BufferDataMapping != NULL)
+            PciIo->Unmap(PciIo, HdaStream->BufferDataMapping);
+        if (HdaStream->BufferData != NULL)
+            PciIo->FreeBuffer(PciIo, EFI_SIZE_TO_PAGES(HDA_STREAM_BUF_SIZE), HdaStream->BufferData);
+    }
+
+    // Clear DMA positions structure base address.
+    Tmp = 0;
+    PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_DPLBASE, 1, &Tmp);
+    if (HdaControllerDev->Capabilities & HDA_REG_GCAP_64OK) {
+        Tmp = 0;
+        PciIo->Mem.Write(PciIo, EfiPciIoWidthUint32, PCI_HDA_BAR, HDA_REG_DPUBASE, 1, &Tmp);
+    }
+
+    // Unmap and free DMA positions structure.
+    if (HdaControllerDev->DmaPositionsMapping != NULL)
+        PciIo->Unmap(PciIo, HdaControllerDev->DmaPositionsMapping);
+    if (HdaControllerDev->DmaPositions != NULL)
+        PciIo->FreeBuffer(PciIo, EFI_SIZE_TO_PAGES(HdaControllerDev->DmaPositionsSize), HdaControllerDev->DmaPositions);
 }
 
 EFI_STATUS
