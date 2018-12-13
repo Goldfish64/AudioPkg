@@ -108,6 +108,7 @@ typedef enum {
 
 // Maximum number of channels.
 #define EFI_AUDIO_IO_PROTOCOL_MAX_CHANNELS 16
+#define EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME 100
 
 // Callback function.
 typedef
@@ -138,6 +139,7 @@ EFI_STATUS
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
   @param[in] OutputIndex        The zero-based index of the desired output.
+  @param[in] Volume             The volume (0-100) to use.
   @param[in] Bits               The width in bits of the source data.
   @param[in] Freq               The frequency of the source data.
   @param[in] Channels           The number of channels the source data contains.
@@ -150,6 +152,7 @@ EFI_STATUS
 (EFIAPI *EFI_AUDIO_IO_SETUP_PLAYBACK)(
     IN EFI_AUDIO_IO_PROTOCOL *This,
     IN UINT32 OutputIndex,
+    IN UINT8 Volume,
     IN EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
     IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,
     IN UINT8 Channels);

@@ -72,7 +72,7 @@ AudioDemoMain(
         Status = fs->OpenVolume(fs, &root);
         ASSERT_EFI_ERROR(Status);
 
-        Status = root->Open(root, &token, L"welcome.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        Status = root->Open(root, &token, L"yee.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if (!(EFI_ERROR(Status)))
             break;
     }
@@ -114,16 +114,23 @@ AudioDemoMain(
         Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
 
-            // Play audio.
-        Status = AudioIo->SetupPlayback(AudioIo, i, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        // Play audio.
+        Status = AudioIo->SetupPlayback(AudioIo, i, 100, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
         ASSERT_EFI_ERROR(Status);
 
-        Status = AudioIo->StartPlayback(AudioIo, bytes, (SIZE_1MB * 4) + 0x40000, 0);
+        Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
+        ASSERT_EFI_ERROR(Status);
+
+        // Play audio.
+        Status = AudioIo->SetupPlayback(AudioIo, i, 50, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        ASSERT_EFI_ERROR(Status);
+
+        Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
         ASSERT_EFI_ERROR(Status);
     }
 
     // Play audio.
-        Status = AudioIo->SetupPlayback(AudioIo, 0, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        Status = AudioIo->SetupPlayback(AudioIo, 0, 75, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
         ASSERT_EFI_ERROR(Status);
 
     // play async.

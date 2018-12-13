@@ -763,7 +763,7 @@ HdaCodecEnableWidgetPath(
     DEBUG((DEBUG_INFO, "HdaCodecEnableWidgetPath(): start\n"));
 
     // Check if widget is valid.
-    if (HdaWidget == NULL)
+    if ((HdaWidget == NULL) || (Volume > EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME))
         return EFI_INVALID_PARAMETER;
 
     // Create variables.
@@ -808,6 +808,8 @@ HdaCodecEnableWidgetPath(
             if (!(HdaWidget->AmpOverride))
                 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpOutCapabilities);
 
+            // Calculate offset.
+            offset = (offset * Volume) / EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME;
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
                 HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, offset, FALSE, TRUE, TRUE, FALSE, TRUE)), &Response);
             if (EFI_ERROR(Status))

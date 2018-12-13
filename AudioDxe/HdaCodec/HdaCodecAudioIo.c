@@ -178,6 +178,7 @@ HdaCodecAudioIoGetOutputs(
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
   @param[in] OutputIndex        The zero-based index of the desired output.
+  @param[in] Volume             The volume (0-100) to use.
   @param[in] Bits               The width in bits of the source data.
   @param[in] Freq               The frequency of the source data.
   @param[in] Channels           The number of channels the source data contains.
@@ -190,6 +191,7 @@ EFIAPI
 HdaCodecAudioIoSetupPlayback(
     IN EFI_AUDIO_IO_PROTOCOL *This,
     IN UINT32 OutputIndex,
+    IN UINT8 Volume,
     IN EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
     IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,
     IN UINT8 Channels) {
@@ -213,8 +215,8 @@ HdaCodecAudioIoSetupPlayback(
     UINT16 StreamFmt;
 
     // If a parameter is invalid, return error.
-    if ((This == NULL) || (Freq >= EfiAudioIoFreqMaximum) ||
-        (Bits >= EfiAudioIoBitsMaximum))
+    if ((This == NULL) || (Volume > EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME) ||
+        (Freq >= EfiAudioIoFreqMaximum) || (Bits >= EfiAudioIoBitsMaximum))
         return EFI_INVALID_PARAMETER;
 
     // Get private data.
