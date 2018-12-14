@@ -268,8 +268,8 @@ HdaControllerReset(
     if (EFI_ERROR(Status))
         return Status;
 
-    // Wait 50ms to ensure all codecs have also reset.
-    gBS->Stall(MS_TO_MICROSECOND(50));
+    // Wait 100ms to ensure all codecs have also reset.
+    gBS->Stall(MS_TO_MICROSECOND(100));
 
     // Controller is reset.
     DEBUG((DEBUG_INFO, "HdaControllerReset(): done\n"));
