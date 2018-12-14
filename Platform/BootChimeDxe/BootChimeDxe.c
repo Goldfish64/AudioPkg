@@ -1,5 +1,5 @@
 /*
- * File: BootChime.c
+ * File: BootChimeDxe.c
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,7 +22,7 @@
  * SOFTWARE.
  */
 
-#include "BootChime.h"
+#include "BootChimeDxe.h"
 
 STATIC EFI_IMAGE_START mOrigStartImage;
 STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
@@ -162,10 +162,10 @@ IN EFI_EVENT Event,
 
 EFI_STATUS
 EFIAPI
-BootChimeMain(
+BootChimeDxeMain(
     IN EFI_HANDLE ImageHandle,
     IN EFI_SYSTEM_TABLE *SystemTable) {
-    Print(L"BootChime start\n");
+    Print(L"BootChimeDxe start\n");
 
     // Replace ImageStart.
     mOrigStartImage = gBS->StartImage;

@@ -23,6 +23,7 @@
  */
 
 #include "AudioDemo.h"
+#include <Library/WaveLib.h>
 
 VOID callback(
     IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
@@ -69,7 +70,7 @@ AudioDemoMain(
         Status = fs->OpenVolume(fs, &root);
         ASSERT_EFI_ERROR(Status);
 
-        Status = root->Open(root, &token, L"quadra.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        Status = root->Open(root, &token, L"quadra-mono.wav", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if (!(EFI_ERROR(Status)))
             break;
     }
@@ -91,6 +92,17 @@ AudioDemoMain(
     UINT8 *bytes = AllocateZeroPool(bytesLength);
     Status = token->Read(token, &bytesLength, bytes);
     ASSERT_EFI_ERROR(Status);
+
+    // Read WAVE.
+    WAVE_FILE_DATA WaveData;
+    Status = WaveGetFileData(bytes, bytesLength, &WaveData);
+    ASSERT_EFI_ERROR(Status);
+
+    Print(L"Format length: %u bytes\n", WaveData.FormatLength);
+    Print(L"  Channels: %u  Sample rate: %u Hz  Bits: %u\n", WaveData.Format->Channels, WaveData.Format->SamplesPerSec, WaveData.Format->BitsPerSample);
+    Print(L"Samples length: %u bytes\n", WaveData.SamplesLength);
+
+    return EFI_SUCCESS;
 
     for (UINT8 a = 0; a < AudioIoHandleCount; a++) {
 

@@ -49,10 +49,12 @@
     UefiFileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
     UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
     UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
+    WaveLib|AudioPkg/Library/WaveLib/WaveLib.inf
 
 [Components]
+    AudioPkg/Library/WaveLib/WaveLib.inf
     AudioPkg/Platform/AudioDxe/AudioDxe.inf
-    AudioPkg/Platform/BootChimeDxe/BootChime.inf
+    AudioPkg/Platform/BootChimeDxe/BootChimeDxe.inf
     AudioPkg/Application/HdaCodecDump/HdaCodecDump.inf
     AudioPkg/Application/AudioDemo/AudioDemo.inf
 

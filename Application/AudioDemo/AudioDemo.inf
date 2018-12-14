@@ -43,6 +43,7 @@
     UefiBootServicesTableLib
     UefiFileHandleLib
     UefiLib
+    WaveLib
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES

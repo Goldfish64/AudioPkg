@@ -1,5 +1,5 @@
 ##
- # File: BootChime.inf
+ # File: WaveLib.inf
  #
  # Copyright (c) 2018 John Davis
  #
@@ -24,11 +24,11 @@
 
 [Defines]
     INF_VERSION    = 0x00010005
-    BASE_NAME      = BootChime
-    ENTRY_POINT    = BootChimeMain
-    FILE_GUID      = 16D2D3C7-57BE-424C-93DB-DB6786A697B9
-    MODULE_TYPE    = UEFI_DRIVER
+    BASE_NAME      = WaveLib
+    FILE_GUID      = ABF9E884-6A3B-43AE-83AB-8B72BFF46908
+    MODULE_TYPE    = BASE
     VERSION_STRING = 1.0
+    LIBRARY_CLASS  = WaveLib|PEIM DXE_DRIVER DXE_RUNTIME_DRIVER UEFI_DRIVER UEFI_APPLICATION DXE_SMM_DRIVER
 
 [Packages]
     MdePkg/MdePkg.dec
@@ -39,15 +39,10 @@
     DebugLib
     MemoryAllocationLib
     PcdLib
+    UefiApplicationEntryPoint
     UefiBootServicesTableLib
-    UefiDriverEntryPoint
     UefiFileHandleLib
     UefiLib
 
-[Protocols]
-    gEfiAudioIoProtocolGuid # CONSUMES
-    gEfiSimpleFileSystemProtocolGuid # CONSUMES
-
 [Sources]
-    BootChime.h
-    BootChime.c
+    WaveLib.c

@@ -1,5 +1,5 @@
 /*
- * File: BootChime.h
+ * File: BootChimeDxe.h
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,8 +22,8 @@
  * SOFTWARE.
  */
 
-#ifndef _EFI_BOOT_CHIME_H_
-#define _EFI_BOOT_CHIME_H_
+#ifndef _EFI_BOOT_CHIME_DXE_H_
+#define _EFI_BOOT_CHIME_DXE_H_
 
 // Common UEFI includes and library classes.
 #include <Uefi.h>
