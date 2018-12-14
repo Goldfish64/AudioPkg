@@ -40,7 +40,7 @@ HdaCodecProbeWidget(
 
     // Get widget capabilities.
     Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &HdaWidget->Capabilities);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_WIDGET_CAPS), &HdaWidget->Capabilities);
     if (EFI_ERROR(Status))
         return Status;
     HdaWidget->Type = HDA_PARAMETER_WIDGET_CAPS_TYPE(HdaWidget->Capabilities);
@@ -51,7 +51,7 @@ HdaCodecProbeWidget(
     // Get default unsolicitation.
     if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_UNSOL_CAPABLE) {
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_UNSOL_RESPONSE, 0), &Response);
+            HDA_CODEC_VERB(HDA_VERB_GET_UNSOL_RESPONSE, 0), &Response);
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultUnSol = (UINT8)Response;
@@ -62,7 +62,7 @@ HdaCodecProbeWidget(
     if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_CONN_LIST) {
         // Get connection list length.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_CONN_LIST_LENGTH), &HdaWidget->ConnectionListLength);
+            HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_CONN_LIST_LENGTH), &HdaWidget->ConnectionListLength);
         if (EFI_ERROR(Status))
             return Status;
         HdaWidget->ConnectionCount = HDA_PARAMETER_CONN_LIST_LENGTH_LEN(HdaWidget->ConnectionListLength);
@@ -78,7 +78,7 @@ HdaCodecProbeWidget(
             if (!(c % ConnectionListThresh)) {
                 // Get connection entries.
                 Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-                    HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONN_LIST_ENTRY, c), &Response);
+                    HDA_CODEC_VERB(HDA_VERB_GET_CONN_LIST_ENTRY, c), &Response);
                 if (EFI_ERROR(Status))
                     return Status;
             }
@@ -101,14 +101,14 @@ HdaCodecProbeWidget(
     if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_POWER_CNTRL) {
         // Get supported power states.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &HdaWidget->SupportedPowerStates);
+            HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &HdaWidget->SupportedPowerStates);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X supported power states: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPowerStates));
 
         // Get default power state.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_POWER_STATE, 0), &HdaWidget->DefaultPowerState);
+            HDA_CODEC_VERB(HDA_VERB_GET_POWER_STATE, 0), &HdaWidget->DefaultPowerState);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X power state: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultPowerState));
@@ -118,7 +118,7 @@ HdaCodecProbeWidget(
     if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_IN_AMP) {
         // Get input amp capabilities.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &HdaWidget->AmpInCapabilities);
+            HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &HdaWidget->AmpInCapabilities);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X input amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpInCapabilities));
@@ -136,7 +136,7 @@ HdaCodecProbeWidget(
         for (UINT8 i = 0; i < AmpInCount; i++) {
             // Get left.
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE,
+            HDA_CODEC_VERB(HDA_VERB_GET_AMP_GAIN_MUTE,
             HDA_VERB_GET_AMP_GAIN_MUTE_PAYLOAD(i, TRUE, FALSE)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -144,7 +144,7 @@ HdaCodecProbeWidget(
 
             // Get right.
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE,
+            HDA_CODEC_VERB(HDA_VERB_GET_AMP_GAIN_MUTE,
             HDA_VERB_GET_AMP_GAIN_MUTE_PAYLOAD(i, FALSE, FALSE)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -158,14 +158,14 @@ HdaCodecProbeWidget(
     if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP) {
         // Get output amp capabilities.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &HdaWidget->AmpOutCapabilities);
+            HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &HdaWidget->AmpOutCapabilities);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X output amp capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->AmpOutCapabilities));
 
         // Get left.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-        HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE,
+        HDA_CODEC_VERB(HDA_VERB_GET_AMP_GAIN_MUTE,
         HDA_VERB_GET_AMP_GAIN_MUTE_PAYLOAD(0, TRUE, TRUE)), &Response);
         if (EFI_ERROR(Status))
             return Status;
@@ -173,7 +173,7 @@ HdaCodecProbeWidget(
 
         // Get right.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-        HDA_CODEC_VERB_4BIT(HDA_VERB_GET_AMP_GAIN_MUTE,
+        HDA_CODEC_VERB(HDA_VERB_GET_AMP_GAIN_MUTE,
         HDA_VERB_GET_AMP_GAIN_MUTE_PAYLOAD(0, FALSE, TRUE)), &Response);
         if (EFI_ERROR(Status))
             return Status;
@@ -187,14 +187,14 @@ HdaCodecProbeWidget(
         if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_FORMAT_OVERRIDE) {
             // Get supported PCM sizes/rates.
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-                HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &HdaWidget->SupportedPcmRates);
+                HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &HdaWidget->SupportedPcmRates);
             if (EFI_ERROR(Status))
                 return Status;
             //DEBUG((DEBUG_INFO, "Widget @ 0x%X supported PCM sizes/rates: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedPcmRates));
 
             // Get supported stream formats.
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-                HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &HdaWidget->SupportedFormats);
+                HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &HdaWidget->SupportedFormats);
             if (EFI_ERROR(Status))
                 return Status;
             //DEBUG((DEBUG_INFO, "Widget @ 0x%X supported formats: 0x%X\n", HdaWidget->NodeId, HdaWidget->SupportedFormats));
@@ -202,31 +202,31 @@ HdaCodecProbeWidget(
 
         // Get default converter format.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Response);
-        if (EFI_NON_TIMEOUT_ERROR(Status))
+            HDA_CODEC_VERB(HDA_VERB_GET_CONVERTER_FORMAT, 0), &Response);
+        if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultConvFormat = (UINT16)Response;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X default format: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvFormat));
 
         // Get default converter stream/channel.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0), &Response);
-        if (EFI_NON_TIMEOUT_ERROR(Status))
+            HDA_CODEC_VERB(HDA_VERB_GET_CONVERTER_STREAM_CHANNEL, 0), &Response);
+        if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultConvStreamChannel = (UINT8)Response;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X default stream/channel: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvStreamChannel));
 
         // Get default converter channel count.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONVERTER_CHANNEL_COUNT, 0), &Response);
-        if (EFI_NON_TIMEOUT_ERROR(Status))
+            HDA_CODEC_VERB(HDA_VERB_GET_CONVERTER_CHANNEL_COUNT, 0), &Response);
+        if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultConvChannelCount = (UINT8)Response;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X default channel count: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConvChannelCount));
     } else if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) { // Is the widget a Pin Complex?
         // Get pin capabilities.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_PIN_CAPS), &HdaWidget->PinCapabilities);
+            HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_PIN_CAPS), &HdaWidget->PinCapabilities);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X pin capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->PinCapabilities));
@@ -234,7 +234,7 @@ HdaCodecProbeWidget(
         // Get default EAPD.
         if (HdaWidget->PinCapabilities & HDA_PARAMETER_PIN_CAPS_EAPD) {
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-                HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Response);
+                HDA_CODEC_VERB(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Response);
             if (EFI_ERROR(Status))
                 return Status;
             HdaWidget->DefaultEapd = (UINT8)Response;
@@ -243,30 +243,30 @@ HdaCodecProbeWidget(
 
         // Get default pin control.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Response);
-        if (EFI_NON_TIMEOUT_ERROR(Status))
+            HDA_CODEC_VERB(HDA_VERB_GET_PIN_WIDGET_CONTROL, 0), &Response);
+        if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultPinControl = (UINT8)Response;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X default pin control: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultPinControl));
 
         // Get default pin configuration.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_CONFIGURATION_DEFAULT, 0), &HdaWidget->DefaultConfiguration);
+            HDA_CODEC_VERB(HDA_VERB_GET_CONFIGURATION_DEFAULT, 0), &HdaWidget->DefaultConfiguration);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X default pin configuration: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultConfiguration));
     } else if (HdaWidget->Type == HDA_WIDGET_TYPE_VOLUME_KNOB) { // Is the widget a Volume Knob?
         // Get volume knob capabilities.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VOLUME_KNOB_CAPS), &HdaWidget->VolumeCapabilities);
+            HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VOLUME_KNOB_CAPS), &HdaWidget->VolumeCapabilities);
         if (EFI_ERROR(Status))
             return Status;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X volume knob capabilities: 0x%X\n", HdaWidget->NodeId, HdaWidget->VolumeCapabilities));
 
         // Get default volume.
         Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId,
-            HDA_CODEC_VERB_12BIT(HDA_VERB_GET_VOLUME_KNOB, 0), &Response);
-        if (EFI_NON_TIMEOUT_ERROR(Status))
+            HDA_CODEC_VERB(HDA_VERB_GET_VOLUME_KNOB, 0), &Response);
+        if (EFI_ERROR(Status))
             return Status;
         HdaWidget->DefaultVolume = (UINT8)Response;
         //DEBUG((DEBUG_INFO, "Widget @ 0x%X default volume: 0x%X\n", HdaWidget->NodeId, HdaWidget->DefaultVolume));
@@ -294,7 +294,7 @@ HdaCodecProbeFuncGroup(
 
     // Get function group type.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &Response);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_TYPE), &Response);
     if (EFI_ERROR(Status))
         return Status;
     FuncGroup->Type = HDA_PARAMETER_FUNC_GROUP_TYPE_NODETYPE(Response);
@@ -307,56 +307,56 @@ HdaCodecProbeFuncGroup(
 
     // Get function group capabilities.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &FuncGroup->Capabilities);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_FUNC_GROUP_CAPS), &FuncGroup->Capabilities);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->Capabilities));
 
     // Get default supported PCM sizes/rates.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &FuncGroup->SupportedPcmRates);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES), &FuncGroup->SupportedPcmRates);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X supported PCM sizes/rates: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedPcmRates));
 
     // Get default supported stream formats.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &FuncGroup->SupportedFormats);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_STREAM_FORMATS), &FuncGroup->SupportedFormats);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X supported formats: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedFormats));
 
     // Get default input amp capabilities.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &FuncGroup->AmpInCapabilities);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_INPUT), &FuncGroup->AmpInCapabilities);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X input amp capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->AmpInCapabilities));
 
     // Get default output amp capabilities.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &FuncGroup->AmpOutCapabilities);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_AMP_CAPS_OUTPUT), &FuncGroup->AmpOutCapabilities);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X output amp capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->AmpOutCapabilities));
 
     // Get supported power states.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &FuncGroup->SupportedPowerStates);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUPPORTED_POWER_STATES), &FuncGroup->SupportedPowerStates);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X supported power states: 0x%X\n", FuncGroup->NodeId, FuncGroup->SupportedPowerStates));
 
     // Get GPIO capabilities.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_GPIO_COUNT), &FuncGroup->GpioCapabilities);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_GPIO_COUNT), &FuncGroup->GpioCapabilities);
     if (EFI_ERROR(Status))
         return Status;
     //DEBUG((DEBUG_INFO, "Function group @ 0x%X GPIO capabilities: 0x%X\n", FuncGroup->NodeId, FuncGroup->GpioCapabilities));
 
     // Get number of widgets in function group.
     Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
     if (EFI_ERROR(Status))
         return Status;
     WidgetStart = HDA_PARAMETER_SUBNODE_COUNT_START(Response);
@@ -366,7 +366,7 @@ HdaCodecProbeFuncGroup(
         FuncGroup->NodeId, WidgetCount, WidgetStart, WidgetEnd));
 
     // Power up.
-    Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_POWER_STATE, 0), &Response);
+    Status = HdaIo->SendCommand(HdaIo, FuncGroup->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_POWER_STATE, 0), &Response);
     ASSERT_EFI_ERROR(Status);
 
     // Ensure there are widgets.
@@ -393,7 +393,7 @@ HdaCodecProbeFuncGroup(
 
         // Power up.
         if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_POWER_CNTRL) {
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_POWER_STATE, 0), &Response);
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_POWER_STATE, 0), &Response);
             ASSERT_EFI_ERROR(Status);
         }
     }
@@ -449,14 +449,14 @@ HdaCodecProbeCodec(
 
     // Get vendor and device ID.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &HdaCodecDev->VendorId);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID), &HdaCodecDev->VendorId);
     if (EFI_ERROR(Status))
         return Status;
     DEBUG((DEBUG_INFO, "Codec ID: 0x%X:0x%X\n", HDA_PARAMETER_VENDOR_ID_VEN(HdaCodecDev->VendorId), HDA_PARAMETER_VENDOR_ID_DEV(HdaCodecDev->VendorId)));
 
     // Get revision ID.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &HdaCodecDev->RevisionId);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_REVISION_ID), &HdaCodecDev->RevisionId);
     if (EFI_ERROR(Status))
         return Status;
 
@@ -488,7 +488,7 @@ HdaCodecProbeCodec(
     
     // Get function group count.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
-        HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
+        HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
     if (EFI_ERROR(Status))
         return Status;
     FuncStart = HDA_PARAMETER_SUBNODE_COUNT_START(Response);
@@ -751,7 +751,7 @@ HdaCodecDisableWidgetPath(
     while (HdaWidget != NULL) {
         // If pin complex, clear pin control
         if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {  
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
                 HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, FALSE, FALSE)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -759,7 +759,7 @@ HdaCodecDisableWidgetPath(
 
         // If there is an output amp, mute.
         if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP) {
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_AMP_GAIN_MUTE,
                 HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, 0, TRUE, TRUE, TRUE, FALSE, TRUE)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -767,7 +767,7 @@ HdaCodecDisableWidgetPath(
 
         // If Output, disable stream.
         if (HdaWidget->Type == HDA_WIDGET_TYPE_OUTPUT) {
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL,
                 HDA_VERB_SET_CONVERTER_STREAM_PAYLOAD(0, 0)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -805,7 +805,7 @@ HdaCodecEnableWidgetPath(
 
         // If pin complex, set as output.
         if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {  
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_PIN_WIDGET_CONTROL,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
                 HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, TRUE, FALSE)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -813,14 +813,14 @@ HdaCodecEnableWidgetPath(
             // If EAPD, enable.
             if (HdaWidget->PinCapabilities & HDA_PARAMETER_PIN_CAPS_EAPD) {
                 // Get current EAPD setting.
-                Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Response);
+                Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_GET_EAPD_BTL_ENABLE, 0), &Response);
                 if (EFI_ERROR(Status))
                     return Status;
 
                 // If the EAPD is not set, set it.
                 if (!(Response & HDA_EAPD_BTL_ENABLE_EAPD)) {
                     Response |= HDA_EAPD_BTL_ENABLE_EAPD;
-                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_EAPD_BTL_ENABLE,
+                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_EAPD_BTL_ENABLE,
                         (UINT8)Response), &Response);
                     if (EFI_ERROR(Status))
                         return Status;
@@ -839,7 +839,7 @@ HdaCodecEnableWidgetPath(
             // Calculate offset.
             offset = (offset * Volume) / EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME;
             DEBUG((DEBUG_INFO, "HdaCodecEnableWidgetPath(): Amp out offset 0x%X\n", offset));
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_AMP_GAIN_MUTE,
                 HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(0, offset, FALSE, TRUE, TRUE, FALSE, TRUE)), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -854,12 +854,12 @@ HdaCodecEnableWidgetPath(
                     // If there are no overriden amp capabilities, check function group.
                     if (!(HdaWidget->AmpOverride))
                         offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpInCapabilities);
-                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_AMP_GAIN_MUTE,
                         HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, offset, FALSE, TRUE, TRUE, TRUE, FALSE)), &Response);
                     if (EFI_ERROR(Status))
                         return Status;
                 } else {
-                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_AMP_GAIN_MUTE,
+                    Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_AMP_GAIN_MUTE,
                         HDA_VERB_SET_AMP_GAIN_MUTE_PAYLOAD(c, 0, TRUE, TRUE, TRUE, TRUE, FALSE)), &Response);
                     if (EFI_ERROR(Status))
                         return Status;
@@ -869,7 +869,7 @@ HdaCodecEnableWidgetPath(
 
         // If there is more than one connection, select our upstream.
         if (HdaWidget->ConnectionCount > 1) {
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONN_SELECT_CONTROL,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONN_SELECT_CONTROL,
                 HdaWidget->UpstreamIndex), &Response);
             if (EFI_ERROR(Status))
                 return Status;
@@ -878,11 +878,11 @@ HdaCodecEnableWidgetPath(
         // If Output, set up stream.
         if (HdaWidget->Type == HDA_WIDGET_TYPE_OUTPUT) {
             DEBUG((DEBUG_INFO, "Widget @ 0x%X output\n", HdaWidget->NodeId));
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_4BIT(HDA_VERB_SET_CONVERTER_FORMAT,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONVERTER_FORMAT,
                 StreamFormat), &Response);
             if (EFI_ERROR(Status))
                 return Status;
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB_12BIT(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL,
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONVERTER_STREAM_CHANNEL,
                 HDA_VERB_SET_CONVERTER_STREAM_PAYLOAD(0, StreamId)), &Response);
             if (EFI_ERROR(Status))
                 return Status;

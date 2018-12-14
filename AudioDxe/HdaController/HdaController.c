@@ -304,7 +304,7 @@ HdaControllerScanCodecs(
         return Status;
 
     // Create verb list with single item.
-    VendorVerb = HDA_CODEC_VERB_12BIT(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID);
+    VendorVerb = HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_VENDOR_ID);
     ZeroMem(&HdaCodecVerbList, sizeof(EFI_HDA_IO_VERB_LIST));
     HdaCodecVerbList.Count = 1;
     HdaCodecVerbList.Verbs = &VendorVerb;
@@ -493,8 +493,10 @@ START:
 
                 // Get response and ensure it belongs to the current codec.
                 RirbResponse = HdaRirb[HdaDev->RirbReadPointer];
-                if (HDA_RIRB_CAD(RirbResponse) != CodecAddress || HDA_RIRB_UNSOL(RirbResponse))
+                if (HDA_RIRB_CAD(RirbResponse) != CodecAddress || HDA_RIRB_UNSOL(RirbResponse)) {
+                    DEBUG((DEBUG_INFO, "Unknown response!\n"));
                     continue;
+                }
 
                 // Add response to list.
                 Verbs->Responses[Verbs->Count - RemainingResponses] = HDA_RIRB_RESP(RirbResponse);
@@ -506,6 +508,7 @@ START:
             if (!ResponseReceived) {
                 // If timeout reached, fail.
                 if (!ResponseTimeout) {
+                    DEBUG((DEBUG_INFO, "Command: 0x%X\n", Verbs->Verbs[0]));
                     Status = EFI_TIMEOUT;
                     goto TIMEOUT;
                 }

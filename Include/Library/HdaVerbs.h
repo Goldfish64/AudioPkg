@@ -28,9 +28,10 @@
 // Root node ID.
 #define HDA_NID_ROOT    0
 
-// Macros for building verbs.
-#define HDA_CODEC_VERB_4BIT(Verb, Payload)  ((((UINT32)Verb) << 16) | (Payload & 0xFFFF))
-#define HDA_CODEC_VERB_12BIT(Verb, Payload) ((((UINT32)Verb) << 8) | (Payload & 0xFF))
+// Macro for building verbs. 4-bit verbs will be zero when masked against 0xFF0.
+#define HDA_CODEC_VERB(Verb, Payload)   ((UINT32)((((Verb) & 0xFFF) & 0xFF0) ? \
+    ((((Verb) & 0xFFF) << 8) | ((Payload) & 0xFF)) : /* 12-bit verbs */ \
+    ((((Verb) & 0xF) << 16) | ((Payload) & 0xFFFF)))) /* 4-bit verbs */
 
 // Get/Set Converter Format.
 #define HDA_VERB_GET_CONVERTER_FORMAT       0xA
