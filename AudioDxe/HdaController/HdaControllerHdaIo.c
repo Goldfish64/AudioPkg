@@ -385,9 +385,9 @@ HdaControllerHdaIoStartStream(
 
     // If we are starting in the upper half, fill the lower half as well.
     if ((HdaStreamDmaPos >= HDA_STREAM_BUF_SIZE_HALF) && (HdaStreamDmaRemainingLength <= HDA_STREAM_BUF_SIZE_HALF)) {
-        HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE_HALF;
-        if ((HdaStream->BufferSourcePosition + HdaStreamDmaRemainingLength) > BufferLength)
-            HdaStreamDmaRemainingLength = BufferLength;
+        HdaStreamDmaRemainingLength = BufferLength - HdaStream->BufferSourcePosition;
+        if (HdaStreamDmaRemainingLength > HDA_STREAM_BUF_SIZE_HALF)
+            HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE_HALF;
         CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
         HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
     }

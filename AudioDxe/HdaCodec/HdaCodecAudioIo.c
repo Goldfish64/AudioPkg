@@ -403,6 +403,9 @@ HdaCodecAudioIoSetupPlayback(
     Status = HdaCodecEnableWidgetPath(PinWidget, Volume, HdaStreamId, StreamFmt);
     if (EFI_ERROR(Status))
         goto CLOSE_STREAM;
+
+    // Wait 750ms for all widgets to fully come on.
+    gBS->Stall(MS_TO_MICROSECOND(750));
     return EFI_SUCCESS;
 
 CLOSE_STREAM:

@@ -518,9 +518,11 @@ START:
         }
 
     } while (RemainingVerbs || RemainingResponses);
-
     Status = EFI_SUCCESS;
+    goto DONE;
+
 TIMEOUT:
+    DEBUG((DEBUG_INFO, "Timeout!\n"));
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointerNew);
     if (EFI_ERROR(Status))
         goto DONE;
