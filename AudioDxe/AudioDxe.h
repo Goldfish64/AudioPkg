@@ -71,6 +71,19 @@ EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
 #define GET_CODEC_DEVICE_ID(a)  (a & 0xFFFF)
 #define GET_CODEC_GENERIC_ID(a) (a | 0xFFFF)
 
-#define EFI_NON_TIMEOUT_ERROR(a) ((EFI_ERROR(a)) && ((a) != EFI_TIMEOUT))
+// Controller name strings.
+typedef struct {
+    UINT32 Id;
+    CHAR16 *Name;
+} HDA_CONTROLLER_LIST_ENTRY;
+extern HDA_CONTROLLER_LIST_ENTRY gHdaControllerList[];
+
+// Codec name strings.
+typedef struct {
+    UINT32 Id;
+    UINT16 Rev;
+    CHAR16 *Name;
+} HDA_CODEC_LIST_ENTRY;
+extern HDA_CODEC_LIST_ENTRY gHdaCodecList[];
 
 #endif
