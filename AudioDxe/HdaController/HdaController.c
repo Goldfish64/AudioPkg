@@ -429,15 +429,26 @@ HdaControllerSendCommands(
     UINT32 RemainingVerbs = Verbs->Count;
     UINT32 RemainingResponses = Verbs->Count;
     UINT16 HdaCorbReadPointer;
+    UINT16 HdaCorbReadPointerNew;
     UINT16 HdaRirbWritePointer;
     BOOLEAN ResponseReceived;
     UINT8 ResponseTimeout;
     UINT64 RirbResponse;
     UINT32 VerbCommand;
+    BOOLEAN Retry = FALSE;
 
     // Lock.
     AcquireSpinLock(&HdaDev->SpinLock);
 
+    // Get current value of CORBCTL.
+   // UINT8 HdaCorbCtl;
+   // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
+   // if (EFI_ERROR(Status))
+  //      return Status;
+
+ //   ASSERT (HdaCorbCtl & HDA_REG_CORBCTL_CORBRUN);
+
+START:
     do {
         // Keep sending verbs until they are all sent.
         if (RemainingVerbs) {
@@ -445,6 +456,7 @@ HdaControllerSendCommands(
             Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointer);
             if (EFI_ERROR(Status))
                 goto DONE;
+            //DEBUG((DEBUG_INFO, "old RP: 0x%X\n", HdaCorbReadPointer));
 
             // Add verbs to CORB until all of them are added or the CORB becomes full.
             while (RemainingVerbs && ((HdaDev->CorbWritePointer + 1 % HdaDev->CorbEntryCount) != HdaCorbReadPointer)) {
@@ -495,7 +507,7 @@ HdaControllerSendCommands(
                 // If timeout reached, fail.
                 if (!ResponseTimeout) {
                     Status = EFI_TIMEOUT;
-                    goto DONE;
+                    goto TIMEOUT;
                 }
 
                 ResponseTimeout--;
@@ -508,6 +520,31 @@ HdaControllerSendCommands(
     } while (RemainingVerbs || RemainingResponses);
 
     Status = EFI_SUCCESS;
+TIMEOUT:
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointerNew);
+    if (EFI_ERROR(Status))
+        goto DONE;
+
+    if ((HdaCorbReadPointerNew == HdaCorbReadPointer) && (!Retry)) {
+        DEBUG((DEBUG_INFO, "Stall detected, restarting CORB and RIRB!\n"));
+        Status = HdaControllerSetCorb(HdaDev, FALSE);
+        if (EFI_ERROR(Status))
+            goto DONE;
+        Status = HdaControllerSetRirb(HdaDev, FALSE);
+        if (EFI_ERROR(Status))
+            goto DONE;
+        Status = HdaControllerSetRirb(HdaDev, TRUE);
+        if (EFI_ERROR(Status))
+            goto DONE;
+        Status = HdaControllerSetCorb(HdaDev, TRUE);
+        if (EFI_ERROR(Status))
+            goto DONE;
+
+        // Try again.
+        Retry = TRUE;
+        goto START;
+    }
+
 DONE:
     ReleaseSpinLock(&HdaDev->SpinLock);
     return Status;
