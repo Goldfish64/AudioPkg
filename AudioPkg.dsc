@@ -51,10 +51,10 @@
     UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
 
 [Components]
-    AudioPkg/AudioDxe/AudioDxe.inf
-    AudioPkg/HdaCodecDump/HdaCodecDump.inf
-    AudioPkg/AudioDemo/AudioDemo.inf
-    AudioPkg/BootChime/BootChime.inf
+    AudioPkg/Platform/AudioDxe/AudioDxe.inf
+    AudioPkg/Platform/BootChimeDxe/BootChime.inf
+    AudioPkg/Application/HdaCodecDump/HdaCodecDump.inf
+    AudioPkg/Application/AudioDemo/AudioDemo.inf
 
 [PcdsFixedAtBuild]
     gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0

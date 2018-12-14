@@ -30,6 +30,9 @@ STATIC EFI_AUDIO_IO_PROTOCOL *AudioIo;
 STATIC UINTN bytesLength;
     STATIC UINT8 *bytes;
 
+//STATIC EFI_EVENT protNot;
+STATIC VOID* reg;
+
 STATIC BOOLEAN played = FALSE;
 
 STATIC UINT8 index = 0;
@@ -110,6 +113,53 @@ BootChimeStartImage(
   //  return EFI_SUCCESS;
 }
 
+VOID
+EFIAPI
+BootChimeNotify(
+IN EFI_EVENT Event,
+    IN VOID *Context) {
+    EFI_STATUS Status;
+    EFI_HANDLE ImageHandle = (EFI_HANDLE)Context;
+    EFI_HANDLE AudioIoHandle;
+    UINTN AudioIoHandleCount;
+    EFI_AUDIO_IO_PROTOCOL *dd;
+
+    Status = gBS->LocateHandle(ByProtocol, &gEfiAudioIoProtocolGuid, reg, &AudioIoHandleCount, &AudioIoHandle);
+    if (EFI_ERROR(Status))
+        return;
+
+    Status = gBS->OpenProtocol(AudioIoHandle, &gEfiAudioIoProtocolGuid, (VOID**)&dd, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    ASSERT_EFI_ERROR(Status);
+
+
+
+    // Get outputs.
+    EFI_AUDIO_IO_PORT *Outputs;
+    UINTN OutputsCount;
+    Status = dd->GetOutputs(dd, &Outputs, &OutputsCount);
+    ASSERT_EFI_ERROR(Status);
+
+    CHAR16 *Devices[EfiAudioIoDeviceMaximum] = { L"Line", L"Speaker", L"Headphones", L"SPDIF", L"Mic", L"Other" };
+    CHAR16 *Locations[EfiAudioIoLocationMaximum] = { L"N/A", L"rear", L"front", L"left", L"right", L"top", L"bottom", L"other" };
+    CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
+
+    BOOLEAN hasHP = FALSE;
+    for (UINTN i = 0; i < OutputsCount; i++) {
+        Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
+            Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
+        if (Outputs[i].Device == EfiAudioIoDeviceHeadphones)
+            hasHP = TRUE;
+
+        if (Outputs[i].Device == EfiAudioIoDeviceSpeaker)
+            index = i;
+    }
+
+    if (!hasHP)
+        return;
+
+    AudioIo = dd;
+}
+
 EFI_STATUS
 EFIAPI
 BootChimeMain(
@@ -127,10 +177,14 @@ BootChimeMain(
     EFI_STATUS Status;
     EFI_HANDLE *AudioIoHandles;
     UINTN AudioIoHandleCount;
-    
+
+   // Status = gBS->CreateEvent(EVT_NOTIFY_SIGNAL, TPL_NOTIFY, BootChimeNotify, ImageHandle, &protNot);
+   // ASSERT_EFI_ERROR(Status);
+   //// Status = gBS->RegisterProtocolNotify(&gEfiAudioIoProtocolGuid, protNot, &reg);
+   // ASSERT_EFI_ERROR(Status);
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
-    ASSERT_EFI_ERROR(Status);
+   // ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "audio handles %u\n", AudioIoHandleCount));
 
     EFI_HANDLE* handles = NULL;   
