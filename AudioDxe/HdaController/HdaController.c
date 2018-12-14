@@ -426,10 +426,9 @@ HdaControllerSendCommands(
     HdaCorb = HdaDev->CorbBuffer;
     HdaRirb = HdaDev->RirbBuffer;
 
-    UINT32 RemainingVerbs = Verbs->Count;
-    UINT32 RemainingResponses = Verbs->Count;
+    UINT32 RemainingVerbs;
+    UINT32 RemainingResponses;
     UINT16 HdaCorbReadPointer;
-    UINT16 HdaCorbReadPointerNew;
     UINT16 HdaRirbWritePointer;
     BOOLEAN ResponseReceived;
     UINT8 ResponseTimeout;
@@ -440,15 +439,9 @@ HdaControllerSendCommands(
     // Lock.
     AcquireSpinLock(&HdaDev->SpinLock);
 
-    // Get current value of CORBCTL.
-   // UINT8 HdaCorbCtl;
-   // Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
-   // if (EFI_ERROR(Status))
-  //      return Status;
-
- //   ASSERT (HdaCorbCtl & HDA_REG_CORBCTL_CORBRUN);
-
 START:
+    RemainingVerbs = Verbs->Count;
+    RemainingResponses = Verbs->Count;
     do {
         // Keep sending verbs until they are all sent.
         if (RemainingVerbs) {
@@ -508,7 +501,7 @@ START:
             if (!ResponseReceived) {
                 // If timeout reached, fail.
                 if (!ResponseTimeout) {
-                    DEBUG((DEBUG_INFO, "Command: 0x%X\n", Verbs->Verbs[0]));
+                    DEBUG((DEBUG_INFO, "Command: 0x%X\n", VerbCommand));
                     Status = EFI_TIMEOUT;
                     goto TIMEOUT;
                 }
@@ -526,11 +519,7 @@ START:
 
 TIMEOUT:
     DEBUG((DEBUG_INFO, "Timeout!\n"));
-    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR, HDA_REG_CORBRP, 1, &HdaCorbReadPointerNew);
-    if (EFI_ERROR(Status))
-        goto DONE;
-
-    if ((HdaCorbReadPointerNew == HdaCorbReadPointer) && (!Retry)) {
+    if (!Retry) {
         DEBUG((DEBUG_INFO, "Stall detected, restarting CORB and RIRB!\n"));
         Status = HdaControllerSetCorb(HdaDev, FALSE);
         if (EFI_ERROR(Status))
@@ -538,10 +527,10 @@ TIMEOUT:
         Status = HdaControllerSetRirb(HdaDev, FALSE);
         if (EFI_ERROR(Status))
             goto DONE;
-        Status = HdaControllerSetRirb(HdaDev, TRUE);
+        Status = HdaControllerSetCorb(HdaDev, TRUE);
         if (EFI_ERROR(Status))
             goto DONE;
-        Status = HdaControllerSetCorb(HdaDev, TRUE);
+        Status = HdaControllerSetRirb(HdaDev, TRUE);
         if (EFI_ERROR(Status))
             goto DONE;
 

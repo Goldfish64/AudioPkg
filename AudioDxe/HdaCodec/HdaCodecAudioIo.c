@@ -379,7 +379,7 @@ HdaCodecAudioIoSetupPlayback(
     }
 
     // Disable all widget paths.
-    for (UINT8 w = 0; w < HdaCodecDev->OutputPortsCount; w++) {
+    for (UINTN w = 0; w < HdaCodecDev->OutputPortsCount; w++) {
         Status = HdaCodecDisableWidgetPath(HdaCodecDev->OutputPorts[w]);
         if (EFI_ERROR(Status))
             return Status;

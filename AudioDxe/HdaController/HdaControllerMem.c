@@ -195,6 +195,7 @@ HdaControllerSetCorb(
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
     UINT8 HdaCorbCtl;
+    UINT64 Tmp;
 
     // Get current value of CORBCTL.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
@@ -210,8 +211,9 @@ HdaControllerSetCorb(
     if (EFI_ERROR(Status))
         return Status;
 
-    // Success.
-    return EFI_SUCCESS;
+    // Wait for bit to cycle.
+    return PciIo->PollMem(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, HDA_REG_CORBCTL_CORBRUN,
+        Enable ? HDA_REG_CORBCTL_CORBRUN : 0, MS_TO_NANOSECOND(50), &Tmp);
 }
 
 EFI_STATUS
@@ -363,6 +365,7 @@ HdaControllerSetRirb(
     EFI_STATUS Status;
     EFI_PCI_IO_PROTOCOL *PciIo = HdaDev->PciIo;
     UINT8 HdaRirbCtl;
+    UINT64 Tmp;
 
     // Get current value of RIRBCTL.
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, 1, &HdaRirbCtl);
@@ -378,8 +381,9 @@ HdaControllerSetRirb(
     if (EFI_ERROR(Status))
         return Status;
 
-    // Success.
-    return EFI_SUCCESS;
+    // Wait for bit to cycle.
+    return PciIo->PollMem(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, HDA_REG_RIRBCTL_RIRBDMAEN,
+        Enable ? HDA_REG_RIRBCTL_RIRBDMAEN : 0, MS_TO_NANOSECOND(50), &Tmp);
 }
 
 EFI_STATUS
