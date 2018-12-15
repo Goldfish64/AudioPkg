@@ -71,15 +71,8 @@
         # DEBUG_ERROR | DEBUG_WARN | DEBUG_INFO
         gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000042
         gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000042
-    !else
-        # DEBUG_PRINT_ENABLED
-        gEfiMdePkgTokenSpaceGuid.PcdDebugPropertyMask|2
-        # DEBUG_ERROR | DEBUG_WARN
-        gEfiMdePkgTokenSpaceGuid.PcdDebugPrintErrorLevel|0x80000002
-        gEfiMdePkgTokenSpaceGuid.PcdFixedDebugPrintErrorLevel|0x80000002
     !endif
 
 [BuildOptions]
-    !if $(TARGET) == RELEASE
-        XCODE:*_*_*_CC_FLAGS = -flto
-    !endif
+    XCODE:DEBUG_*_*_CC_FLAGS = -D DISABLE_NEW_DEPRECATED_INTERFACES
+    XCODE:RELEASE_*_*_CC_FLAGS = -D MDEPKG_NDEBUG -D DISABLE_NEW_DEPRECATED_INTERFACES
