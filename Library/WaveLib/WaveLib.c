@@ -85,6 +85,7 @@ WaveGetFileData(
     // Copy to output structure.
     ZeroMem(WaveFileData, sizeof(WAVE_FILE_DATA));
     WaveFileData->FileLength = FileLength;
+    WaveFileData->DataLength = RiffChunk->Size;
     WaveFileData->Format = (WAVE_FORMAT_DATA*)FormatChunk->Data;
     WaveFileData->FormatLength = FormatChunk->Size;
     WaveFileData->Samples = DataChunk->Data;

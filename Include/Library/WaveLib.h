@@ -32,6 +32,7 @@
 // WAVE file data.
 typedef struct {
     UINT32 FileLength;
+    UINT32 DataLength;
     WAVE_FORMAT_DATA *Format;
     UINT32 FormatLength;
 

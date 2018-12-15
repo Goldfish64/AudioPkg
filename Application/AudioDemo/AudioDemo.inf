@@ -31,8 +31,10 @@
     VERSION_STRING = 1.0
 
 [Packages]
-    MdePkg/MdePkg.dec
     AudioPkg/AudioPkg.dec
+    MdePkg/MdePkg.dec
+    MdeModulePkg/MdeModulePkg.dec
+    ShellPkg/ShellPkg.dec
 
 [LibraryClasses]
     BaseMemoryLib
@@ -44,6 +46,7 @@
     UefiFileHandleLib
     UefiLib
     WaveLib
+    ShellLib
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES

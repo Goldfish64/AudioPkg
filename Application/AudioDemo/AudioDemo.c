@@ -24,6 +24,7 @@
 
 #include "AudioDemo.h"
 #include <Library/WaveLib.h>
+#include <Library/ShellLib.h>
 
 VOID callback(
     IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
@@ -46,6 +47,16 @@ AudioDemoMain(
     EFI_HANDLE *AudioIoHandles;
     UINTN AudioIoHandleCount;
     EFI_AUDIO_IO_PROTOCOL *AudioIo;
+
+    LIST_ENTRY *Package;
+    CHAR16 *ProblemParam;
+    Status = ShellCommandLineParse(EmptyParamList, &Package, &ProblemParam, TRUE);
+    ASSERT_EFI_ERROR(Status);
+
+    Print(L"%u command line args\n", ShellCommandLineGetCount(Package));
+
+    // Get filename.
+    CHAR16 *filename = (CHAR16*)ShellCommandLineGetRawValue(Package, 1);
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
     ASSERT_EFI_ERROR(Status);
@@ -70,7 +81,7 @@ AudioDemoMain(
         Status = fs->OpenVolume(fs, &root);
         ASSERT_EFI_ERROR(Status);
 
-        Status = root->Open(root, &token, L"quadra-mono.wav", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+        Status = root->Open(root, &token, filename, EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if (!(EFI_ERROR(Status)))
             break;
     }
@@ -97,12 +108,46 @@ AudioDemoMain(
     WAVE_FILE_DATA WaveData;
     Status = WaveGetFileData(bytes, bytesLength, &WaveData);
     ASSERT_EFI_ERROR(Status);
-
+    Print(L"data length: %u bytes\n", WaveData.DataLength);
     Print(L"Format length: %u bytes\n", WaveData.FormatLength);
     Print(L"  Channels: %u  Sample rate: %u Hz  Bits: %u\n", WaveData.Format->Channels, WaveData.Format->SamplesPerSec, WaveData.Format->BitsPerSample);
     Print(L"Samples length: %u bytes\n", WaveData.SamplesLength);
 
-    return EFI_SUCCESS;
+    EFI_AUDIO_IO_PROTOCOL_BITS bits;
+    switch (WaveData.Format->BitsPerSample) {
+        case 16:
+            bits = EfiAudioIoBits16;
+            break;
+
+        case 20:
+            bits = EfiAudioIoBits20;
+            break;
+
+        case 24:
+            bits = EfiAudioIoBits24;
+            break;
+
+        default:
+            return EFI_UNSUPPORTED;
+    }
+
+    EFI_AUDIO_IO_PROTOCOL_FREQ freq;
+    switch (WaveData.Format->SamplesPerSec) {
+        case 44100:
+            freq = EfiAudioIoFreq44kHz;
+            break;
+        
+        case 48000:
+            freq = EfiAudioIoFreq48kHz;
+            break;
+
+        default:
+            return EFI_UNSUPPORTED;
+    }
+
+    //gBS->Stall(10000000);
+
+    //return EFI_SUCCESS;
 
     for (UINT8 a = 0; a < AudioIoHandleCount; a++) {
 
@@ -137,21 +182,21 @@ AudioDemoMain(
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
 
         // Play audio.
-        Print(L"Now playing audio at 100%% volume...\n");
-        Status = AudioIo->SetupPlayback(AudioIo, i, 80, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        Print(L"Now playing audio at 90%% volume...\n");
+        Status = AudioIo->SetupPlayback(AudioIo, i, 60, freq, bits, WaveData.Format->Channels);
         ASSERT_EFI_ERROR(Status);
 
-        Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
+        Status = AudioIo->StartPlayback(AudioIo, WaveData.Samples, WaveData.SamplesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
         ASSERT_EFI_ERROR(Status);
 
         //gBS->Stall(10000000);
 
         // Play audio at 80%.
         Print(L"Now playing audio at 80%% volume...\n");
-        Status = AudioIo->SetupPlayback(AudioIo, i, 80, EfiAudioIoFreq44kHz, EfiAudioIoBits16, 2);
+        Status = AudioIo->SetupPlayback(AudioIo, i, 40, freq, bits, WaveData.Format->Channels);
         ASSERT_EFI_ERROR(Status);
 
-        Status = AudioIo->StartPlayback(AudioIo, bytes, bytesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
+        Status = AudioIo->StartPlayback(AudioIo, WaveData.Samples, WaveData.SamplesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
         ASSERT_EFI_ERROR(Status);
 
         //gBS->Stall(10000000);

@@ -50,6 +50,11 @@
     UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
     UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
     WaveLib|AudioPkg/Library/WaveLib/WaveLib.inf
+    FileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
+    SortLib|MdeModulePkg/Library/UefiSortLib/UefiSortLib.inf
+    UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
+    HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
+    ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
 
 [Components]
     AudioPkg/Library/WaveLib/WaveLib.inf
