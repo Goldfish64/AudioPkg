@@ -30,7 +30,7 @@ STATIC EFI_AUDIO_IO_PROTOCOL *AudioIo;
 STATIC UINTN bytesLength;
     STATIC UINT8 *bytes;
 
-//STATIC EFI_EVENT protNot;
+STATIC EFI_EVENT protNot;
 STATIC VOID* reg;
 
 STATIC BOOLEAN played = FALSE;
@@ -178,10 +178,10 @@ BootChimeDxeMain(
     EFI_HANDLE *AudioIoHandles;
     UINTN AudioIoHandleCount;
 
-   // Status = gBS->CreateEvent(EVT_NOTIFY_SIGNAL, TPL_NOTIFY, BootChimeNotify, ImageHandle, &protNot);
-   // ASSERT_EFI_ERROR(Status);
-   //// Status = gBS->RegisterProtocolNotify(&gEfiAudioIoProtocolGuid, protNot, &reg);
-   // ASSERT_EFI_ERROR(Status);
+    Status = gBS->CreateEvent(EVT_NOTIFY_SIGNAL, TPL_NOTIFY, BootChimeNotify, ImageHandle, &protNot);
+    ASSERT_EFI_ERROR(Status);
+    Status = gBS->RegisterProtocolNotify(&gEfiAudioIoProtocolGuid, protNot, &reg);
+    ASSERT_EFI_ERROR(Status);
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
    // ASSERT_EFI_ERROR(Status);

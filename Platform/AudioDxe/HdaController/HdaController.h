@@ -150,6 +150,7 @@ typedef struct {
     UINT8 *BufferSource;
     UINTN BufferSourceLength;
     UINTN BufferSourcePosition;
+    BOOLEAN BufferSourceDone;
 
     // Timing elements for buffer filling.
     EFI_EVENT PollTimer;

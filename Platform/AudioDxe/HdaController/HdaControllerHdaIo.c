@@ -416,6 +416,7 @@ HdaControllerHdaIoStartStream(
     }
 
     // Setup polling timer.
+    HdaStream->BufferSourceDone = FALSE;
     Status = gBS->SetTimer(HdaStream->PollTimer, TimerPeriodic, HDA_STREAM_POLL_TIME);
     if (EFI_ERROR(Status))
         goto STOP_STREAM;
