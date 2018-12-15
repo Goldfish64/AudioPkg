@@ -183,7 +183,7 @@ AudioDemoMain(
 
         // Play audio.
         Print(L"Now playing audio at 90%% volume...\n");
-        Status = AudioIo->SetupPlayback(AudioIo, i, 60, freq, bits, WaveData.Format->Channels);
+        Status = AudioIo->SetupPlayback(AudioIo, i, 90, freq, bits, WaveData.Format->Channels);
         ASSERT_EFI_ERROR(Status);
 
         Status = AudioIo->StartPlayback(AudioIo, WaveData.Samples, WaveData.SamplesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
@@ -192,8 +192,8 @@ AudioDemoMain(
         //gBS->Stall(10000000);
 
         // Play audio at 80%.
-        Print(L"Now playing audio at 80%% volume...\n");
-        Status = AudioIo->SetupPlayback(AudioIo, i, 40, freq, bits, WaveData.Format->Channels);
+        Print(L"Now playing audio at 60%% volume...\n");
+        Status = AudioIo->SetupPlayback(AudioIo, i, 60, freq, bits, WaveData.Format->Channels);
         ASSERT_EFI_ERROR(Status);
 
         Status = AudioIo->StartPlayback(AudioIo, WaveData.Samples, WaveData.SamplesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);

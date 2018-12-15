@@ -341,6 +341,8 @@ HdaControllerHdaIoStartStream(
     UINT16 HdaStreamSts;
     UINT32 HdaStreamDmaPos;
     UINTN HdaStreamDmaRemainingLength;
+    UINTN HdaStreamCurrentBlock;
+    UINTN HdaStreamNextBlock;
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (Type >= EfiHdaIoTypeMaximum) ||
@@ -375,6 +377,9 @@ HdaControllerHdaIoStartStream(
 
     // Get current DMA position.
     HdaStreamDmaPos = HdaControllerDev->DmaPositions[HdaStream->Index].Position;
+    HdaStreamCurrentBlock = HdaStreamDmaPos / HDA_BDL_BLOCKSIZE;
+    HdaStreamNextBlock = HdaStreamCurrentBlock + 1;
+    HdaStreamNextBlock %= HDA_BDL_ENTRY_COUNT;
     DEBUG((DEBUG_INFO, "HdaControllerHdaIoStartStream(): stream %u DMA pos 0x%X\n",
         HdaStream->Index, HdaStreamDmaPos));
 
@@ -390,23 +395,24 @@ HdaControllerHdaIoStartStream(
     // Zero out buffer.
     ZeroMem(HdaStream->BufferData, HDA_STREAM_BUF_SIZE);
 
-    // Determine number of bytes to write. If the stream has never run before (LPIB is 0), fill the whole buffer.
-    HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE - HdaStreamDmaPos;
+    // Fill rest of current block.
+    HdaStreamDmaRemainingLength = HDA_BDL_BLOCKSIZE - (HdaStreamDmaPos - (HdaStreamCurrentBlock * HDA_BDL_BLOCKSIZE));
     if ((HdaStream->BufferSourcePosition + HdaStreamDmaRemainingLength) > BufferLength)
         HdaStreamDmaRemainingLength = BufferLength;
-
-    // Fill stream buffer.
     CopyMem(HdaStream->BufferData + HdaStreamDmaPos, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
     HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
-    DEBUG((DEBUG_INFO, "%u (0x%X) bytes written to 0x%X\n", HdaStreamDmaRemainingLength, HdaStreamDmaRemainingLength, HdaStream->BufferData + HdaStreamDmaPos));
+    DEBUG((DEBUG_INFO, "%u (0x%X) bytes written to 0x%X (block %u of %u)\n", HdaStreamDmaRemainingLength, HdaStreamDmaRemainingLength,
+        HdaStream->BufferData + HdaStreamDmaPos, HdaStreamCurrentBlock, HDA_BDL_ENTRY_COUNT));
 
-    // If we are starting in the upper half, fill the lower half as well.
-    if ((HdaStreamDmaPos >= HDA_STREAM_BUF_SIZE_HALF) && (HdaStreamDmaRemainingLength <= HDA_STREAM_BUF_SIZE_HALF)) {
-        HdaStreamDmaRemainingLength = BufferLength - HdaStream->BufferSourcePosition;
-        if (HdaStreamDmaRemainingLength > HDA_STREAM_BUF_SIZE_HALF)
-            HdaStreamDmaRemainingLength = HDA_STREAM_BUF_SIZE_HALF;
-        CopyMem(HdaStream->BufferData, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
+    // Fill next block.
+    if (HdaStream->BufferSourcePosition < BufferLength) {
+        HdaStreamDmaRemainingLength = HDA_BDL_BLOCKSIZE;
+        if ((HdaStream->BufferSourcePosition + HdaStreamDmaRemainingLength) > BufferLength)
+            HdaStreamDmaRemainingLength = BufferLength;
+        CopyMem(HdaStream->BufferData + (HdaStreamNextBlock * HDA_BDL_BLOCKSIZE), HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
         HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
+        DEBUG((DEBUG_INFO, "%u (0x%X) bytes written to 0x%X (block %u of %u)\n", HdaStreamDmaRemainingLength, HdaStreamDmaRemainingLength,
+            HdaStream->BufferData + (HdaStreamNextBlock * HDA_BDL_BLOCKSIZE), HdaStreamNextBlock, HDA_BDL_ENTRY_COUNT));
     }
 
     // Setup polling timer.

@@ -496,11 +496,7 @@ HdaControllerInitStreams(
             HdaStream->BufferList[b].Address = (UINT32)DataBlockAddr;
             HdaStream->BufferList[b].AddressHigh = (UINT32)(DataBlockAddr >> 32);
             HdaStream->BufferList[b].Length = HDA_BDL_BLOCKSIZE;
-
-            // We want the stream to signal when its completed either half of the
-            // buffer so it can be refilled with fresh data.
-            HdaStream->BufferList[b].InterruptOnCompletion =
-                (((b == HDA_BDL_ENTRY_HALF) || (b == HDA_BDL_ENTRY_LAST)) ? HDA_BDL_ENTRY_IOC : 0);
+            HdaStream->BufferList[b].InterruptOnCompletion = TRUE;
         }
     }
 

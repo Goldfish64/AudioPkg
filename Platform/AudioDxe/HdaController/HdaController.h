@@ -101,7 +101,7 @@ typedef struct {
 
 // Buffer Descriptor List sizes. Max number of entries is 256, min is 2.
 #define HDA_BDL_ENTRY_IOC       BIT0
-#define HDA_BDL_ENTRY_COUNT     4
+#define HDA_BDL_ENTRY_COUNT     8
 #define HDA_BDL_SIZE            (sizeof(HDA_BDL_ENTRY) * HDA_BDL_ENTRY_COUNT)
 #define HDA_BDL_ENTRY_HALF      ((HDA_BDL_ENTRY_COUNT / 2) - 1)
 #define HDA_BDL_ENTRY_LAST      (HDA_BDL_ENTRY_COUNT - 1)
