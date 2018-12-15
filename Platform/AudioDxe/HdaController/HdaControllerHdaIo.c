@@ -128,6 +128,7 @@ HdaControllerHdaIoSetupStream(
 
     // Stream.
     HDA_STREAM *HdaStream;
+    UINT16 HdaStreamFormat;
     UINT8 HdaStreamId;
     EFI_TPL OldTpl = 0;
 
@@ -174,6 +175,22 @@ HdaControllerHdaIoSetupStream(
     if (HdaStreamId == 0) {
         Status = EFI_OUT_OF_RESOURCES;
         goto DONE;
+    }
+
+    // Get current format.
+    Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint16, PCI_HDA_BAR,
+        HDA_REG_SDNFMT(HdaStream->Index), 1, &HdaStreamFormat);
+    if (EFI_ERROR(Status))
+        goto DONE;
+
+    // Reset stream if format has changed.
+    if (Format != HdaStreamFormat) {
+        // Reset stream.
+        DEBUG((DEBUG_INFO, "HdaControllerHdaIoSetupStream(): format changed, resetting stream\n"));
+        HdaControllerDev->DmaPositions[HdaStream->Index].Position = 0;
+        Status = HdaControllerResetStream(HdaStream);
+        if (EFI_ERROR(Status))
+            goto DONE;
     }
 
     // Set stream ID.
@@ -381,7 +398,7 @@ HdaControllerHdaIoStartStream(
     // Fill stream buffer.
     CopyMem(HdaStream->BufferData + HdaStreamDmaPos, HdaStream->BufferSource + HdaStream->BufferSourcePosition, HdaStreamDmaRemainingLength);
     HdaStream->BufferSourcePosition += HdaStreamDmaRemainingLength;
-    DEBUG((DEBUG_INFO, "%u (0x%X) bytes written\n", HdaStreamDmaRemainingLength, HdaStreamDmaRemainingLength));
+    DEBUG((DEBUG_INFO, "%u (0x%X) bytes written to 0x%X\n", HdaStreamDmaRemainingLength, HdaStreamDmaRemainingLength, HdaStream->BufferData + HdaStreamDmaPos));
 
     // If we are starting in the upper half, fill the lower half as well.
     if ((HdaStreamDmaPos >= HDA_STREAM_BUF_SIZE_HALF) && (HdaStreamDmaRemainingLength <= HDA_STREAM_BUF_SIZE_HALF)) {

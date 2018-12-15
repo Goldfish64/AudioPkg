@@ -33,7 +33,7 @@ HdaControllerStreamPollTimerHandler(
     // Create variables.
     EFI_STATUS Status;
     HDA_STREAM *HdaStream = (HDA_STREAM*)Context;
-    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaDev->PciIo;
+    EFI_PCI_IO_PROTOCOL *PciIo = HdaStream->HdaControllerDev->PciIo;
     UINT8 HdaStreamSts = 0;
     UINT32 HdaStreamDmaPos;
     UINTN HdaSourceLength;
@@ -63,7 +63,7 @@ HdaControllerStreamPollTimerHandler(
                     HdaStream->CallbackContext1, HdaStream->CallbackContext2, HdaStream->CallbackContext3);
         } else {
             // Get stream DMA position.
-            HdaStreamDmaPos = HdaStream->HdaDev->DmaPositions[HdaStream->Index].Position;
+            HdaStreamDmaPos = HdaStream->HdaControllerDev->DmaPositions[HdaStream->Index].Position;
 
             // Determine number of bytes to pull from or push to source data.
             HdaSourceLength = HDA_STREAM_BUF_SIZE_HALF;
