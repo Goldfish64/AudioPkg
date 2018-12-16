@@ -49,5 +49,6 @@
     gEfiSimpleFileSystemProtocolGuid # CONSUMES
 
 [Sources]
+    ChimeData.c
     BootChimeDxe.h
     BootChimeDxe.c

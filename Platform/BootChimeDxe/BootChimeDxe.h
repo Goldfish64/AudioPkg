@@ -44,4 +44,8 @@
 #include <Protocol/DevicePathUtilities.h>
 #include <Library/DevicePathLib.h>
 
+// Default chime data.
+extern UINT8 ChimeData[];
+extern UINTN ChimeDataLength;
+
 #endif
