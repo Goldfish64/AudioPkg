@@ -24,7 +24,6 @@
 
 #include "BootChimeDxe.h"
 
-STATIC EFI_IMAGE_START mOrigStartImage;
 STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
 STATIC EFI_AUDIO_IO_PROTOCOL *AudioIo;
 //STATIC UINTN bytesLength;
