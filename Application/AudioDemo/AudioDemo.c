@@ -106,7 +106,7 @@ AudioDemoMain(
 
     // Read WAVE.
     WAVE_FILE_DATA WaveData;
-    Status = WaveGetFileData(bytes, bytesLength, &WaveData);
+    Status = WaveGetFileData(bytes, (UINT32)bytesLength, &WaveData);
     ASSERT_EFI_ERROR(Status);
     Print(L"data length: %u bytes\n", WaveData.DataLength);
     Print(L"Format length: %u bytes\n", WaveData.FormatLength);
@@ -177,13 +177,13 @@ AudioDemoMain(
     if (!hasHP)
         continue;
 
-    for (UINTN i = 0; i < OutputsCount; i++) {
+    for (UINT8 i = 0; i < OutputsCount; i++) {
         Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
 
         // Play audio.
         Print(L"Now playing audio at 90%% volume...\n");
-        Status = AudioIo->SetupPlayback(AudioIo, i, 90, freq, bits, WaveData.Format->Channels);
+        Status = AudioIo->SetupPlayback(AudioIo, i, 90, freq, bits, (UINT8)WaveData.Format->Channels);
         ASSERT_EFI_ERROR(Status);
 
         Status = AudioIo->StartPlayback(AudioIo, WaveData.Samples, WaveData.SamplesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);
@@ -193,7 +193,7 @@ AudioDemoMain(
 
         // Play audio at 80%.
         Print(L"Now playing audio at 60%% volume...\n");
-        Status = AudioIo->SetupPlayback(AudioIo, i, 60, freq, bits, WaveData.Format->Channels);
+        Status = AudioIo->SetupPlayback(AudioIo, i, 60, freq, bits, (UINT8)WaveData.Format->Channels);
         ASSERT_EFI_ERROR(Status);
 
         Status = AudioIo->StartPlayback(AudioIo, WaveData.Samples, WaveData.SamplesLength, 0);// (SIZE_1MB * 4) + 0x40000, 0);

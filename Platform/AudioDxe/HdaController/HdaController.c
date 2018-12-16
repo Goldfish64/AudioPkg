@@ -380,7 +380,12 @@ HdaControllerScanCodecs(
         // Do we have a codec at this address?
         if (HdaControllerDev->HdaIoChildren[i].PrivateData != NULL) {
             // Create Device Path for codec.
-            EFI_HDA_IO_DEVICE_PATH HdaIoDevicePathNode = EFI_HDA_IO_DEVICE_PATH_TEMPLATE;
+            EFI_HDA_IO_DEVICE_PATH HdaIoDevicePathNode; //EFI_HDA_IO_DEVICE_PATH_TEMPLATE;
+            HdaIoDevicePathNode.Header.Type = MESSAGING_DEVICE_PATH;
+            HdaIoDevicePathNode.Header.SubType = MSG_VENDOR_DP;
+            HdaIoDevicePathNode.Header.Length[0] = (UINT8)(sizeof(EFI_HDA_IO_DEVICE_PATH));
+            HdaIoDevicePathNode.Header.Length[1] = (UINT8)((sizeof(EFI_HDA_IO_DEVICE_PATH)) >> 8);
+            HdaIoDevicePathNode.Guid = gEfiHdaIoDevicePathGuid;
             HdaIoDevicePathNode.Address = i;
             HdaControllerDev->HdaIoChildren[i].DevicePath = AppendDevicePathNode(HdaControllerDev->DevicePath, (EFI_DEVICE_PATH_PROTOCOL*)&HdaIoDevicePathNode);
             if (HdaControllerDev->HdaIoChildren[i].DevicePath == NULL) {

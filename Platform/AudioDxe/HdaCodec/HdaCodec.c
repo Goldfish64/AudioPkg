@@ -298,7 +298,7 @@ HdaCodecProbeFuncGroup(
     if (EFI_ERROR(Status))
         return Status;
     FuncGroup->Type = HDA_PARAMETER_FUNC_GROUP_TYPE_NODETYPE(Response);
-    FuncGroup->UnsolCapable = Response & HDA_PARAMETER_FUNC_GROUP_TYPE_UNSOL;
+    FuncGroup->UnsolCapable = (Response & HDA_PARAMETER_FUNC_GROUP_TYPE_UNSOL) != 0;
 
     // Determine if function group is an audio one. If not, we cannot support it.
     DEBUG((DEBUG_INFO, "Function group @ 0x%X is of type 0x%X\n", FuncGroup->NodeId, FuncGroup->Type));

@@ -135,7 +135,7 @@ HdaControllerInitCorb(
 
     // Populate device object properties.
     HdaDev->CorbBuffer = CorbBuffer;
-    HdaDev->CorbEntryCount = CorbLength / HDA_CORB_ENTRY_SIZE;
+    HdaDev->CorbEntryCount = (UINT32)(CorbLength / HDA_CORB_ENTRY_SIZE);
     HdaDev->CorbMapping = CorbMapping;
     HdaDev->CorbPhysAddr = CorbPhysAddr;
     HdaDev->CorbWritePointer = HdaCorbWp;
@@ -305,7 +305,7 @@ HdaControllerInitRirb(
 
     // Populate device object properties.
     HdaDev->RirbBuffer = RirbBuffer;
-    HdaDev->RirbEntryCount = RirbLength / HDA_RIRB_ENTRY_SIZE;
+    HdaDev->RirbEntryCount = (UINT32)(RirbLength / HDA_RIRB_ENTRY_SIZE);
     HdaDev->RirbMapping = RirbMapping;
     HdaDev->RirbPhysAddr = RirbPhysAddr;
     HdaDev->RirbReadPointer = 0;

@@ -228,7 +228,7 @@ EFI_STATUS
 EFIAPI
 HdaCodecAudioIoSetupPlayback(
     IN EFI_AUDIO_IO_PROTOCOL *This,
-    IN UINT32 OutputIndex,
+    IN UINT8 OutputIndex,
     IN UINT8 Volume,
     IN EFI_AUDIO_IO_PROTOCOL_FREQ Freq,
     IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,

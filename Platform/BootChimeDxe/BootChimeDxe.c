@@ -135,7 +135,7 @@ IN EFI_EVENT Event,
     CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
 
     BOOLEAN hasHP = FALSE;
-    for (UINTN i = 0; i < OutputsCount; i++) {
+    for (UINT8 i = 0; i < OutputsCount; i++) {
         Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
         if (Outputs[i].Device == EfiAudioIoDeviceHeadphones)
@@ -240,7 +240,7 @@ BootChimeDxeMain(
     CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
 
     BOOLEAN hasHP = FALSE;
-    for (UINTN i = 0; i < OutputsCount; i++) {
+    for (UINT8 i = 0; i < OutputsCount; i++) {
         Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
             Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
         if (Outputs[i].Device == EfiAudioIoDeviceHeadphones)
