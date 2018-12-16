@@ -1,0 +1,10 @@
+language: cpp
+
+matrix:
+  include:
+  - os: osx
+    compiler: clang
+
+    script:
+    - "./macbuild.tool"
+    
