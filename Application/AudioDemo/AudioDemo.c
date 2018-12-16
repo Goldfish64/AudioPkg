@@ -157,7 +157,7 @@ AudioDemoMain(
 
 
     // Get outputs.
-    EFI_AUDIO_IO_PORT *Outputs;
+    EFI_AUDIO_IO_PROTOCOL_PORT *Outputs;
     UINTN OutputsCount;
     Status = AudioIo->GetOutputs(AudioIo, &Outputs, &OutputsCount);
     ASSERT_EFI_ERROR(Status);

@@ -39,7 +39,7 @@ typedef enum {
     EfiAudioIoTypeOutput = 0,
     EfiAudioIoTypeInput,
     EfiAudioIoTypeMaximum
-} EFI_AUDIO_IO_TYPE;
+} EFI_AUDIO_IO_PROTOCOL_TYPE;
 
 // Device type.
 typedef enum {
@@ -50,7 +50,7 @@ typedef enum {
     EfiAudioIoDeviceMic,
     EfiAudioIoDeviceOther,
     EfiAudioIoDeviceMaximum
-} EFI_AUDIO_IO_DEVICE;
+} EFI_AUDIO_IO_PROTOCOL_DEVICE;
 
 // Port location.
 typedef enum {
@@ -63,7 +63,7 @@ typedef enum {
     EfiAudioIoLocationBottom,
     EfiAudioIoLocationOther,
     EfiAudioIoLocationMaximum
-} EFI_AUDIO_IO_LOCATION;
+} EFI_AUDIO_IO_PROTOCOL_LOCATION;
 
 // Port surface.
 typedef enum {
@@ -71,40 +71,41 @@ typedef enum {
     EfiAudioIoSurfaceInternal,
     EfiAudioIoSurfaceOther,
     EfiAudioIoSurfaceMaximum
-} EFI_AUDIO_IO_SURFACE;
-
-// Audio input/output structure.
-typedef struct {
-    EFI_AUDIO_IO_TYPE Type;
-    EFI_AUDIO_IO_DEVICE Device;
-    EFI_AUDIO_IO_LOCATION Location;
-    EFI_AUDIO_IO_SURFACE Surface;
-} EFI_AUDIO_IO_PORT;
+} EFI_AUDIO_IO_PROTOCOL_SURFACE;
 
 // Size in bits of each sample.
 typedef enum {
-    EfiAudioIoBits8 = 0,
-    EfiAudioIoBits16,
-    EfiAudioIoBits20,
-    EfiAudioIoBits24,
-    EfiAudioIoBits32,
-    EfiAudioIoBitsMaximum
+    EfiAudioIoBits8     = BIT0,
+    EfiAudioIoBits16    = BIT1,
+    EfiAudioIoBits20    = BIT2,
+    EfiAudioIoBits24    = BIT3,
+    EfiAudioIoBits32    = BIT4
 } EFI_AUDIO_IO_PROTOCOL_BITS;
 
 // Frequency of each sample.
 typedef enum {
-    EfiAudioIoFreq8kHz = 0,
-    EfiAudioIoFreq11kHz,
-    EfiAudioIoFreq16kHz,
-    EfiAudioIoFreq22kHz,
-    EfiAudioIoFreq32kHz,
-    EfiAudioIoFreq44kHz,
-    EfiAudioIoFreq48kHz,
-    EfiAudioIoFreq88kHz,
-    EfiAudioIoFreq96kHz,
-    EfiAudioIoFreq192kHz,
-    EfiAudioIoFreqMaximum
+    EfiAudioIoFreq8kHz      = BIT0,
+    EfiAudioIoFreq11kHz     = BIT1,
+    EfiAudioIoFreq16kHz     = BIT2,
+    EfiAudioIoFreq22kHz     = BIT3,
+    EfiAudioIoFreq32kHz     = BIT4,
+    EfiAudioIoFreq44kHz     = BIT5,
+    EfiAudioIoFreq48kHz     = BIT6,
+    EfiAudioIoFreq88kHz     = BIT7,
+    EfiAudioIoFreq96kHz     = BIT8,
+    EfiAudioIoFreq192kHz    = BIT9
 } EFI_AUDIO_IO_PROTOCOL_FREQ;
+
+// Audio input/output structure.
+typedef struct {
+    EFI_AUDIO_IO_PROTOCOL_TYPE Type;
+    EFI_AUDIO_IO_PROTOCOL_BITS SupportedBits;
+    EFI_AUDIO_IO_PROTOCOL_FREQ SupportedFreqs;
+
+    EFI_AUDIO_IO_PROTOCOL_DEVICE Device;
+    EFI_AUDIO_IO_PROTOCOL_LOCATION Location;
+    EFI_AUDIO_IO_PROTOCOL_SURFACE Surface;
+} EFI_AUDIO_IO_PROTOCOL_PORT;
 
 // Maximum number of channels.
 #define EFI_AUDIO_IO_PROTOCOL_MAX_CHANNELS 16
@@ -131,7 +132,7 @@ typedef
 EFI_STATUS
 (EFIAPI *EFI_AUDIO_IO_GET_OUTPUTS)(
     IN  EFI_AUDIO_IO_PROTOCOL *This,
-    OUT EFI_AUDIO_IO_PORT **OutputPorts,
+    OUT EFI_AUDIO_IO_PROTOCOL_PORT **OutputPorts,
     OUT UINTN *OutputPortsCount);
 
 /**                                                                 

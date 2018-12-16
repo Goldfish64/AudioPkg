@@ -221,7 +221,7 @@ EFI_STATUS
 EFIAPI
 HdaCodecAudioIoGetOutputs(
     IN  EFI_AUDIO_IO_PROTOCOL *This,
-    OUT EFI_AUDIO_IO_PORT **OutputPorts,
+    OUT EFI_AUDIO_IO_PROTOCOL_PORT **OutputPorts,
     OUT UINTN *OutputPortsCount);
 
 EFI_STATUS

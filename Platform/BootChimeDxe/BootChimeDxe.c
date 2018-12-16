@@ -37652,7 +37652,7 @@ IN EFI_EVENT Event,
 
 
     // Get outputs.
-    EFI_AUDIO_IO_PORT *Outputs;
+    EFI_AUDIO_IO_PROTOCOL_PORT *Outputs;
     UINTN OutputsCount;
     Status = dd->GetOutputs(dd, &Outputs, &OutputsCount);
     ASSERT_EFI_ERROR(Status);
@@ -37757,7 +37757,7 @@ BootChimeDxeMain(
 
 
     // Get outputs.
-    EFI_AUDIO_IO_PORT *Outputs;
+    EFI_AUDIO_IO_PROTOCOL_PORT *Outputs;
     UINTN OutputsCount;
     Status = dd->GetOutputs(dd, &Outputs, &OutputsCount);
     ASSERT_EFI_ERROR(Status);

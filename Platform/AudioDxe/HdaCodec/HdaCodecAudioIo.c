@@ -60,16 +60,16 @@ EFI_STATUS
 EFIAPI
 HdaCodecAudioIoGetOutputs(
     IN  EFI_AUDIO_IO_PROTOCOL *This,
-    OUT EFI_AUDIO_IO_PORT **OutputPorts,
+    OUT EFI_AUDIO_IO_PROTOCOL_PORT **OutputPorts,
     OUT UINTN *OutputPortsCount) {
     DEBUG((DEBUG_INFO, "HdaCodecAudioIoGetOutputs(): start\n"));
 
     // Create variables.
+    EFI_STATUS Status;
     AUDIO_IO_PRIVATE_DATA *AudioIoPrivateData;
     HDA_CODEC_DEV *HdaCodecDev;
-
-    // Widgets.
-    EFI_AUDIO_IO_PORT *HdaOutputPorts;
+    EFI_AUDIO_IO_PROTOCOL_PORT *HdaOutputPorts;
+    UINT32 SupportedRates;
 
     // If a parameter is invalid, return error.
     if ((This == NULL) || (OutputPorts == NULL) ||
@@ -81,7 +81,7 @@ HdaCodecAudioIoGetOutputs(
     HdaCodecDev = AudioIoPrivateData->HdaCodecDev;
 
     // Allocate buffer.
-    HdaOutputPorts = AllocateZeroPool(sizeof(EFI_AUDIO_IO_PORT) * HdaCodecDev->OutputPortsCount);
+    HdaOutputPorts = AllocateZeroPool(sizeof(EFI_AUDIO_IO_PROTOCOL_PORT) * HdaCodecDev->OutputPortsCount);
     if (HdaOutputPorts == NULL)
         return EFI_OUT_OF_RESOURCES;
 
@@ -165,6 +165,47 @@ HdaCodecAudioIoGetOutputs(
             default:
                 HdaOutputPorts[i].Surface = EfiAudioIoSurfaceOther;
         }
+
+        // Get supported stream formats.
+        Status = HdaCodecGetSupportedPcmRates(HdaCodecDev->OutputPorts[i], &SupportedRates);
+        if (EFI_ERROR(Status))
+            return Status;
+
+        // Get supported bit depths.
+        HdaOutputPorts[i].SupportedBits = 0;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_8BIT)
+            HdaOutputPorts[i].SupportedBits |= EfiAudioIoBits8;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16BIT)
+            HdaOutputPorts[i].SupportedBits |= EfiAudioIoBits16;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_20BIT)
+            HdaOutputPorts[i].SupportedBits |= EfiAudioIoBits20;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_24BIT)
+            HdaOutputPorts[i].SupportedBits |= EfiAudioIoBits24;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_32BIT)
+            HdaOutputPorts[i].SupportedBits |= EfiAudioIoBits32;
+
+        // Get supported sample rates.
+        HdaOutputPorts[i].SupportedFreqs = 0;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_8KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq8kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_11KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq11kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq16kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_22KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq22kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_32KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq32kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_44KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq44kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_48KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq48kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_88KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq88kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_96KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq96kHz;
+        if (SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_192KHZ)
+            HdaOutputPorts[i].SupportedFreqs |= EfiAudioIoFreq192kHz;
     }
 
     // Ports gotten successfully.
@@ -215,8 +256,7 @@ HdaCodecAudioIoSetupPlayback(
     UINT16 StreamFmt;
 
     // If a parameter is invalid, return error.
-    if ((This == NULL) || (Volume > EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME) ||
-        (Freq >= EfiAudioIoFreqMaximum) || (Bits >= EfiAudioIoBitsMaximum))
+    if ((This == NULL) || (Volume > EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME))
         return EFI_INVALID_PARAMETER;
 
     // Get private data.
