@@ -263,11 +263,6 @@ struct _HDA_CONTROLLER_INFO_PRIVATE_DATA {
 #define HDA_CONTROLLER_INFO_PRIVATE_DATA_FROM_THIS(This) \
     CR(This, HDA_CONTROLLER_INFO_PRIVATE_DATA, HdaControllerInfo, HDA_CONTROLLER_PRIVATE_DATA_SIGNATURE)
 
-VOID
-HdaControllerStreamPollTimerHandler(
-    IN EFI_EVENT Event,
-    IN VOID *Context);
-
 //
 // HDA I/O protocol functions.
 //
@@ -344,6 +339,12 @@ HdaControllerInfoGetName(
 //
 // HDA controller internal functions.
 //
+VOID
+EFIAPI
+HdaControllerStreamPollTimerHandler(
+    IN EFI_EVENT Event,
+    IN VOID *Context);
+
 EFI_STATUS
 EFIAPI
 HdaControllerReset(

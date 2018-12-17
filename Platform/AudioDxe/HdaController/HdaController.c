@@ -26,6 +26,7 @@
 #include "HdaControllerComponentName.h"
 
 VOID
+EFIAPI
 HdaControllerStreamPollTimerHandler(
     IN EFI_EVENT Event,
     IN VOID *Context) {
