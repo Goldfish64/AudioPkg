@@ -444,7 +444,7 @@ HdaControllerInitStreams(
 
         // Initialize polling timer.
         Status = gBS->CreateEvent(EVT_TIMER | EVT_NOTIFY_SIGNAL, TPL_NOTIFY,
-            HdaControllerStreamPollTimerHandler, HdaStream, &HdaStream->PollTimer);
+            (EFI_EVENT_NOTIFY)HdaControllerStreamPollTimerHandler, HdaStream, &HdaStream->PollTimer);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
 

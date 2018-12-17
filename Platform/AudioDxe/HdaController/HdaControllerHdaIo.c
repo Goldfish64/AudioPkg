@@ -443,7 +443,6 @@ HdaControllerHdaIoStopStream(
     // Create variables.
     EFI_STATUS Status;
     HDA_IO_PRIVATE_DATA *HdaIoPrivateData;
-    HDA_CONTROLLER_DEV *HdaControllerDev;
 
     // Stream.
     HDA_STREAM *HdaStream;
@@ -455,7 +454,6 @@ HdaControllerHdaIoStopStream(
 
     // Get private data.
     HdaIoPrivateData = HDA_IO_PRIVATE_DATA_FROM_THIS(This);
-    HdaControllerDev = HdaIoPrivateData->HdaControllerDev;
 
     // Get stream.
     if (Type == EfiHdaIoTypeOutput)
