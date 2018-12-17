@@ -1,6 +1,6 @@
 /*
  * File: Riff.h
- * 
+ *
  * Description: Resource Interchange File Format format definition.
  *
  * Copyright (c) 2018 John Davis

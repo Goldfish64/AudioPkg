@@ -2,7 +2,7 @@
  * File: ChimeData.c
  *
  * Description: Apple startup chime at 48 kHz, 16-bit, stereo. Copyright (c) Apple Inc.
- * 
+ *
  */
 
 #include <Uefi.h>

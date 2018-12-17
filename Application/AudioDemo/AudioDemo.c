@@ -62,12 +62,12 @@ AudioDemoMain(
     ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "audio handles %u\n", AudioIoHandleCount));
 
-    EFI_HANDLE* handles = NULL;   
+    EFI_HANDLE* handles = NULL;
     UINTN handleCount = 0;
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
     ASSERT_EFI_ERROR(Status);
-    
+
     EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
     DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
     EFI_FILE_PROTOCOL* root = NULL;
@@ -97,7 +97,7 @@ AudioDemoMain(
     FileInfo = (EFI_FILE_INFO*)fileinfobuf;
 
     Print(L"File size: %u bytes\n", FileInfo->FileSize);
-    
+
     // Read file into buffer.
     UINTN bytesLength = FileInfo->FileSize;
     UINT8 *bytes = AllocateZeroPool(bytesLength);
@@ -136,7 +136,7 @@ AudioDemoMain(
         case 44100:
             freq = EfiAudioIoFreq44kHz;
             break;
-        
+
         case 48000:
             freq = EfiAudioIoFreq48kHz;
             break;

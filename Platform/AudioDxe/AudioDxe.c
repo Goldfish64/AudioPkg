@@ -57,7 +57,7 @@ AudioDxeInit(
 
     // Create variables.
     EFI_STATUS Status;
-    
+
     // Register HdaController Driver Binding.
     Status = EfiLibInstallDriverBindingComponentName2(ImageHandle, SystemTable, &gHdaControllerDriverBinding,
         ImageHandle, &gHdaControllerComponentName, &gHdaControllerComponentName2);

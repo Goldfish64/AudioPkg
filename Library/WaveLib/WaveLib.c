@@ -1,6 +1,6 @@
 /*
  * File: WaveLib.c
- * 
+ *
  * Description: WAVE file format functions.
  *
  * Copyright (c) 2018 John Davis
@@ -36,7 +36,7 @@ WaveGetFileData(
     IN  CONST VOID *FileData,
     IN  UINT32 FileLength,
     OUT WAVE_FILE_DATA *WaveFileData) {
-    
+
     // Create variables.
     UINT8 *FilePtr = NULL;
     RIFF_CHUNK *RiffChunk = NULL;
@@ -81,7 +81,7 @@ WaveGetFileData(
     }
     if (DataChunk == NULL)
         return EFI_UNSUPPORTED;
-    
+
     // Copy to output structure.
     ZeroMem(WaveFileData, sizeof(WAVE_FILE_DATA));
     WaveFileData->FileLength = FileLength;

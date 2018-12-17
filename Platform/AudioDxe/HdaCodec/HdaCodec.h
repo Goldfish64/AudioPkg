@@ -42,7 +42,7 @@ struct _HDA_WIDGET_DEV {
 
     // General widgets.
     UINT32 Capabilities;
-    UINT8 DefaultUnSol;    
+    UINT8 DefaultUnSol;
 
     // Connections.
     UINT32 ConnectionListLength;
@@ -88,7 +88,7 @@ struct _HDA_FUNC_GROUP {
     UINT8 NodeId;
     BOOLEAN UnsolCapable;
     UINT8 Type;
-    
+
     // Capabilities.
     UINT32 Capabilities;
     UINT32 SupportedPcmRates;

@@ -118,7 +118,7 @@ VOID
     IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
     IN VOID *Context);
 
-/**                                                                 
+/**
   Gets the collection of output ports.
 
   @param[in]  This              A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -135,7 +135,7 @@ EFI_STATUS
     OUT EFI_AUDIO_IO_PROTOCOL_PORT **OutputPorts,
     OUT UINTN *OutputPortsCount);
 
-/**                                                                 
+/**
   Sets up the device to play audio data.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -158,7 +158,7 @@ EFI_STATUS
     IN EFI_AUDIO_IO_PROTOCOL_BITS Bits,
     IN UINT8 Channels);
 
-/**                                                                 
+/**
   Begins playback on the device and waits for playback to complete.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -177,7 +177,7 @@ EFI_STATUS
     IN UINTN DataLength,
     IN UINTN Position OPTIONAL);
 
-/**                                                                 
+/**
   Begins playback on the device asynchronously.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -200,7 +200,7 @@ EFI_STATUS
     IN EFI_AUDIO_IO_CALLBACK Callback OPTIONAL,
     IN VOID *Context OPTIONAL);
 
-/**                                                                 
+/**
   Stops playback on the device.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.

@@ -356,7 +356,7 @@
 
 //
 // Parameters.
-// 
+//
 // Vendor ID.
 #define HDA_PARAMETER_VENDOR_ID                 0x00
 #define HDA_PARAMETER_VENDOR_ID_DEV(a)          ((UINT16)a)

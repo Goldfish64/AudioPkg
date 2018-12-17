@@ -34,14 +34,14 @@
 extern EFI_GUID gEfiHdaControllerInfoProtocolGuid;
 typedef struct _EFI_HDA_CONTROLLER_INFO_PROTOCOL EFI_HDA_CONTROLLER_INFO_PROTOCOL;
 
-/**                                                                 
+/**
   Gets the controller's name.
 
   @param[in]  This              A pointer to the EFI_HDA_CONTROLLER_INFO_PROTOCOL instance.
   @param[out] CodecName         A pointer to the buffer to return the codec name.
 
   @retval EFI_SUCCESS           The controller name was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -49,14 +49,14 @@ EFI_STATUS
     IN  EFI_HDA_CONTROLLER_INFO_PROTOCOL *This,
     OUT CHAR16 **ControllerName);
 
-/**                                                                 
+/**
   Gets the controller's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CONTROLLER_INFO_PROTOCOL instance.
   @param[out] VendorId          The vendor and device ID of the controller.
 
   @retval EFI_SUCCESS           The vendor and device ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS

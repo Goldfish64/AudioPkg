@@ -76,14 +76,14 @@ typedef struct {
     UINT8 DefaultVolume;
 } HDA_WIDGET;
 
-/**                                                                 
+/**
   Gets the codec's name.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] CodecName         A pointer to the buffer to return the codec name.
 
   @retval EFI_SUCCESS           The codec name was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -91,14 +91,14 @@ EFI_STATUS
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT CHAR16 **CodecName);
 
-/**                                                                 
+/**
   Gets the codec's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] VendorId          The vendor and device ID of the codec.
 
   @retval EFI_SUCCESS           The vendor and device ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -106,14 +106,14 @@ EFI_STATUS
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT UINT32 *VendorId);
 
-/**                                                                 
+/**
   Gets the codec's revision ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] RevisionId        The revision ID of the codec.
 
   @retval EFI_SUCCESS           The revision ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -121,7 +121,7 @@ EFI_STATUS
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT UINT32 *RevisionId);
 
-/**                                                                 
+/**
   Gets the node ID of the codec's audio function.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -129,7 +129,7 @@ EFI_STATUS
   @param[out] UnsolCapable      Whether or not the function supports unsolicitation.
 
   @retval EFI_SUCCESS           The node ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -138,7 +138,7 @@ EFI_STATUS
     OUT UINT8 *AudioFuncId,
     OUT BOOLEAN *UnsolCapable);
 
-/**                                                                 
+/**
   Gets the codec's default supported stream rates and formats.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -146,7 +146,7 @@ EFI_STATUS
   @param[out] Formats           The default supported formats.
 
   @retval EFI_SUCCESS           The stream rates and formats were retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -155,7 +155,7 @@ EFI_STATUS
     OUT UINT32 *Rates,
     OUT UINT32 *Formats);
 
-/**                                                                 
+/**
   Gets the codec's default amp capabilities.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -163,7 +163,7 @@ EFI_STATUS
   @param[out] AmpOutCaps        The default output amp capabilities.
 
   @retval EFI_SUCCESS           The default amp capabilities were retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -172,7 +172,7 @@ EFI_STATUS
     OUT UINT32 *AmpInCaps,
     OUT UINT32 *AmpOutCaps);
 
-/**                                                                 
+/**
   Gets the codec's widgets.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -180,7 +180,7 @@ EFI_STATUS
   @param[out] WidgetCount       The number of widgets returned in Widgets.
 
   @retval EFI_SUCCESS           The widgets were retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -189,14 +189,14 @@ EFI_STATUS
     OUT HDA_WIDGET **Widgets,
     OUT UINTN *WidgetCount);
 
-/**                                                                 
+/**
   Frees an array of HDA_WIDGET.
 
   @param[in] Widgets            A pointer to the buffer array of widgets that is to be freed.
   @param[in] WidgetCount        The number of widgets in Widgets.
 
   @retval EFI_SUCCESS           The buffer was freed.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS

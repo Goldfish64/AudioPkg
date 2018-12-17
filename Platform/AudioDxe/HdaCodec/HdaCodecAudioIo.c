@@ -37,7 +37,7 @@ HdaCodecHdaIoStreamCallback(
     // Create variables.
     EFI_AUDIO_IO_PROTOCOL *AudioIo = (EFI_AUDIO_IO_PROTOCOL*)Context1;
     EFI_AUDIO_IO_CALLBACK AudioIoCallback = (EFI_AUDIO_IO_CALLBACK)Context2;
-    
+
     // Ensure required parameters are valid.
     if ((AudioIo == NULL) || (AudioIoCallback == NULL))
         return;
@@ -46,7 +46,7 @@ HdaCodecHdaIoStreamCallback(
     AudioIoCallback(AudioIo, Context3);
 }
 
-/**                                                                 
+/**
   Gets the collection of output ports.
 
   @param[in]  This              A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -214,7 +214,7 @@ HdaCodecAudioIoGetOutputs(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Sets up the device to play audio data.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -287,7 +287,7 @@ HdaCodecAudioIoSetupPlayback(
                 return EFI_UNSUPPORTED;
             StreamBits = HDA_CONVERTER_FORMAT_BITS_8;
             break;
-        
+
         // 16-bit.
         case EfiAudioIoBits16:
             if (!(SupportedRates & HDA_PARAMETER_SUPPORTED_PCM_SIZE_RATES_16BIT))
@@ -454,7 +454,7 @@ CLOSE_STREAM:
     return Status;
 }
 
-/**                                                                 
+/**
   Begins playback on the device and waits for playback to complete.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -509,7 +509,7 @@ HdaCodecAudioIoStartPlayback(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Begins playback on the device asynchronously.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -554,7 +554,7 @@ HdaCodecAudioIoStartPlaybackAsync(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Stops playback on the device.
 
   @param[in] This               A pointer to the EFI_AUDIO_IO_PROTOCOL instance.
@@ -567,7 +567,7 @@ EFIAPI
 HdaCodecAudioIoStopPlayback(
     IN EFI_AUDIO_IO_PROTOCOL *This) {
     DEBUG((DEBUG_INFO, "HdaCodecAudioIoStopPlayback(): start\n"));
-    
+
     // Create variables.
     AUDIO_IO_PRIVATE_DATA *AudioIoPrivateData;
     EFI_HDA_IO_PROTOCOL *HdaIo;

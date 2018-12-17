@@ -24,7 +24,7 @@
 
 #include "HdaCodec.h"
 
-/**                                                                 
+/**
   Gets the codec's name.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -39,7 +39,7 @@ HdaCodecInfoGetCodecName(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT CHAR16 **CodecName) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetCodecName(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
@@ -53,14 +53,14 @@ HdaCodecInfoGetCodecName(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Gets the codec's vendor and device ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] VendorId          The vendor and device ID of the codec.
 
   @retval EFI_SUCCESS           The vendor and device ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI
@@ -68,7 +68,7 @@ HdaCodecInfoGetVendorId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT UINT32 *VendorId) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetVendorId(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
@@ -82,14 +82,14 @@ HdaCodecInfoGetVendorId(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Gets the codec's revision ID.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] RevisionId        The revision ID of the codec.
 
   @retval EFI_SUCCESS           The revision ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI
@@ -97,7 +97,7 @@ HdaCodecInfoGetRevisionId(
     IN  EFI_HDA_CODEC_INFO_PROTOCOL *This,
     OUT UINT32 *RevisionId) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetRevisionId(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
@@ -111,14 +111,14 @@ HdaCodecInfoGetRevisionId(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Gets the node ID of the codec's audio function.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
   @param[out] AudioFuncId       The node ID of the codec's audio function.
 
   @retval EFI_SUCCESS           The node ID was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI
@@ -127,7 +127,7 @@ HdaCodecInfoGetAudioFuncId(
     OUT UINT8 *AudioFuncId,
     OUT BOOLEAN *UnsolCapable) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetAudioFuncId(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
@@ -142,7 +142,7 @@ HdaCodecInfoGetAudioFuncId(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Gets the codec's default supported stream rates and formats.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -150,7 +150,7 @@ HdaCodecInfoGetAudioFuncId(
   @param[out] Formats           The default supported formats.
 
   @retval EFI_SUCCESS           The stream rates and formats were retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI
@@ -159,7 +159,7 @@ HdaCodecInfoGetDefaultRatesFormats(
     OUT UINT32 *Rates,
     OUT UINT32 *Formats) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetDefaultRatesFormats(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
@@ -174,7 +174,7 @@ HdaCodecInfoGetDefaultRatesFormats(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Gets the codec's default amp capabilities.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -191,7 +191,7 @@ HdaCodecInfoGetDefaultAmpCaps(
     OUT UINT32 *AmpInCaps,
     OUT UINT32 *AmpOutCaps) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetDefaultAmpCaps(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
 
@@ -206,7 +206,7 @@ HdaCodecInfoGetDefaultAmpCaps(
     return EFI_SUCCESS;
 }
 
-/**                                                                 
+/**
   Gets the codec's widgets.
 
   @param[in]  This              A pointer to the EFI_HDA_CODEC_INFO_PROTOCOL instance.
@@ -224,7 +224,7 @@ HdaCodecInfoGetWidgets(
     OUT HDA_WIDGET **Widgets,
     OUT UINTN *WidgetCount) {
     //DEBUG((DEBUG_INFO, "HdaCodecInfoGetWidgets(): start\n"));
-    
+
     // Create variables.
     HDA_CODEC_INFO_PRIVATE_DATA *HdaPrivateData;
     HDA_WIDGET_DEV *HdaWidgetDev;
@@ -242,7 +242,7 @@ HdaCodecInfoGetWidgets(
     HdaWidgets = AllocateZeroPool(sizeof(HDA_WIDGET) * HdaWidgetsCount);
     if (HdaWidgets == NULL)
         return EFI_OUT_OF_RESOURCES;
-    
+
     // Populate widgets array.
     for (UINTN w = 0; w < HdaWidgetsCount; w++) {
         // Get widget.
@@ -291,7 +291,7 @@ HdaCodecInfoGetWidgets(
         HdaWidgets[w].AmpOutCapabilities = HdaWidgetDev->AmpOutCapabilities;
         HdaWidgets[w].AmpOutLeftDefaultGainMute = HdaWidgetDev->AmpOutLeftDefaultGainMute;
         HdaWidgets[w].AmpOutRightDefaultGainMute = HdaWidgetDev->AmpOutRightDefaultGainMute;
-        
+
         // Get input/output data.
         HdaWidgets[w].SupportedPcmRates = HdaWidgetDev->SupportedPcmRates;
         HdaWidgets[w].SupportedFormats = HdaWidgetDev->SupportedFormats;
@@ -319,14 +319,14 @@ FREE_WIDGETS:
     return EFI_OUT_OF_RESOURCES;
 }
 
-/**                                                                 
+/**
   Frees an array of HDA_WIDGET.
 
   @param[in] Widgets            A pointer to the buffer array of widgets that is to be freed.
   @param[in] WidgetCount        The number of widgets in Widgets.
 
   @retval EFI_SUCCESS           The buffer was freed.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI

@@ -24,14 +24,14 @@
 
 #include "HdaController.h"
 
-/**                                                                 
+/**
   Gets the controller's name.
 
   @param[in]  This              A pointer to the EFI_HDA_CONTROLLER_INFO_PROTOCOL instance.
   @param[out] CodecName         A pointer to the buffer to return the codec name.
 
   @retval EFI_SUCCESS           The controller name was retrieved.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                    
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 EFI_STATUS
 EFIAPI
@@ -39,7 +39,7 @@ HdaControllerInfoGetName(
     IN  EFI_HDA_CONTROLLER_INFO_PROTOCOL *This,
     OUT CHAR16 **ControllerName) {
     //DEBUG((DEBUG_INFO, "HdaControllerInfoGetName(): start\n"));
-    
+
     // Create variables.
     HDA_CONTROLLER_INFO_PRIVATE_DATA *HdaPrivateData;
 

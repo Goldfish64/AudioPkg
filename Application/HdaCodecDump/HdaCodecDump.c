@@ -224,7 +224,7 @@ HdaCodecDumpPrintWidgets(
             Print(L"    Conn = %s, Color = %s\n",
                 ConnTypes[HDA_VERB_GET_CONFIGURATION_DEFAULT_CONN_TYPE(Widgets[w].DefaultConfiguration)],
                 Colors[HDA_VERB_GET_CONFIGURATION_DEFAULT_COLOR(Widgets[w].DefaultConfiguration)]);
-            
+
             // Print default association and sequence.
             Print(L"    DefAssociation = 0x%X, Sequence = 0x%X\n",
                 HDA_VERB_GET_CONFIGURATION_DEFAULT_ASSOCIATION(Widgets[w].DefaultConfiguration),
@@ -318,7 +318,7 @@ HdaCodecDumpMain(
     Status = HdaCodecInfo->GetWidgets(HdaCodecInfo, &Widgets, &WidgetCount);
     HdaCodecDumpPrintWidgets(Widgets, WidgetCount);
     Status = HdaCodecInfo->FreeWidgetsBuffer(Widgets, WidgetCount);
-    
+
 
     return EFI_SUCCESS;
 }

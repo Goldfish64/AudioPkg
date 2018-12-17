@@ -75,7 +75,7 @@ HdaControllerInitCorb(
     if (EFI_ERROR(Status))
         return Status;
     ZeroMem(CorbBuffer, CorbLength);
-    
+
     // Map outbound buffer.
     CorbLengthActual = CorbLength;
     Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, CorbBuffer, &CorbLengthActual, &CorbPhysAddr, &CorbMapping);
@@ -169,7 +169,7 @@ HdaControllerCleanupCorb(
     Status = HdaControllerSetCorb(HdaDev, FALSE);
     if (EFI_ERROR(Status))
         return Status;
-    
+
     // Unmap CORB and free buffer.
     if (HdaDev->CorbMapping)
         PciIo->Unmap(PciIo, HdaDev->CorbMapping);
@@ -201,7 +201,7 @@ HdaControllerSetCorb(
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_CORBCTL, 1, &HdaCorbCtl);
     if (EFI_ERROR(Status))
         return Status;
-    
+
     // Change CORB operation.
     if (Enable)
         HdaCorbCtl |= HDA_REG_CORBCTL_CORBRUN;
@@ -264,7 +264,7 @@ HdaControllerInitRirb(
     if (EFI_ERROR(Status))
         return Status;
     ZeroMem(RirbBuffer, RirbLength);
-    
+
     // Map outbound buffer.
     RirbLengthActual = RirbLength;
     Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, RirbBuffer, &RirbLengthActual, &RirbPhysAddr, &RirbMapping);
@@ -339,7 +339,7 @@ HdaControllerCleanupRirb(
     Status = HdaControllerSetRirb(HdaDev, FALSE);
     if (EFI_ERROR(Status))
         return Status;
-    
+
     // Unmap RIRB and free buffer.
     if (HdaDev->RirbMapping)
         PciIo->Unmap(PciIo, HdaDev->RirbMapping);
@@ -371,7 +371,7 @@ HdaControllerSetRirb(
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_RIRBCTL, 1, &HdaRirbCtl);
     if (EFI_ERROR(Status))
         return Status;
-    
+
     // Change RIRB operation.
     if (Enable)
         HdaRirbCtl |= HDA_REG_RIRBCTL_RIRBDMAEN;
@@ -454,7 +454,7 @@ HdaControllerInitStreams(
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
         ZeroMem(HdaStream->BufferList, HDA_BDL_SIZE);
-        
+
         // Map buffer descriptor list.
         BdlLengthActual = HDA_BDL_SIZE;
         Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, HdaStream->BufferList, &BdlLengthActual,
@@ -470,14 +470,14 @@ HdaControllerInitStreams(
         Status = HdaControllerResetStream(HdaStream);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
-        
+
         // Allocate buffer for data.
         Status = PciIo->AllocateBuffer(PciIo, AllocateAnyPages, EfiBootServicesData, EFI_SIZE_TO_PAGES(HDA_STREAM_BUF_SIZE),
             (VOID**)&HdaStream->BufferData, 0);
         if (EFI_ERROR(Status))
             goto FREE_BUFFER;
         ZeroMem(HdaStream->BufferData, HDA_STREAM_BUF_SIZE);
-        
+
         // Map buffer descriptor list.
         DataLengthActual = HDA_STREAM_BUF_SIZE;
         Status = PciIo->Map(PciIo, EfiPciIoOperationBusMasterCommonBuffer, HdaStream->BufferData, &DataLengthActual,
@@ -737,7 +737,7 @@ HdaControllerSetStream(
     Status = PciIo->Mem.Read(PciIo, EfiPciIoWidthUint8, PCI_HDA_BAR, HDA_REG_SDNCTL1(HdaStream->Index), 1, &HdaStreamCtl1);
     if (EFI_ERROR(Status))
         return Status;
-    
+
     // Update stream operation.
     if (Run)
         HdaStreamCtl1 |= HDA_REG_SDNCTL1_RUN;

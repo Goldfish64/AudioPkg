@@ -485,7 +485,7 @@ HdaCodecProbeCodec(
     if (HdaCodecDev->Name == NULL)
         HdaCodecDev->Name = HDA_CODEC_MODEL_GENERIC;
     DEBUG((DEBUG_INFO, "Codec name: %s\n", HdaCodecDev->Name));
-    
+
     // Get function group count.
     Status = HdaIo->SendCommand(HdaIo, HDA_NID_ROOT,
         HDA_CODEC_VERB(HDA_VERB_GET_PARAMETER, HDA_PARAMETER_SUBNODE_COUNT), &Response);
@@ -637,7 +637,7 @@ HdaCodecInstallProtocols(
     if ((HdaCodecInfoData == NULL) || (AudioIoData == NULL)) {
         Status = EFI_OUT_OF_RESOURCES;
         goto FREE_POOLS;
-    }   
+    }
 
     // Populate info protocol data.
     HdaCodecInfoData->Signature = HDA_CODEC_PRIVATE_DATA_SIGNATURE;
@@ -665,7 +665,7 @@ HdaCodecInstallProtocols(
     // Install protocols.
     Status = gBS->InstallMultipleProtocolInterfaces(&HdaCodecDev->ControllerHandle,
         &gEfiHdaCodecInfoProtocolGuid, &HdaCodecInfoData->HdaCodecInfo,
-        &gEfiAudioIoProtocolGuid, &AudioIoData->AudioIo, 
+        &gEfiAudioIoProtocolGuid, &AudioIoData->AudioIo,
         &gEfiCallerIdGuid, HdaCodecDev, NULL);
     if (EFI_ERROR(Status))
         goto FREE_POOLS;
@@ -750,7 +750,7 @@ HdaCodecDisableWidgetPath(
     // Crawl through widget path.
     while (HdaWidget != NULL) {
         // If pin complex, clear pin control
-        if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {  
+        if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
                 HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, FALSE, FALSE)), &Response);
             if (EFI_ERROR(Status))
@@ -804,7 +804,7 @@ HdaCodecEnableWidgetPath(
         DEBUG((DEBUG_INFO, "Widget @ 0x%X setting up\n", HdaWidget->NodeId));
 
         // If pin complex, set as output.
-        if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {  
+        if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {
             Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
                 HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, TRUE, FALSE)), &Response);
             if (EFI_ERROR(Status))
@@ -831,7 +831,7 @@ HdaCodecEnableWidgetPath(
         // If there is an output amp, unmute.
         if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_OUT_AMP) {
             UINT8 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->AmpOutCapabilities); // TODO set volume.
-            
+
             // If there are no overriden amp capabilities, check function group.
             if (!(HdaWidget->AmpOverride))
                 offset = HDA_PARAMETER_AMP_CAPS_OFFSET(HdaWidget->FuncGroup->AmpOutCapabilities);
@@ -995,7 +995,7 @@ HdaCodecDriverBindingSupported(
         This->DriverBindingHandle, ControllerHandle, EFI_OPEN_PROTOCOL_BY_DRIVER);
     if (EFI_ERROR(Status))
         return Status;
-    
+
     // Get address of codec.
     Status = HdaIo->GetAddress(HdaIo, &CodecAddress);
     if (EFI_ERROR(Status))

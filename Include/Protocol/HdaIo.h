@@ -62,14 +62,14 @@ VOID
     IN VOID *Context2,
     IN VOID *Context3);
 
-/**                                                                 
+/**
   Retrieves this codec's address.
 
   @param[in]  This              A pointer to the HDA_IO_PROTOCOL instance.
   @param[out] CodecAddress      The codec's address.
 
   @retval EFI_SUCCESS           The codec's address was returned.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -77,7 +77,7 @@ EFI_STATUS
     IN  EFI_HDA_IO_PROTOCOL *This,
     OUT UINT8 *CodecAddress);
 
-/**                                                                 
+/**
   Sends a single command to the codec.
 
   @param[in]  This              A pointer to the HDA_IO_PROTOCOL instance.
@@ -86,7 +86,7 @@ EFI_STATUS
   @param[out] Response          The response received.
 
   @retval EFI_SUCCESS           The verb was sent successfully and a response received.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS
@@ -96,7 +96,7 @@ EFI_STATUS
     IN  UINT32 Verb,
     OUT UINT32 *Response);
 
-/**                                                                 
+/**
   Sends a set of commands to the codec.
 
   @param[in] This               A pointer to the HDA_IO_PROTOCOL instance.
@@ -104,7 +104,7 @@ EFI_STATUS
   @param[in] Verbs              The verbs to send. Responses will be delievered in the same list.
 
   @retval EFI_SUCCESS           The verbs were sent successfully and all responses received.
-  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.                      
+  @retval EFI_INVALID_PARAMETER One or more parameters are invalid.
 **/
 typedef
 EFI_STATUS

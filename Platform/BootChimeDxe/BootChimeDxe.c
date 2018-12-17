@@ -178,12 +178,12 @@ BootChimeDxeMain(
    // ASSERT_EFI_ERROR(Status);
     DEBUG((DEBUG_INFO, "audio handles %u\n", AudioIoHandleCount));
 
-   /* EFI_HANDLE* handles = NULL;   
+   /* EFI_HANDLE* handles = NULL;
     UINTN handleCount = 0;
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
     ASSERT_EFI_ERROR(Status);
-    
+
     EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
     DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
     EFI_FILE_PROTOCOL* root = NULL;
@@ -213,7 +213,7 @@ BootChimeDxeMain(
     FileInfo = (EFI_FILE_INFO*)fileinfobuf;
 
     Print(L"File size: %u bytes\n", FileInfo->FileSize);
-    
+
     // Read file into buffer.
     bytesLength = FileInfo->FileSize;
     bytes = AllocateZeroPool(bytesLength);
@@ -256,7 +256,7 @@ BootChimeDxeMain(
     AudioIo = dd;
 
     // Play audio.
-        
+
     }
     return EFI_SUCCESS;
 }

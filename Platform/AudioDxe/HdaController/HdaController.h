@@ -227,7 +227,7 @@ struct _HDA_CONTROLLER_DEV {
     EFI_EVENT ResponsePollTimer;
     EFI_EVENT ExitBootServiceEvent;
     SPIN_LOCK SpinLock;
-    
+
 };
 
 // HDA I/O private data.

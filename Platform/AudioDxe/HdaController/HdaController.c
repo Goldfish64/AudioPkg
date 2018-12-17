@@ -30,7 +30,7 @@ EFIAPI
 HdaControllerStreamPollTimerHandler(
     IN EFI_EVENT Event,
     IN VOID *Context) {
-    
+
     // Create variables.
     EFI_STATUS Status;
     HDA_STREAM *HdaStream = (HDA_STREAM*)Context;
@@ -199,7 +199,7 @@ HdaControllerInitPciHw(
         return Status;
     DEBUG((DEBUG_INFO, "HdaControllerInitPciHw(): capabilities:\n  64-bit: %s  Serial Data Out Signals: %u\n",
         HdaControllerDev->Capabilities & HDA_REG_GCAP_64OK ? L"Yes" : L"No",
-        HDA_REG_GCAP_NSDO(HdaControllerDev->Capabilities)));    
+        HDA_REG_GCAP_NSDO(HdaControllerDev->Capabilities)));
     DEBUG((DEBUG_INFO, "  Bidir streams: %u  Input streams: %u  Output streams: %u\n",
         HDA_REG_GCAP_BSS(HdaControllerDev->Capabilities), HDA_REG_GCAP_ISS(HdaControllerDev->Capabilities),
         HDA_REG_GCAP_OSS(HdaControllerDev->Capabilities)));
@@ -350,7 +350,7 @@ HdaControllerScanCodecs(
             HdaIoPrivateData->HdaIo.GetStream = HdaControllerHdaIoGetStream;
             HdaIoPrivateData->HdaIo.StartStream = HdaControllerHdaIoStartStream;
             HdaIoPrivateData->HdaIo.StopStream = HdaControllerHdaIoStopStream;
-            
+
             // Assign output stream.
             if (CurrentOutputStreamIndex < HdaControllerDev->OutputStreamsCount) {
                 DEBUG((DEBUG_INFO, "Assigning output stream %u to codec\n", CurrentOutputStreamIndex));
@@ -409,7 +409,7 @@ HdaControllerScanCodecs(
                 goto FREE_CODECS;
         }
     }
-    
+
     return EFI_SUCCESS;
 
 FREE_CODECS:
@@ -785,7 +785,7 @@ HdaControllerDriverBindingStart(
     // Scan for codecs.
     Status = HdaControllerScanCodecs(HdaControllerDev);
     ASSERT_EFI_ERROR(Status);
-    
+
     DEBUG((DEBUG_INFO, "HdaControllerDriverBindingStart(): done\n"));
     return EFI_SUCCESS;
 
