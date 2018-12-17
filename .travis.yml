@@ -1,14 +1,10 @@
-language: cpp
-
-env:
-  global:
-   - FORCE_INSTALL=1
+language: c
 
 matrix:
   include:
-  - os: osx
-    compiler: clang
+  - os: linux
+    compiler: gcc
 
     script:
-    - "./macbuild.tool"
+    - "./debbuild.sh"
     
