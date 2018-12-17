@@ -43,12 +43,12 @@
     UefiDriverEntryPoint
     UefiFileHandleLib
     UefiLib
+    ChimeDataLib
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES
     gEfiSimpleFileSystemProtocolGuid # CONSUMES
 
 [Sources]
-    ChimeData.c
     BootChimeDxe.h
     BootChimeDxe.c

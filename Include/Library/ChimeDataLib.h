@@ -1,5 +1,7 @@
 /*
- * File: BootChimeDxe.h
+ * File: ChimeDataLib.h
+ *
+ * Description: Apple startup chime header.
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,28 +24,17 @@
  * SOFTWARE.
  */
 
-#ifndef _EFI_BOOT_CHIME_DXE_H_
-#define _EFI_BOOT_CHIME_DXE_H_
+#ifndef _EFI_CHIME_DATA_LIB_H_
+#define _EFI_CHIME_DATA_LIB_H_
 
-// Common UEFI includes and library classes.
 #include <Uefi.h>
-#include <Library/BaseLib.h>
-#include <Library/BaseMemoryLib.h>
-#include <Library/DebugLib.h>
-#include <Library/MemoryAllocationLib.h>
-#include <Library/UefiBootServicesTableLib.h>
-#include <Library/UefiLib.h>
-
-#include <Guid/FileInfo.h>
-
-// Consumed protocols.
 #include <Protocol/AudioIo.h>
-#include <Protocol/SimpleFileSystem.h>
-#include <Protocol/LoadedImage.h>
-#include <Protocol/DevicePath.h>
-#include <Protocol/DevicePathUtilities.h>
-#include <Library/DevicePathLib.h>
 
-#include <Library/ChimeDataLib.h>
+// Chime data.
+extern UINT8 ChimeData[];
+extern UINTN ChimeDataLength;
+extern UINT8 ChimeDataChannels;
+extern EFI_AUDIO_IO_PROTOCOL_BITS ChimeDataBits;
+extern EFI_AUDIO_IO_PROTOCOL_FREQ ChimeDataFreq;
 
 #endif

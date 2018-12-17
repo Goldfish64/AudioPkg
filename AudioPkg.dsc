@@ -55,8 +55,10 @@
     UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
     HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
     ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
+    ChimeDataLib|AudioPkg/Library/ChimeDataLib/ChimeDataLib.inf
 
 [Components]
+    AudioPkg/Library/ChimeDataLib/ChimeDataLib.inf
     AudioPkg/Library/WaveLib/WaveLib.inf
     AudioPkg/Platform/AudioDxe/AudioDxe.inf
     AudioPkg/Platform/BootChimeDxe/BootChimeDxe.inf
