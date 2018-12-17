@@ -600,7 +600,7 @@ HdaCodecParsePorts(
                 (DefaultDeviceType == HDA_CONFIG_DEFAULT_DEVICE_OTHER_DIGITAL_OUT)) {
 
                 // Try to get upstream output.
-                DEBUG((DEBUG_INFO, "Port widget @ 0x%X is an output\n", HdaWidget->NodeId));
+                DEBUG((DEBUG_INFO, "Port widget @ 0x%X is an output (pin defaults 0x%X)\n", HdaWidget->NodeId, HdaWidget->DefaultConfiguration));
                 Status = HdaCodecFindUpstreamOutput(HdaWidget, 0);
                 if (EFI_ERROR(Status))
                     continue;
@@ -709,13 +709,22 @@ HdaCodecGetOutputDac(
 EFI_STATUS
 EFIAPI
 HdaCodecGetSupportedPcmRates(
-    IN  HDA_WIDGET_DEV *HdaOutputWidget,
+    IN  HDA_WIDGET_DEV *HdaPinWidget,
     OUT UINT32 *SupportedRates) {
     DEBUG((DEBUG_INFO, "HdaCodecGetSupportedPcmRates(): start\n"));
 
     // Check that parameters are valid.
-    if ((HdaOutputWidget == NULL) || (SupportedRates == NULL))
+    if ((HdaPinWidget == NULL) || (SupportedRates == NULL))
         return EFI_INVALID_PARAMETER;
+
+    // Create variables.
+    EFI_STATUS Status;
+    HDA_WIDGET_DEV *HdaOutputWidget;
+
+    // Get output DAC widget.
+    Status = HdaCodecGetOutputDac(HdaPinWidget, &HdaOutputWidget);
+    if (EFI_ERROR(Status))
+        return Status;
 
     // Does the widget specify format info?
     if (HdaOutputWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_FORMAT_OVERRIDE) {
