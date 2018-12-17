@@ -548,7 +548,7 @@ HdaCodecAudioIoStartPlaybackAsync(
 
     // Start stream.
     Status = HdaIo->StartStream(HdaIo, EfiHdaIoTypeOutput, Data, DataLength, Position,
-        HdaCodecHdaIoStreamCallback, (VOID*)This, (VOID*)Callback, Context);
+        (VOID*)HdaCodecHdaIoStreamCallback, (VOID*)This, (VOID*)Callback, Context);
     if (EFI_ERROR(Status))
         return Status;
     return EFI_SUCCESS;
