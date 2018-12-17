@@ -3,7 +3,7 @@ language: c
 matrix:
   include:
   - os: linux
-    compiler: gcc
+    compiler: gcc-5
 
     script:
     - "./debbuild.sh"
