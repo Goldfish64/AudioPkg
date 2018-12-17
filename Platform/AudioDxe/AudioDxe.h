@@ -61,8 +61,8 @@
 #define MS_TO_NANOSECOND(a)  ((a) * 1000000)
 
 // Driver Bindings.
-EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding;
-EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
+extern EFI_DRIVER_BINDING_PROTOCOL gHdaControllerDriverBinding;
+extern EFI_DRIVER_BINDING_PROTOCOL gHdaCodecDriverBinding;
 
 #define GET_PCI_VENDOR_ID(a)    (a & 0xFFFF)
 #define GET_PCI_DEVICE_ID(a)    ((a >> 16) & 0xFFFF)

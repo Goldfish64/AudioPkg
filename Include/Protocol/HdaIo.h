@@ -173,7 +173,7 @@ struct _EFI_HDA_IO_PROTOCOL {
 #define EFI_HDA_IO_DEVICE_PATH_GUID { \
     0xA9003FEB, 0xD806, 0x41DB, { 0xA4, 0x91, 0x54, 0x05, 0xFE, 0xEF, 0x46, 0xC3 } \
 }
-EFI_GUID gEfiHdaIoDevicePathGuid;
+extern EFI_GUID gEfiHdaIoDevicePathGuid;
 
 // HDA I/O Device Path structure.
 typedef struct {
