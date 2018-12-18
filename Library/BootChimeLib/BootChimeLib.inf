@@ -1,5 +1,5 @@
 ##
- # File: ChimeDataLib.inf
+ # File: BootChimeLib.inf
  #
  # Copyright (c) 2018 John Davis
  #
@@ -24,18 +24,28 @@
 
 [Defines]
     INF_VERSION    = 0x00010005
-    BASE_NAME      = ChimeDataLib
+    BASE_NAME      = BootChimeLib
     FILE_GUID      = 82BB53BA-D0CB-4478-8067-D6E13FCBBA74
     MODULE_TYPE    = BASE
     VERSION_STRING = 1.0
-    LIBRARY_CLASS  = ChimeDataLib|PEIM DXE_DRIVER DXE_RUNTIME_DRIVER UEFI_DRIVER UEFI_APPLICATION DXE_SMM_DRIVER
+    LIBRARY_CLASS  = BootChimeLib|PEIM DXE_DRIVER DXE_RUNTIME_DRIVER UEFI_DRIVER UEFI_APPLICATION DXE_SMM_DRIVER
 
 [Packages]
     MdePkg/MdePkg.dec
     AudioPkg/AudioPkg.dec
 
 [LibraryClasses]
-    UefiLib
+    BaseLib
+    BaseMemoryLib
+    DevicePathLib
+    MemoryAllocationLib
+    UefiBootServicesTableLib
+    UefiRuntimeServicesTableLib
+
+[Protocols]
+    gEfiAudioIoProtocolGuid # CONSUMES
+    gEfiDevicePathProtocolGuid # CONSUMES
 
 [Sources]
-    ChimeDataLib.c
+    BootChimeLib.c
+    ChimeData.c

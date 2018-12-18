@@ -45,6 +45,7 @@
     TimerLib|MdePkg/Library/SecPeiDxeTimerLibCpu/SecPeiDxeTimerLibCpu.inf
     UefiApplicationEntryPoint|MdePkg/Library/UefiApplicationEntryPoint/UefiApplicationEntryPoint.inf
     UefiBootServicesTableLib|MdePkg/Library/UefiBootServicesTableLib/UefiBootServicesTableLib.inf
+    UefiRuntimeServicesTableLib|MdePkg/Library/UefiRuntimeServicesTableLib/UefiRuntimeServicesTableLib.inf
     UefiDriverEntryPoint|MdePkg/Library/UefiDriverEntryPoint/UefiDriverEntryPoint.inf
     UefiFileHandleLib|MdePkg/Library/UefiFileHandleLib/UefiFileHandleLib.inf
     UefiLib|MdePkg/Library/UefiLib/UefiLib.inf
@@ -55,13 +56,14 @@
     UefiHiiServicesLib|MdeModulePkg/Library/UefiHiiServicesLib/UefiHiiServicesLib.inf
     HiiLib|MdeModulePkg/Library/UefiHiiLib/UefiHiiLib.inf
     ShellLib|ShellPkg/Library/UefiShellLib/UefiShellLib.inf
-    ChimeDataLib|AudioPkg/Library/ChimeDataLib/ChimeDataLib.inf
+    BootChimeLib|AudioPkg/Library/BootChimeLib/BootChimeLib.inf
 
 [Components]
-    AudioPkg/Library/ChimeDataLib/ChimeDataLib.inf
+    AudioPkg/Library/BootChimeLib/BootChimeLib.inf
     AudioPkg/Library/WaveLib/WaveLib.inf
     AudioPkg/Platform/AudioDxe/AudioDxe.inf
     AudioPkg/Platform/BootChimeDxe/BootChimeDxe.inf
+    AudioPkg/Application/BootChimeCfg/BootChimeCfg.inf
     AudioPkg/Application/HdaCodecDump/HdaCodecDump.inf
     AudioPkg/Application/AudioDemo/AudioDemo.inf
 

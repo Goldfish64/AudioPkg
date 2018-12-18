@@ -44,7 +44,7 @@
     UefiDriverEntryPoint
     UefiFileHandleLib
     UefiLib
-    ChimeDataLib
+    BootChimeLib
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES

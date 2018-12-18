@@ -1,5 +1,7 @@
 /*
- * File: BootChimeDxe.h
+ * File: BootChimeCfg.h
+ * 
+ * Description: BootChimeDxe configuration application.
  *
  * Copyright (c) 2018 John Davis
  *
@@ -22,8 +24,8 @@
  * SOFTWARE.
  */
 
-#ifndef _EFI_BOOT_CHIME_DXE_H_
-#define _EFI_BOOT_CHIME_DXE_H_
+#ifndef _EFI_BOOT_CHIME_CFG_H_
+#define _EFI_BOOT_CHIME_CFG_H_
 
 // Common UEFI includes and library classes.
 #include <Uefi.h>
@@ -32,18 +34,30 @@
 #include <Library/DebugLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Library/BootChimeLib.h>
 
 #include <Guid/FileInfo.h>
 
 // Consumed protocols.
 #include <Protocol/AudioIo.h>
-#include <Protocol/SimpleFileSystem.h>
-#include <Protocol/LoadedImage.h>
 #include <Protocol/DevicePath.h>
 #include <Protocol/DevicePathUtilities.h>
 #include <Library/DevicePathLib.h>
 
-#include <Library/BootChimeLib.h>
+#define BCFG_NAME       (L"BOOTCHIMECFG.EFI")
+#define BCFG_ARG_HELP   (L"-?")
+#define BCFG_ARG_LIST   (L"-l")
+#define BCFG_ARG_SELECT (L"-s")
+#define BCFG_ARG_VOLUME (L"-v")
+#define BCFG_ARG_TEST   (L"-t")
+
+typedef struct {
+    EFI_AUDIO_IO_PROTOCOL *AudioIo;
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath;
+    EFI_AUDIO_IO_PROTOCOL_PORT OutputPort;
+    UINTN OutputPortIndex;
+} BOOT_CHIME_DEVICE;
 
 #endif

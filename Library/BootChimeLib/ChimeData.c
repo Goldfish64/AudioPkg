@@ -1,13 +1,15 @@
 /*
- * File: ChimeDataLib.c
+ * File: ChimeData.c
  *
  * Description: Apple startup chime at 48 kHz, 16-bit, stereo. Copyright (c) Apple Inc.
  *
  */
 
-#include <Uefi.h>
-#include <Protocol/AudioIo.h>
+#include <Library/BootChimeLib.h>
 
+//
+// Default chime data.
+//
 UINT8 ChimeData[] = {
     0XDF, 0XFF, 0XE3, 0XFF, 0XD7, 0XFF, 0XD9, 0XFF, 0XDB, 0XFF, 0XDD, 0XFF,
     0XD9, 0XFF, 0XD8, 0XFF, 0XDA, 0XFF, 0XD9, 0XFF, 0XDA, 0XFF, 0XDC, 0XFF,
