@@ -39,6 +39,7 @@
     DebugLib
     MemoryAllocationLib
     PcdLib
+    DevicePathLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
     UefiFileHandleLib

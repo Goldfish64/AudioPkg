@@ -115,7 +115,10 @@ HdaCodecAudioIoGetOutputs(
                 break;
 
             default:
-                HdaOutputPorts[i].Device = EfiAudioIoDeviceOther;
+                if (HdaCodecDev->OutputPorts[i]->PinCapabilities & HDA_PARAMETER_PIN_CAPS_HDMI)
+                    HdaOutputPorts[i].Device = EfiAudioIoDeviceHdmi;
+                else
+                    HdaOutputPorts[i].Device = EfiAudioIoDeviceOther;
         }
 
         // Get location.

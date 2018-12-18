@@ -274,7 +274,7 @@ HdaCodecGetOutputDac(
 EFI_STATUS
 EFIAPI
 HdaCodecGetSupportedPcmRates(
-    IN  HDA_WIDGET_DEV *HdaOutputWidget,
+    IN  HDA_WIDGET_DEV *HdaPinWidget,
     OUT UINT32 *SupportedRates);
 
 EFI_STATUS

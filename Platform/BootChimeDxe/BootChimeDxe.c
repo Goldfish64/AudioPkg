@@ -85,6 +85,11 @@ BootChimeExitBootServices(
     if ((!played) && (BootChimeIsAppleBootLoader(ImageHandle))) {
         played = TRUE;
 
+        if (AudioIo == NULL) {
+            Print(L"AudioIo protocol is NULL\n");
+            while(TRUE);
+        }
+
         // Setup playback.
         Status = AudioIo->SetupPlayback(AudioIo, index, 80, EfiAudioIoFreq48kHz, EfiAudioIoBits16, 2);
         if (EFI_ERROR(Status)) {
@@ -130,7 +135,7 @@ IN EFI_EVENT Event,
     Status = dd->GetOutputs(dd, &Outputs, &OutputsCount);
     ASSERT_EFI_ERROR(Status);
 
-    CHAR16 *Devices[EfiAudioIoDeviceMaximum] = { L"Line", L"Speaker", L"Headphones", L"SPDIF", L"Mic", L"Other" };
+    CHAR16 *Devices[EfiAudioIoDeviceMaximum] = { L"Line", L"Speaker", L"Headphones", L"SPDIF", L"Mic", L"HDMI", L"Other" };
     CHAR16 *Locations[EfiAudioIoLocationMaximum] = { L"N/A", L"rear", L"front", L"left", L"right", L"top", L"bottom", L"other" };
     CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
 

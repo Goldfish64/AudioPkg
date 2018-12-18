@@ -48,6 +48,7 @@ typedef enum {
     EfiAudioIoDeviceHeadphones,
     EfiAudioIoDeviceSpdif,
     EfiAudioIoDeviceMic,
+    EfiAudioIoDeviceHdmi,
     EfiAudioIoDeviceOther,
     EfiAudioIoDeviceMaximum
 } EFI_AUDIO_IO_PROTOCOL_DEVICE;
