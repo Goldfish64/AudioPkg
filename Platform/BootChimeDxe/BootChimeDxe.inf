@@ -36,18 +36,20 @@
 
 [LibraryClasses]
     BaseMemoryLib
+    BootChimeLib
     DebugLib
-    MemoryAllocationLib
     DevicePathLib
+    MemoryAllocationLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
     UefiFileHandleLib
     UefiLib
-    BootChimeLib
+    WaveLib
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES
     gEfiDevicePathProtocolGuid # CONSUMES
+    gEfiLoadedImageDevicePathProtocolGuid # CONSUMES
     gEfiSimpleFileSystemProtocolGuid # CONSUMES
 
 [Sources]

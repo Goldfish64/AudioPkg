@@ -35,6 +35,7 @@
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiLib.h>
 #include <Library/UefiBootServicesTableLib.h>
+#include <Library/WaveLib.h>
 
 #include <Guid/FileInfo.h>
 
@@ -45,5 +46,6 @@
 #include <Protocol/SimpleFileSystem.h>
 
 #define ERROR_WAIT_TIME 5000000
+#define AUDIO_FILE_NAME L"bootchime.wav"
 
 #endif

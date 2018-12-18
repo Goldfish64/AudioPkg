@@ -24,14 +24,24 @@
 
 #include "BootChimeDxe.h"
 
+// Original ExitBootServices().
 STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
 
-STATIC BOOLEAN mPlayed = FALSE;
+// Audio file data.
+STATIC UINT8 *mSoundData;
+STATIC UINTN mSoundDataLength;
+STATIC EFI_AUDIO_IO_PROTOCOL_FREQ mSoundFreq;
+STATIC EFI_AUDIO_IO_PROTOCOL_BITS mSoundBits;
+STATIC UINT8 mSoundChannels;
+STATIC BOOLEAN mPlayed;
 
 BOOLEAN
 EFIAPI
 BootChimeIsAppleBootLoader(
     IN EFI_HANDLE ImageHandle) {
+    DEBUG((DEBUG_INFO, "BootChimeIsAppleBootLoader(%lx): start\n", ImageHandle));
+
+    // Create variables.
     EFI_STATUS Status;
     EFI_LOADED_IMAGE_PROTOCOL *LoadedImage;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
@@ -53,16 +63,18 @@ BootChimeIsAppleBootLoader(
         DevicePath = NextDevicePathNode(DevicePath);
     }
 
+    // Check to see if path matches up with where boot.efi would be.
     if (LastPathNode != NULL) {
         DEBUG((DEBUG_INFO, "Path: %s\n", LastPathNode->PathName));
         PathLen = StrLen(LastPathNode->PathName);
         BootPathName = LastPathNode->PathName + PathLen - BootPathLen;
         if (PathLen >= BootPathLen) {
-            if (((PathLen == BootPathLen) || (*(BootPathName - 1) == L'\\')) && (StrCmp(BootPathName, L"boot.efi") == 0))
+            if (((PathLen == BootPathLen) || (*(BootPathName - 1) == L'\\')) && (StrCmp(BootPathName, L"boot.efi") == 0)) {
+                DEBUG((DEBUG_INFO, "BootChimeIsAppleBootLoader(%lx): image is Apple boot.efi\n", ImageHandle));
                 return TRUE;
+            }
         }
     }
-
     return FALSE;
 }
 
@@ -71,7 +83,7 @@ EFIAPI
 BootChimeExitBootServices(
     IN EFI_HANDLE ImageHandle,
     IN UINTN MapKey) {
-    DEBUG((DEBUG_INFO, "BootChimeExitBootServices(): start\n"));
+    DEBUG((DEBUG_INFO, "BootChimeExitBootServices(%lx): start\n", ImageHandle));
 
     // Create variables.
     EFI_STATUS Status;
@@ -85,12 +97,12 @@ BootChimeExitBootServices(
         mPlayed = TRUE;
 
         // Get stored audio settings.
-        Status = BootChimeGetStoredOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+        Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex, &OutputVolume);
         if (EFI_ERROR(Status)) {
             if (Status == EFI_NOT_FOUND) {
                 Print(L"BootChimeDxe: A saved playback device couldn't be found, using default device.\n");
                 Print(L"BootChimeDxe: Please run BootChimeCfg if the selected device is wrong.\n");
-                Status = BootChimeGetDefaultOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+                Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex, &OutputVolume);
                 if (EFI_ERROR(Status)) {
                     Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
                     goto DONE_ERROR;
@@ -103,14 +115,14 @@ BootChimeExitBootServices(
 
         // Setup playback.
         Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume,
-            ChimeDataFreq, ChimeDataBits, ChimeDataChannels);
+            mSoundFreq, mSoundBits, mSoundChannels);
         if (EFI_ERROR(Status)) {
             Print(L"BootChimeDxe: Error setting up playback: %r\n", Status);
             goto DONE_ERROR;
         }
 
         // Start playback.
-        Status = AudioIo->StartPlayback(AudioIo, ChimeData, ChimeDataLength, 0);
+        Status = AudioIo->StartPlayback(AudioIo, mSoundData, mSoundDataLength, 0);
         if (EFI_ERROR(Status)) {
             Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
             goto DONE_ERROR;
@@ -136,51 +148,243 @@ BootChimeDxeMain(
     IN EFI_SYSTEM_TABLE *SystemTable) {
     DEBUG((DEBUG_INFO, "BootChimeDxeMain(): start\n"));
 
-    // Replace ExitBootServices().
-    mOrigExitBootServices = gBS->ExitBootServices;
-    gBS->ExitBootServices = BootChimeExitBootServices;
+    // Create variables.
+    EFI_STATUS Status;
 
-   /* EFI_HANDLE* handles = NULL;
-    UINTN handleCount = 0;
+    // Image info.
+    EFI_DEVICE_PATH_PROTOCOL *LoadedImageDevicePath = NULL;
+    EFI_DEVICE_PATH_PROTOCOL *DevicePath = NULL;
+    EFI_DEVICE_PATH_PROTOCOL *ParentDeviceNode = NULL;
 
-    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &handleCount, &handles);
-    ASSERT_EFI_ERROR(Status);
+    // Filesystem.
+    EFI_HANDLE *SfsHandles = NULL;
+    UINTN SfsHandleCount = 0;
+    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL *SfsIo = NULL;
+    EFI_FILE_PROTOCOL *FileRootVolume = NULL;
+    EFI_FILE_PROTOCOL *FileAudio = NULL;
 
-    EFI_SIMPLE_FILE_SYSTEM_PROTOCOL* fs = NULL;
-    DEBUG((DEBUG_INFO, "Handles %u\n", handleCount));
-    EFI_FILE_PROTOCOL* root = NULL;
+    // File info.
+    EFI_FILE_INFO *AudioFileInfo = NULL;
+    UINTN AudioFileInfoSize = 0;
+    UINT8 *AudioFileBuffer;
+    UINTN AudioFileBufferSize;
+    EFI_AUDIO_IO_PROTOCOL_BITS AudioFileBits;
+    EFI_AUDIO_IO_PROTOCOL_FREQ AudioFileFreq;
+    UINT8 AudioFileChannels;
+    WAVE_FILE_DATA WaveData;
 
-    // opewn file.
-    EFI_FILE_PROTOCOL* token = NULL;
-    for (UINTN handle = 0; handle < handleCount; handle++) {
-        Status = gBS->HandleProtocol(handles[handle], &gEfiSimpleFileSystemProtocolGuid, (void**)&fs);
-        ASSERT_EFI_ERROR(Status);
+    // Default to using built-in data.
+    mSoundData = ChimeData;
+    mSoundDataLength = ChimeDataLength;
+    mSoundFreq = ChimeDataFreq;
+    mSoundBits = ChimeDataBits;
+    mSoundChannels = ChimeDataChannels;
+    mPlayed = FALSE;
 
-        Status = fs->OpenVolume(fs, &root);
-        ASSERT_EFI_ERROR(Status);
+    // Open Loaded Image Device Path protocol.
+    Status = gBS->HandleProtocol(ImageHandle, &gEfiLoadedImageDevicePathProtocolGuid, (VOID**)&LoadedImageDevicePath);
+    if (EFI_ERROR(Status) && (Status != EFI_UNSUPPORTED))
+        goto DONE;
 
-        Status = root->Open(root, &token, L"quadra.raw", EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
+    // Get parent device path if supported.
+    if (LoadedImageDevicePath) {
+        DevicePath = LoadedImageDevicePath;
+        while(!IsDevicePathEnd(DevicePath)) {
+            if (!((DevicePath->Type == MEDIA_DEVICE_PATH) && (DevicePath->SubType == MEDIA_FILEPATH_DP)))
+                ParentDeviceNode = DevicePath;
+            DevicePath = NextDevicePathNode(DevicePath);
+        }
+    }
+
+    // Get filesystem volumes in system.
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiSimpleFileSystemProtocolGuid, NULL, &SfsHandleCount, &SfsHandles);
+    if (EFI_ERROR(Status))
+        goto DONE;
+
+    // Check each filesystem.
+    for (UINTN f = 0; f < SfsHandleCount; f++) {
+        // Open Simple Filesystem protocol.
+        Status = gBS->HandleProtocol(SfsHandles[f], &gEfiSimpleFileSystemProtocolGuid, (VOID**)&SfsIo);
+        if (EFI_ERROR(Status))
+            continue;
+
+        // Should we check the device paths?
+        if (LoadedImageDevicePath) {
+            // Get Device Path protocol.
+            Status = gBS->HandleProtocol(SfsHandles[f], &gEfiDevicePathProtocolGuid, (VOID**)&DevicePath);
+            if (EFI_ERROR(Status))
+                continue;
+
+            // Get end of device path.
+            while (!IsDevicePathEnd(NextDevicePathNode(DevicePath)))
+                DevicePath = NextDevicePathNode(DevicePath);
+
+            // Compare nodes. If they don't match, move to the next handle.
+            if (CompareMem(DevicePath, ParentDeviceNode, DevicePathNodeLength(ParentDeviceNode)) != 0)
+                continue;
+        }
+
+        // Open the volume.
+        Status = SfsIo->OpenVolume(SfsIo, &FileRootVolume);
+        if (EFI_ERROR(Status))
+            continue;
+
+        // Try to open the file.
+        Status = FileRootVolume->Open(FileRootVolume, &FileAudio, AUDIO_FILE_NAME,
+            EFI_FILE_MODE_READ, EFI_FILE_READ_ONLY | EFI_FILE_HIDDEN | EFI_FILE_SYSTEM);
         if (!(EFI_ERROR(Status)))
             break;
     }
 
-    // Get size.
-    EFI_FILE_INFO *FileInfo;
+    // If an audio file was found, read that and use it for a chime.
+    if (FileAudio) {
+        DEBUG((DEBUG_INFO, "BootChimeDxeMain(): found file %s\n", AUDIO_FILE_NAME));
 
-    UINTN FileInfoSize = 512;
-    VOID *fileinfobuf = AllocateZeroPool(FileInfoSize);
-    Status = token->GetInfo(token, &gEfiFileInfoGuid, &FileInfoSize, fileinfobuf);
-    ASSERT_EFI_ERROR(Status);
+        // Get file info size.
+        AudioFileInfoSize = 0;
+        Status = FileAudio->GetInfo(FileAudio, &gEfiFileInfoGuid, &AudioFileInfoSize, NULL);
+        if (EFI_ERROR(Status) && (Status != EFI_BUFFER_TOO_SMALL))
+            goto DONE;
 
-    FileInfo = (EFI_FILE_INFO*)fileinfobuf;
+        // Allocate space for file info.
+        AudioFileInfo = AllocateZeroPool(AudioFileInfoSize);
+        if (AudioFileInfo == NULL) {
+            Status = EFI_OUT_OF_RESOURCES;
+            goto DONE;
+        }
 
-    Print(L"File size: %u bytes\n", FileInfo->FileSize);
+        // Get file info.
+        Status = FileAudio->GetInfo(FileAudio, &gEfiFileInfoGuid, &AudioFileInfoSize, (VOID*)AudioFileInfo);
+        if (EFI_ERROR(Status))
+            goto DONE;
+        DEBUG((DEBUG_INFO, "BootChimeDxeMain(): file size is %u bytes\n", AudioFileInfo->FileSize));
 
-    // Read file into buffer.
-    bytesLength = FileInfo->FileSize;
-    bytes = AllocateZeroPool(bytesLength);
-    Status = token->Read(token, &bytesLength, bytes);
-    ASSERT_EFI_ERROR(Status);*/
+        // Allocate space for file buffer.
+        AudioFileBufferSize = AudioFileInfo->FileSize;
+        AudioFileBuffer = AllocatePool(AudioFileBufferSize);
+        if (AudioFileBuffer == NULL) {
+            Status = EFI_OUT_OF_RESOURCES;
+            goto DONE;
+        }
 
+        // Read file data.
+        Status = FileAudio->Read(FileAudio, &AudioFileBufferSize, AudioFileBuffer);
+        if (EFI_ERROR(Status)) {
+            FreePool(AudioFileBuffer);
+            goto DONE;
+        }
+
+        // Get WAVE info.
+        Status = WaveGetFileData(AudioFileBuffer, AudioFileBufferSize, &WaveData);
+        if (EFI_ERROR(Status)) {
+            FreePool(AudioFileBuffer);
+            goto DONE;
+        }
+
+        // Determine bits.
+        switch (WaveData.Format->BitsPerSample) {
+            case 8:
+                AudioFileBits = EfiAudioIoBits8;
+                break;
+
+            case 16:
+                AudioFileBits = EfiAudioIoBits16;
+                break;
+
+            case 20:
+                AudioFileBits = EfiAudioIoBits20;
+                break;
+
+            case 24:
+                AudioFileBits = EfiAudioIoBits24;
+                break;
+
+            case 32:
+                AudioFileBits = EfiAudioIoBits32;
+                break;
+
+            default:
+                Print(L"BootChimeDxe: Unsupported bit depth for file: %u.\n", WaveData.Format->BitsPerSample);
+                FreePool(AudioFileBuffer);
+                goto DONE;
+        }
+
+        // Determine frequency.
+        switch (WaveData.Format->SamplesPerSec) {
+            case 8000:
+                AudioFileFreq = EfiAudioIoFreq8kHz;
+                break;
+
+            case 11025:
+                AudioFileFreq = EfiAudioIoFreq11kHz;
+                break;
+
+            case 16000:
+                AudioFileFreq = EfiAudioIoFreq16kHz;
+                break;
+
+            case 22050:
+                AudioFileFreq = EfiAudioIoFreq22kHz;
+                break;
+
+            case 32000:
+                AudioFileFreq = EfiAudioIoFreq32kHz;
+                break;
+
+            case 44100:
+                AudioFileFreq = EfiAudioIoFreq44kHz;
+                break;
+
+            case 48000:
+                AudioFileFreq = EfiAudioIoFreq48kHz;
+                break;
+
+            case 88200:
+                AudioFileFreq = EfiAudioIoFreq88kHz;
+                break;
+
+            case 96000:
+                AudioFileFreq = EfiAudioIoFreq96kHz;
+                break;
+
+            case 192000:
+                AudioFileFreq = EfiAudioIoFreq192kHz;
+                break;
+
+            default:
+                Print(L"BootChimeDxe: Unsupported sample rate for file: %u Hz.\n", WaveData.Format->SamplesPerSec);
+                FreePool(AudioFileBuffer);
+                goto DONE;
+        }
+
+        // Check channels.
+        if ((WaveData.Format->Channels == 0) || (WaveData.Format->Channels > EFI_AUDIO_IO_PROTOCOL_MAX_CHANNELS)) {
+            Print(L"BootChimeDxe: Unsupported number of channels for file: %u.\n", WaveData.Format->Channels);
+            FreePool(AudioFileBuffer);
+            goto DONE;
+        }
+        AudioFileChannels = (UINT8)WaveData.Format->Channels;
+
+        // Show warning if file is not optimal.
+        if ((AudioFileBits != EfiAudioIoBits16) || (AudioFileFreq != EfiAudioIoFreq48kHz) || (AudioFileChannels != 2))
+            Print(L"BootChimeDxe: The specified file is not 16-bit stereo @ 48 kHz. Support may vary.\n");
+
+        // Use file instead of built-in data.
+        mSoundData = WaveData.Samples;
+        mSoundDataLength = WaveData.SamplesLength;
+        mSoundBits = AudioFileBits;
+        mSoundFreq = AudioFileFreq;
+        mSoundChannels = AudioFileChannels;
+    }
+
+DONE:
+    if (SfsHandles)
+        FreePool(SfsHandles);
+    if (AudioFileInfo)
+        FreePool(AudioFileInfo);
+
+    // Replace ExitBootServices().
+    mOrigExitBootServices = gBS->ExitBootServices;
+    gBS->ExitBootServices = BootChimeExitBootServices;
     return EFI_SUCCESS;
 }
