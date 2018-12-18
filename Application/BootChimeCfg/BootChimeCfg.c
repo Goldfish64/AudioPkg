@@ -36,6 +36,7 @@ STATIC CONST SHELL_PARAM_ITEM ParamList[] = {
     { BCFG_ARG_SELECT, TypeValue },
     { BCFG_ARG_VOLUME, TypeValue },
     { BCFG_ARG_TEST, TypeFlag },
+    { BCFG_ARG_CLEAR, TypeFlag },
     { NULL, TypeMax }
 };
 
@@ -134,12 +135,13 @@ EFIAPI
 PrintHelp(VOID) {
     // Print help.
     ShellPrintEx(-1, -1, L"Configures the BootChimeDxe EFI driver.\n\n");
-    ShellPrintEx(-1, -1, L"%s [%s] [%s X] [%s X] [%s] [%s]\n\n", BCFG_NAME,
-        BCFG_ARG_LIST, BCFG_ARG_SELECT, BCFG_ARG_VOLUME, BCFG_ARG_TEST, BCFG_ARG_HELP);
+    ShellPrintEx(-1, -1, L"%s [%s] [%s X] [%s X] [%s] [%s] [%s]\n\n", BCFG_NAME,
+        BCFG_ARG_LIST, BCFG_ARG_SELECT, BCFG_ARG_VOLUME, BCFG_ARG_TEST, BCFG_ARG_CLEAR, BCFG_ARG_HELP);
     ShellPrintEx(-1, -1, L"    %s - List all audio outputs\n", BCFG_ARG_LIST);
     ShellPrintEx(-1, -1, L"    %s - Select audio output\n", BCFG_ARG_SELECT);
     ShellPrintEx(-1, -1, L"    %s - Change volume\n", BCFG_ARG_VOLUME);
     ShellPrintEx(-1, -1, L"    %s - Test current audio output\n", BCFG_ARG_TEST);
+    ShellPrintEx(-1, -1, L"    %s - Clear stored NVRAM variables\n", BCFG_ARG_CLEAR);
     ShellPrintEx(-1, -1, L"    %s - Show this help\n", BCFG_ARG_HELP);
 }
 
@@ -177,7 +179,29 @@ TestOutput(
 
     // Play chime.
     return AudioIo->StartPlayback(AudioIo, ChimeData, ChimeDataLength, 0);
+}
 
+EFI_STATUS
+EFIAPI
+ClearVars(VOID) {
+    // Create variables.
+    EFI_STATUS Status;
+    ShellPrintEx(-1, -1, L"Clearing variables...\n");
+
+    // Delete variables.
+    Status = gRT->SetVariable(BOOT_CHIME_VAR_DEVICE, &gBootChimeVendorVariableGuid, BOOT_CHIME_VAR_ATTRIBUTES, 0, NULL);
+    if (EFI_ERROR(Status) && (Status != EFI_NOT_FOUND))
+        return Status;
+    Status = gRT->SetVariable(BOOT_CHIME_VAR_INDEX, &gBootChimeVendorVariableGuid, BOOT_CHIME_VAR_ATTRIBUTES, 0, NULL);
+    if (EFI_ERROR(Status) && (Status != EFI_NOT_FOUND))
+        return Status;
+    Status = gRT->SetVariable(BOOT_CHIME_VAR_VOLUME, &gBootChimeVendorVariableGuid, BOOT_CHIME_VAR_ATTRIBUTES, 0, NULL);
+    if (EFI_ERROR(Status) && (Status != EFI_NOT_FOUND))
+        return Status;
+
+    // Success.
+    ShellPrintEx(-1, -1, L"Variables cleared!\n");
+    return EFI_SUCCESS;
 }
 
 EFI_STATUS
@@ -217,10 +241,16 @@ BootChimeCfgMain(
     }
 
     // Check to see if any supported flags are on the command line. If none, or the help arg, show help.
-    if ((!(ShellCommandLineGetFlag(Package, BCFG_ARG_LIST) || ShellCommandLineGetFlag(Package, BCFG_ARG_SELECT) ||
-        ShellCommandLineGetFlag(Package, BCFG_ARG_VOLUME) || ShellCommandLineGetFlag(Package, BCFG_ARG_TEST))) ||
-        ShellCommandLineGetFlag(Package, BCFG_ARG_HELP)) {
+    if ((!(ShellCommandLineGetFlag(Package, BCFG_ARG_HELP) || ShellCommandLineGetFlag(Package, BCFG_ARG_LIST) ||
+        ShellCommandLineGetFlag(Package, BCFG_ARG_SELECT) || ShellCommandLineGetFlag(Package, BCFG_ARG_VOLUME) ||
+        ShellCommandLineGetFlag(Package, BCFG_ARG_TEST) || ShellCommandLineGetFlag(Package, BCFG_ARG_CLEAR)))) {
         PrintHelp();
+        goto DONE;
+    }
+
+    // If the clear flag present, clear variables.
+    if (ShellCommandLineGetFlag(Package, BCFG_ARG_CLEAR)) {
+        Status = ClearVars();
         goto DONE;
     }
 

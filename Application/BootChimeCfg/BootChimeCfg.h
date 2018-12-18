@@ -52,6 +52,7 @@
 #define BCFG_ARG_SELECT (L"-s")
 #define BCFG_ARG_VOLUME (L"-v")
 #define BCFG_ARG_TEST   (L"-t")
+#define BCFG_ARG_CLEAR  (L"-x")
 
 typedef struct {
     EFI_AUDIO_IO_PROTOCOL *AudioIo;
