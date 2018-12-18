@@ -51,7 +51,6 @@ extern EFI_AUDIO_IO_PROTOCOL_FREQ ChimeDataFreq;
 EFI_STATUS
 EFIAPI
 BootChimeGetStoredOutput(
-    IN  EFI_HANDLE ImageHandle,
     OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
     OUT UINTN *Index,
     OUT UINT8 *Volume);
@@ -59,7 +58,6 @@ BootChimeGetStoredOutput(
 EFI_STATUS
 EFIAPI
 BootChimeGetDefaultOutput(
-    IN  EFI_HANDLE ImageHandle,
     OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
     OUT UINTN *Index,
     OUT UINT8 *Volume);

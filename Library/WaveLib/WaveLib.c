@@ -34,7 +34,7 @@ EFI_STATUS
 EFIAPI
 WaveGetFileData(
     IN  CONST VOID *FileData,
-    IN  UINT32 FileLength,
+    IN  UINTN FileLength,
     OUT WAVE_FILE_DATA *WaveFileData) {
 
     // Create variables.

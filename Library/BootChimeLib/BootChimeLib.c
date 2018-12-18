@@ -46,7 +46,6 @@ EFI_GUID gBootChimeVendorVariableGuid = BOOT_CHIME_VENDOR_VARIABLE_GUID;
 EFI_STATUS
 EFIAPI
 BootChimeGetStoredOutput(
-    IN  EFI_HANDLE ImageHandle,
     OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
     OUT UINTN *Index,
     OUT UINT8 *Volume) {
@@ -97,8 +96,7 @@ BootChimeGetStoredOutput(
     // Try to find the matching device exposing an Audio I/O protocol.
     for (UINTN h = 0; h < AudioIoHandleCount; h++) {
         // Open Device Path protocol.
-        Status = gBS->OpenProtocol(AudioIoHandles[h], &gEfiDevicePathProtocolGuid, (VOID**)&DevicePath,
-            NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+        Status = gBS->HandleProtocol(AudioIoHandles[h], &gEfiDevicePathProtocolGuid, (VOID**)&DevicePath);
         if (EFI_ERROR(Status))
             continue;
 
@@ -110,8 +108,7 @@ BootChimeGetStoredOutput(
         // Compare Device Paths. If they match, we have our Audio I/O device.
         if (StrCmp(StoredDevicePathStr, DevicePathStr) == 0) {
             // Open Audio I/O protocol.
-            Status = gBS->OpenProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIoProto,
-                NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+            Status = gBS->HandleProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIoProto);
             if (EFI_ERROR(Status))
                 goto DONE;
             break;
@@ -159,7 +156,6 @@ DONE:
 EFI_STATUS
 EFIAPI
 BootChimeGetDefaultOutput(
-    IN  EFI_HANDLE ImageHandle,
     OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
     OUT UINTN *Index,
     OUT UINT8 *Volume) {
@@ -184,8 +180,7 @@ BootChimeGetDefaultOutput(
     // Look through each Audio I/O protocol.
     for (UINTN h = 0; h < AudioIoHandleCount; h++) {
         // Open Audio I/O protocol.
-        Status = gBS->OpenProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIoProto,
-            NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+        Status = gBS->HandleProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIoProto);
         if (EFI_ERROR(Status))
             continue;
 

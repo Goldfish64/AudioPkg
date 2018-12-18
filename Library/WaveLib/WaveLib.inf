@@ -36,12 +36,7 @@
 
 [LibraryClasses]
     BaseMemoryLib
-    DebugLib
     MemoryAllocationLib
-    PcdLib
-    UefiApplicationEntryPoint
-    UefiBootServicesTableLib
-    UefiFileHandleLib
     UefiLib
 
 [Sources]

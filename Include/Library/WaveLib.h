@@ -31,7 +31,7 @@
 
 // WAVE file data.
 typedef struct {
-    UINT32 FileLength;
+    UINTN FileLength;
     UINT32 DataLength;
     WAVE_FORMAT_DATA *Format;
     UINT32 FormatLength;
@@ -44,7 +44,7 @@ EFI_STATUS
 EFIAPI
 WaveGetFileData(
     IN  CONST VOID *FileData,
-    IN  UINT32 FileLength,
+    IN  UINTN FileLength,
     OUT WAVE_FILE_DATA *WaveFileData);
 
 #endif

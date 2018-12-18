@@ -43,7 +43,6 @@ STATIC CONST SHELL_PARAM_ITEM ParamList[] = {
 EFI_STATUS
 EFIAPI
 GetOutputDevices(
-    IN  EFI_HANDLE ImageHandle,
     OUT BOOT_CHIME_DEVICE **Devices,
     OUT UINTN *DevicesCount) {
     // Create variables.
@@ -69,15 +68,13 @@ GetOutputDevices(
     // Discover audio outputs in system.
     for (UINTN h = 0; h < AudioIoHandleCount; h++) {
         // Open Audio I/O protocol.
-        Status = gBS->OpenProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIo,
-            NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+        Status = gBS->HandleProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIo);
         ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             continue;
         
         // Get device path.
-        Status = gBS->OpenProtocol(AudioIoHandles[h], &gEfiDevicePathProtocolGuid, (VOID**)&DevicePath,
-            NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+        Status = gBS->HandleProtocol(AudioIoHandles[h], &gEfiDevicePathProtocolGuid, (VOID**)&DevicePath);
         ASSERT_EFI_ERROR(Status);
         if (EFI_ERROR(Status))
             continue;
@@ -159,8 +156,7 @@ PrintDevices(
 
 EFI_STATUS
 EFIAPI
-TestOutput(
-    IN EFI_HANDLE ImageHandle) {
+TestOutput(VOID) {
     // Create variables.
     EFI_STATUS Status;
     EFI_AUDIO_IO_PROTOCOL *AudioIo;
@@ -168,11 +164,11 @@ TestOutput(
     UINT8 OutputVolume;
 
     // Get stored settings.
-    Status = BootChimeGetStoredOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+    Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex, &OutputVolume);
     if (EFI_ERROR(Status)) {
         if (Status == EFI_NOT_FOUND) {
             ShellPrintEx(-1, -1, L"Couldn't find stored settings, using default output.\n");
-            Status = BootChimeGetDefaultOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+            Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex, &OutputVolume);
             if (EFI_ERROR(Status))
                 return Status;
         } else {
@@ -263,7 +259,7 @@ BootChimeCfgMain(
     }
 
     // Get devices.
-    Status = GetOutputDevices(ImageHandle, &Devices, &DevicesCount);
+    Status = GetOutputDevices(&Devices, &DevicesCount);
     if (EFI_ERROR(Status))
         goto DONE;
 
@@ -335,7 +331,7 @@ BootChimeCfgMain(
 
     // If the test flag is present, test output.
     if (ShellCommandLineGetFlag(Package, BCFG_ARG_TEST)) {
-        Status = TestOutput(ImageHandle);
+        Status = TestOutput();
         if (EFI_ERROR(Status))
             goto DONE;
     }
