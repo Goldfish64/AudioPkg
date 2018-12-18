@@ -38,7 +38,6 @@
     BaseMemoryLib
     DebugLib
     MemoryAllocationLib
-    PcdLib
     DevicePathLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
@@ -48,6 +47,7 @@
 
 [Protocols]
     gEfiAudioIoProtocolGuid # CONSUMES
+    gEfiDevicePathProtocolGuid # CONSUMES
     gEfiSimpleFileSystemProtocolGuid # CONSUMES
 
 [Sources]

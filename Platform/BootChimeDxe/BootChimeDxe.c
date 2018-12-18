@@ -25,16 +25,8 @@
 #include "BootChimeDxe.h"
 
 STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
-STATIC EFI_AUDIO_IO_PROTOCOL *AudioIo;
-//STATIC UINTN bytesLength;
- //   STATIC UINT8 *bytes;
-
-STATIC EFI_EVENT protNot;
-STATIC VOID* reg;
 
 STATIC BOOLEAN played = FALSE;
-
-STATIC UINT8 index = 0;
 
 BOOLEAN
 EFIAPI
@@ -80,80 +72,43 @@ BootChimeExitBootServices(
     IN EFI_HANDLE ImageHandle,
     IN UINTN MapKey) {
     DEBUG((DEBUG_INFO, "BootChimeExitBootServices(): start\n"));
+
+    // Create variables.
     EFI_STATUS Status;
+    EFI_AUDIO_IO_PROTOCOL *AudioIo;
+    UINTN OutputIndex;
+    UINT8 OutputVolume;
 
     if ((!played) && (BootChimeIsAppleBootLoader(ImageHandle))) {
         played = TRUE;
 
-        if (AudioIo == NULL) {
-            Print(L"AudioIo protocol is NULL\n");
-            while(TRUE);
+        // Get stored audio settings.
+        Status = BootChimeGetStoredOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+        if (EFI_ERROR(Status)) {
+            Print(L"BootChimeDxe: An error occurred fetching the stored settings. Please run BootChimeCfg.\nPausing for 5 seconds...\n");
+            gBS->Stall(5000000);
+            goto EXIT_BOOT_SERVICES;
         }
 
         // Setup playback.
-        Status = AudioIo->SetupPlayback(AudioIo, index, 80, EfiAudioIoFreq48kHz, EfiAudioIoBits16, 2);
+        Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume, ChimeDataFreq, ChimeDataBits, ChimeDataChannels);
         if (EFI_ERROR(Status)) {
-            Print(L"BootChimeDxe: Error setting up playback: 0x%X\n", Status);
+            Print(L"BootChimeDxe: Error setting up playback: %r\n", Status);
+            gBS->Stall(5000000);
             goto EXIT_BOOT_SERVICES;
         }
 
         // Start playback.
         Status = AudioIo->StartPlayback(AudioIo, ChimeData, ChimeDataLength, 0);
         if (EFI_ERROR(Status)) {
-            Print(L"BootChimeDxe: Error starting playback: 0x%X\n", Status);
+            Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
+            gBS->Stall(5000000);
             goto EXIT_BOOT_SERVICES;
         }
     }
 
 EXIT_BOOT_SERVICES:
     return mOrigExitBootServices(ImageHandle, MapKey);
-}
-
-VOID
-EFIAPI
-BootChimeNotify(
-IN EFI_EVENT Event,
-    IN VOID *Context) {
-    EFI_STATUS Status;
-    EFI_HANDLE ImageHandle = (EFI_HANDLE)Context;
-    EFI_HANDLE AudioIoHandle;
-    UINTN AudioIoHandleCount;
-    EFI_AUDIO_IO_PROTOCOL *dd;
-
-    Status = gBS->LocateHandle(ByProtocol, &gEfiAudioIoProtocolGuid, reg, &AudioIoHandleCount, &AudioIoHandle);
-    if (EFI_ERROR(Status))
-        return;
-
-    Status = gBS->OpenProtocol(AudioIoHandle, &gEfiAudioIoProtocolGuid, (VOID**)&dd, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-    ASSERT_EFI_ERROR(Status);
-
-
-
-    // Get outputs.
-    EFI_AUDIO_IO_PROTOCOL_PORT *Outputs;
-    UINTN OutputsCount;
-    Status = dd->GetOutputs(dd, &Outputs, &OutputsCount);
-    ASSERT_EFI_ERROR(Status);
-
-    CHAR16 *Devices[EfiAudioIoDeviceMaximum] = { L"Line", L"Speaker", L"Headphones", L"SPDIF", L"Mic", L"HDMI", L"Other" };
-    CHAR16 *Locations[EfiAudioIoLocationMaximum] = { L"N/A", L"rear", L"front", L"left", L"right", L"top", L"bottom", L"other" };
-    CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
-
-    BOOLEAN hasHP = FALSE;
-    for (UINT8 i = 0; i < OutputsCount; i++) {
-        Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
-            Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
-        if (Outputs[i].Device == EfiAudioIoDeviceHeadphones)
-            hasHP = TRUE;
-
-        if (Outputs[i].Device == EfiAudioIoDeviceSpeaker)
-            index = i;
-    }
-
-    if (!hasHP)
-        return;
-
-    AudioIo = dd;
 }
 
 EFI_STATUS
@@ -168,20 +123,6 @@ BootChimeDxeMain(
    // gBS->StartImage = BootChimeStartImage;
     mOrigExitBootServices = gBS->ExitBootServices;
     gBS->ExitBootServices = BootChimeExitBootServices;
-
-    // Create variables.
-    EFI_STATUS Status;
-    EFI_HANDLE *AudioIoHandles;
-    UINTN AudioIoHandleCount;
-
-    Status = gBS->CreateEvent(EVT_NOTIFY_SIGNAL, TPL_NOTIFY, BootChimeNotify, ImageHandle, &protNot);
-    ASSERT_EFI_ERROR(Status);
-    Status = gBS->RegisterProtocolNotify(&gEfiAudioIoProtocolGuid, protNot, &reg);
-    ASSERT_EFI_ERROR(Status);
-
-    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
-   // ASSERT_EFI_ERROR(Status);
-    DEBUG((DEBUG_INFO, "audio handles %u\n", AudioIoHandleCount));
 
    /* EFI_HANDLE* handles = NULL;
     UINTN handleCount = 0;
@@ -225,43 +166,5 @@ BootChimeDxeMain(
     Status = token->Read(token, &bytesLength, bytes);
     ASSERT_EFI_ERROR(Status);*/
 
-    EFI_AUDIO_IO_PROTOCOL *dd;
-
-    for (UINT8 a = 0; a < AudioIoHandleCount; a++) {
-
-    Status = gBS->OpenProtocol(AudioIoHandles[a], &gEfiAudioIoProtocolGuid, (VOID**)&dd, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-    ASSERT_EFI_ERROR(Status);
-
-
-
-    // Get outputs.
-    EFI_AUDIO_IO_PROTOCOL_PORT *Outputs;
-    UINTN OutputsCount;
-    Status = dd->GetOutputs(dd, &Outputs, &OutputsCount);
-    ASSERT_EFI_ERROR(Status);
-
-    CHAR16 *Devices[EfiAudioIoDeviceMaximum] = { L"Line", L"Speaker", L"Headphones", L"SPDIF", L"Mic", L"Other" };
-    CHAR16 *Locations[EfiAudioIoLocationMaximum] = { L"N/A", L"rear", L"front", L"left", L"right", L"top", L"bottom", L"other" };
-    CHAR16 *Surfaces[EfiAudioIoSurfaceMaximum] = { L"external", L"internal", L"other" };
-
-    BOOLEAN hasHP = FALSE;
-    for (UINT8 i = 0; i < OutputsCount; i++) {
-        Print(L"Output %u: %s @ %s %s\n", i, Devices[Outputs[i].Device],
-            Locations[Outputs[i].Location], Surfaces[Outputs[i].Surface]);
-        if (Outputs[i].Device == EfiAudioIoDeviceHeadphones)
-            hasHP = TRUE;
-
-        if (Outputs[i].Device == EfiAudioIoDeviceSpeaker)
-            index = i;
-    }
-
-    if (!hasHP)
-        continue;
-
-    AudioIo = dd;
-
-    // Play audio.
-
-    }
     return EFI_SUCCESS;
 }

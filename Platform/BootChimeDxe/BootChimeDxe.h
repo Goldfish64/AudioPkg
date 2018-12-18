@@ -29,21 +29,21 @@
 #include <Uefi.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/BootChimeLib.h>
 #include <Library/DebugLib.h>
+#include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
-#include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiLib.h>
+#include <Library/UefiBootServicesTableLib.h>
 
 #include <Guid/FileInfo.h>
 
 // Consumed protocols.
 #include <Protocol/AudioIo.h>
-#include <Protocol/SimpleFileSystem.h>
-#include <Protocol/LoadedImage.h>
 #include <Protocol/DevicePath.h>
-#include <Protocol/DevicePathUtilities.h>
-#include <Library/DevicePathLib.h>
+#include <Protocol/LoadedImage.h>
+#include <Protocol/SimpleFileSystem.h>
 
-#include <Library/BootChimeLib.h>
+#define ERROR_WAIT_TIME 5000000
 
 #endif
