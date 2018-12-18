@@ -155,3 +155,80 @@ DONE:
         FreePool(DevicePathStr);
     return Status;
 }
+
+EFI_STATUS
+EFIAPI
+BootChimeGetDefaultOutput(
+    IN  EFI_HANDLE ImageHandle,
+    OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
+    OUT UINTN *Index,
+    OUT UINT8 *Volume) {
+    // Create variables.
+    EFI_STATUS Status;
+
+    // Audio I/O.
+    EFI_HANDLE *AudioIoHandles = NULL;
+    UINTN AudioIoHandleCount = 0;
+    EFI_AUDIO_IO_PROTOCOL *AudioIoProto = NULL;
+
+    // Outputs.
+    EFI_AUDIO_IO_PROTOCOL_PORT *OutputPorts = NULL;
+    UINTN OutputPortsCount = 0;
+    UINTN OutputPortIndex;
+
+    // Get Audio I/O protocols.
+    Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
+    if (EFI_ERROR(Status))
+        goto DONE;
+
+    // Look through each Audio I/O protocol.
+    for (UINTN h = 0; h < AudioIoHandleCount; h++) {
+        // Open Audio I/O protocol.
+        Status = gBS->OpenProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIoProto,
+            NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+        if (EFI_ERROR(Status))
+            continue;
+
+        // Get output ports.
+        Status = AudioIoProto->GetOutputs(AudioIoProto, &OutputPorts, &OutputPortsCount);
+        if (EFI_ERROR(Status))
+            continue;
+
+        // Look for built-in speakers.
+        for (UINTN o = 0; o < OutputPortsCount; o++) {
+            if (OutputPorts[o].Device == EfiAudioIoDeviceSpeaker) {
+                OutputPortIndex = o;
+                goto FOUND_OUTPUT;
+            }
+        }
+
+        // Look for line out.
+        for (UINTN o = 0; o < OutputPortsCount; o++) {
+            if (OutputPorts[o].Device == EfiAudioIoDeviceLine) {
+                OutputPortIndex = o;
+                goto FOUND_OUTPUT;
+            }
+        }
+
+        // Free output ports array.
+        FreePool(OutputPorts);
+    }
+
+    // If we get here, we couldn't find an output.
+    Status = EFI_NOT_FOUND;
+    goto DONE;
+
+FOUND_OUTPUT:
+    // Output was found.
+    *AudioIo = AudioIoProto;
+    *Index = OutputPortIndex;
+    *Volume = EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME;
+    Status = EFI_SUCCESS;
+
+DONE:
+    if (AudioIoHandles != NULL)
+        FreePool(AudioIoHandles);
+    if (OutputPorts != NULL)
+        FreePool(OutputPorts);
+    return Status;
+}

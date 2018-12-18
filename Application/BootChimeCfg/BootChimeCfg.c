@@ -169,8 +169,16 @@ TestOutput(
 
     // Get stored settings.
     Status = BootChimeGetStoredOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
-    if (EFI_ERROR(Status))
-        return Status;
+    if (EFI_ERROR(Status)) {
+        if (Status == EFI_NOT_FOUND) {
+            ShellPrintEx(-1, -1, L"Couldn't find stored settings, using default output.\n");
+            Status = BootChimeGetDefaultOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+            if (EFI_ERROR(Status))
+                return Status;
+        } else {
+            return Status;
+        }
+    }
     
     // Setup playback.
     Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume, ChimeDataFreq, ChimeDataBits, ChimeDataChannels);

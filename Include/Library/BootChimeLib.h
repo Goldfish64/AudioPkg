@@ -56,4 +56,12 @@ BootChimeGetStoredOutput(
     OUT UINTN *Index,
     OUT UINT8 *Volume);
 
+EFI_STATUS
+EFIAPI
+BootChimeGetDefaultOutput(
+    IN  EFI_HANDLE ImageHandle,
+    OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
+    OUT UINTN *Index,
+    OUT UINT8 *Volume);
+
 #endif

@@ -26,7 +26,7 @@
 
 STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
 
-STATIC BOOLEAN played = FALSE;
+STATIC BOOLEAN mPlayed = FALSE;
 
 BOOLEAN
 EFIAPI
@@ -79,32 +79,50 @@ BootChimeExitBootServices(
     UINTN OutputIndex;
     UINT8 OutputVolume;
 
-    if ((!played) && (BootChimeIsAppleBootLoader(ImageHandle))) {
-        played = TRUE;
+    // Check to see if we have played the chime already, and if not, if
+    // the loaded binary is the Apple boot.efi.
+    if ((!mPlayed) && (BootChimeIsAppleBootLoader(ImageHandle))) {
+        mPlayed = TRUE;
 
         // Get stored audio settings.
         Status = BootChimeGetStoredOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
         if (EFI_ERROR(Status)) {
-            Print(L"BootChimeDxe: An error occurred fetching the stored settings. Please run BootChimeCfg.\nPausing for 5 seconds...\n");
-            gBS->Stall(5000000);
-            goto EXIT_BOOT_SERVICES;
+            if (Status == EFI_NOT_FOUND) {
+                Print(L"BootChimeDxe: A saved playback device couldn't be found, using default device.\n");
+                Print(L"BootChimeDxe: Please run BootChimeCfg if the selected device is wrong.\n");
+                Status = BootChimeGetDefaultOutput(ImageHandle, &AudioIo, &OutputIndex, &OutputVolume);
+                if (EFI_ERROR(Status)) {
+                    Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
+                    goto DONE_ERROR;
+                }
+            } else {
+                Print(L"BootChimeDxe: An error occurred fetching the stored settings. Please run BootChimeCfg.\n");
+                goto DONE_ERROR;
+            }
         }
 
         // Setup playback.
-        Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume, ChimeDataFreq, ChimeDataBits, ChimeDataChannels);
+        Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume,
+            ChimeDataFreq, ChimeDataBits, ChimeDataChannels);
         if (EFI_ERROR(Status)) {
             Print(L"BootChimeDxe: Error setting up playback: %r\n", Status);
-            gBS->Stall(5000000);
-            goto EXIT_BOOT_SERVICES;
+            goto DONE_ERROR;
         }
 
         // Start playback.
         Status = AudioIo->StartPlayback(AudioIo, ChimeData, ChimeDataLength, 0);
         if (EFI_ERROR(Status)) {
             Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
-            gBS->Stall(5000000);
-            goto EXIT_BOOT_SERVICES;
+            goto DONE_ERROR;
         }
+
+        // Success.
+        goto EXIT_BOOT_SERVICES;
+
+DONE_ERROR:
+        Print(L"BootChimeDxe: Pausing for 5 seconds...\n");
+        gBS->Stall(ERROR_WAIT_TIME);
+        goto EXIT_BOOT_SERVICES;
     }
 
 EXIT_BOOT_SERVICES:
@@ -116,11 +134,9 @@ EFIAPI
 BootChimeDxeMain(
     IN EFI_HANDLE ImageHandle,
     IN EFI_SYSTEM_TABLE *SystemTable) {
-    Print(L"BootChimeDxe start\n");
+    DEBUG((DEBUG_INFO, "BootChimeDxeMain(): start\n"));
 
-    // Replace ImageStart.
-   // mOrigStartImage = gBS->StartImage;
-   // gBS->StartImage = BootChimeStartImage;
+    // Replace ExitBootServices().
     mOrigExitBootServices = gBS->ExitBootServices;
     gBS->ExitBootServices = BootChimeExitBootServices;
 
