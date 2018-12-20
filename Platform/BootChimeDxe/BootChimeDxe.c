@@ -24,8 +24,9 @@
 
 #include "BootChimeDxe.h"
 
-// Original ExitBootServices().
-STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
+// Original Boot Services functions.
+STATIC EFI_IMAGE_START mOrigStartImage;
+STATIC EFI_GET_MEMORY_MAP mOrigGetMemoryMap;
 
 // Audio file data.
 STATIC UINT8 *mSoundData;
@@ -33,6 +34,8 @@ STATIC UINTN mSoundDataLength;
 STATIC EFI_AUDIO_IO_PROTOCOL_FREQ mSoundFreq;
 STATIC EFI_AUDIO_IO_PROTOCOL_BITS mSoundBits;
 STATIC UINT8 mSoundChannels;
+
+STATIC BOOLEAN mIsAppleBoot;
 STATIC BOOLEAN mPlayed;
 
 BOOLEAN
@@ -80,10 +83,29 @@ BootChimeIsAppleBootLoader(
 
 EFI_STATUS
 EFIAPI
-BootChimeExitBootServices(
-    IN EFI_HANDLE ImageHandle,
-    IN UINTN MapKey) {
-    DEBUG((DEBUG_INFO, "BootChimeExitBootServices(%lx): start\n", ImageHandle));
+BootChimeStartImage(
+    IN  EFI_HANDLE ImageHandle,
+    OUT UINTN *ExitDataSize,
+    OUT CHAR16 **ExitData OPTIONAL) {
+    DEBUG((DEBUG_INFO, "BootChimeStartImage(%lx): start\n", ImageHandle));
+
+    // If the image being loaded is boot.efi, we will play the boot chime later on.
+    if (!mIsAppleBoot && BootChimeIsAppleBootLoader(ImageHandle))
+        mIsAppleBoot = TRUE;
+
+    // Call original StartImage.
+    return mOrigStartImage(ImageHandle, ExitDataSize, ExitData);
+}
+
+EFI_STATUS
+EFIAPI
+BootChimeGetMemoryMap(
+    IN OUT UINTN *MemoryMapSize,
+    IN OUT EFI_MEMORY_DESCRIPTOR *MemoryMap,
+    OUT    UINTN *MapKey,
+    OUT    UINTN *DescriptorSize,
+    OUT    UINT32 *DescriptorVersion) {
+    DEBUG((DEBUG_INFO, "BootChimeGetMemoryMap(): start\n"));
 
     // Create variables.
     EFI_STATUS Status;
@@ -93,7 +115,7 @@ BootChimeExitBootServices(
 
     // Check to see if we have played the chime already, and if not, if
     // the loaded binary is the Apple boot.efi.
-    if ((!mPlayed) && (BootChimeIsAppleBootLoader(ImageHandle))) {
+    if (!mPlayed && mIsAppleBoot) {
         mPlayed = TRUE;
 
         // Get stored audio settings.
@@ -129,16 +151,16 @@ BootChimeExitBootServices(
         }
 
         // Success.
-        goto EXIT_BOOT_SERVICES;
+        goto GET_MEMORY_MAP;
 
 DONE_ERROR:
         Print(L"BootChimeDxe: Pausing for 5 seconds...\n");
         gBS->Stall(ERROR_WAIT_TIME);
-        goto EXIT_BOOT_SERVICES;
+        goto GET_MEMORY_MAP;
     }
 
-EXIT_BOOT_SERVICES:
-    return mOrigExitBootServices(ImageHandle, MapKey);
+GET_MEMORY_MAP:
+    return mOrigGetMemoryMap(MemoryMapSize, MemoryMap, MapKey, DescriptorSize, DescriptorVersion);
 }
 
 EFI_STATUS
@@ -150,6 +172,7 @@ BootChimeDxeMain(
 
     // Create variables.
     EFI_STATUS Status;
+    EFI_TPL OldTpl;
 
     // Image info.
     EFI_DEVICE_PATH_PROTOCOL *LoadedImageDevicePath = NULL;
@@ -179,6 +202,7 @@ BootChimeDxeMain(
     mSoundFreq = ChimeDataFreq;
     mSoundBits = ChimeDataBits;
     mSoundChannels = ChimeDataChannels;
+    mIsAppleBoot = FALSE;
     mPlayed = FALSE;
 
     // Open Loaded Image Device Path protocol.
@@ -383,8 +407,18 @@ DONE:
     if (AudioFileInfo)
         FreePool(AudioFileInfo);
 
-    // Replace ExitBootServices().
-    mOrigExitBootServices = gBS->ExitBootServices;
-    gBS->ExitBootServices = BootChimeExitBootServices;
+    // Raise TPL.
+    OldTpl = gBS->RaiseTPL(TPL_HIGH_LEVEL);
+
+    // Replace Boot Services functions.
+    mOrigStartImage = gBS->StartImage;
+    gBS->StartImage = BootChimeStartImage;
+    mOrigGetMemoryMap = gBS->GetMemoryMap;
+    gBS->GetMemoryMap = BootChimeGetMemoryMap;
+
+    // Recalculate CRC and revert TPL.
+    gBS->Hdr.CRC32 = 0;
+    gBS->CalculateCrc32(gBS, gBS->Hdr.HeaderSize, &gBS->Hdr.CRC32);
+    gBS->RestoreTPL(OldTpl);
     return EFI_SUCCESS;
 }
