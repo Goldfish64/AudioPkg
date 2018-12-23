@@ -56,8 +56,8 @@ fi
 if [ ! -d "Binaries" ]; then
   mkdir Binaries || exit 1
   cd Binaries || exit 1
-  ln -s ../UDK/Build/AudioPkg/RELEASE_XCODE5/X64 RELEASE || exit 1
-  ln -s ../UDK/Build/AudioPkg/DEBUG_XCODE5/X64 DEBUG || exit 1
+  ln -s ../UDK/Build/AudioPkg/RELEASE_GCC5/X64 RELEASE || exit 1
+  ln -s ../UDK/Build/AudioPkg/DEBUG_GCC5/X64 DEBUG || exit 1
   cd .. || exit 1
 fi
 
