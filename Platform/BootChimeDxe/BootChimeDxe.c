@@ -107,60 +107,68 @@ BootChimeGetMemoryMap(
     OUT    UINT32 *DescriptorVersion) {
     DEBUG((DEBUG_INFO, "BootChimeGetMemoryMap(): start\n"));
 
+    // Check to see if we have played the chime already, and if not, if
+    // the loaded binary is the Apple boot.efi.
+    if (!mPlayed && mIsAppleBoot) {
+        // Play chime.
+        mPlayed = TRUE;
+        BootChimeDxePlay();
+    }
+
+    // Call original GetMemoryMap.
+    return mOrigGetMemoryMap(MemoryMapSize, MemoryMap, MapKey, DescriptorSize, DescriptorVersion);
+}
+
+EFI_STATUS
+EFIAPI
+BootChimeDxePlay(VOID) {
+    DEBUG((DEBUG_INFO, "BootChimeDxePlay(): start\n"));
+
     // Create variables.
     EFI_STATUS Status;
     EFI_AUDIO_IO_PROTOCOL *AudioIo;
     UINTN OutputIndex;
     UINT8 OutputVolume;
 
-    // Check to see if we have played the chime already, and if not, if
-    // the loaded binary is the Apple boot.efi.
-    if (!mPlayed && mIsAppleBoot) {
-        mPlayed = TRUE;
-
-        // Get stored audio settings.
-        Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex, &OutputVolume);
-        if (EFI_ERROR(Status)) {
-            if (Status == EFI_NOT_FOUND) {
-                Print(L"BootChimeDxe: A saved playback device couldn't be found, using default device.\n");
-                Print(L"BootChimeDxe: Please run BootChimeCfg if the selected device is wrong.\n");
-                Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex, &OutputVolume);
-                if (EFI_ERROR(Status)) {
-                    Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
-                    goto DONE_ERROR;
-                }
-            } else {
-                Print(L"BootChimeDxe: An error occurred fetching the stored settings. Please run BootChimeCfg.\n");
+    // Get stored audio settings.
+    Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex, &OutputVolume);
+    if (EFI_ERROR(Status)) {
+        if (Status == EFI_NOT_FOUND) {
+            Print(L"BootChimeDxe: A saved playback device couldn't be found, using default device.\n");
+            Print(L"BootChimeDxe: Please run BootChimeCfg if the selected device is wrong.\n");
+            Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex, &OutputVolume);
+            if (EFI_ERROR(Status)) {
+                Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
                 goto DONE_ERROR;
             }
-        }
-
-        // Setup playback.
-        Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume,
-            mSoundFreq, mSoundBits, mSoundChannels);
-        if (EFI_ERROR(Status)) {
-            Print(L"BootChimeDxe: Error setting up playback: %r\n", Status);
+        } else {
+            Print(L"BootChimeDxe: An error occurred fetching the stored settings. Please run BootChimeCfg.\n");
             goto DONE_ERROR;
         }
-
-        // Start playback.
-        Status = AudioIo->StartPlayback(AudioIo, mSoundData, mSoundDataLength, 0);
-        if (EFI_ERROR(Status)) {
-            Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
-            goto DONE_ERROR;
-        }
-
-        // Success.
-        goto GET_MEMORY_MAP;
-
-DONE_ERROR:
-        Print(L"BootChimeDxe: Pausing for 5 seconds...\n");
-        gBS->Stall(ERROR_WAIT_TIME);
-        goto GET_MEMORY_MAP;
     }
 
-GET_MEMORY_MAP:
-    return mOrigGetMemoryMap(MemoryMapSize, MemoryMap, MapKey, DescriptorSize, DescriptorVersion);
+    // Setup playback.
+    Status = AudioIo->SetupPlayback(AudioIo, OutputIndex, OutputVolume,
+        mSoundFreq, mSoundBits, mSoundChannels);
+    if (EFI_ERROR(Status)) {
+        Print(L"BootChimeDxe: Error setting up playback: %r\n", Status);
+        goto DONE_ERROR;
+    }
+
+    // Start playback.
+    Status = AudioIo->StartPlayback(AudioIo, mSoundData, mSoundDataLength, 0);
+    if (EFI_ERROR(Status)) {
+        Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
+        goto DONE_ERROR;
+    }
+
+    // Success.
+    return EFI_SUCCESS;
+
+DONE_ERROR:
+    Print(L"BootChimeDxe: Pausing for 5 seconds...\n");
+    gBS->Stall(ERROR_WAIT_TIME);
+    return Status;
 }
 
 EFI_STATUS

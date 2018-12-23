@@ -48,4 +48,38 @@
 #define ERROR_WAIT_TIME 5000000
 #define AUDIO_FILE_NAME L"bootchime.wav"
 
+//
+// Functions.
+//
+BOOLEAN
+EFIAPI
+BootChimeIsAppleBootLoader(
+    IN EFI_HANDLE ImageHandle);
+
+EFI_STATUS
+EFIAPI
+BootChimeStartImage(
+    IN  EFI_HANDLE ImageHandle,
+    OUT UINTN *ExitDataSize,
+    OUT CHAR16 **ExitData OPTIONAL);
+
+EFI_STATUS
+EFIAPI
+BootChimeGetMemoryMap(
+    IN OUT UINTN *MemoryMapSize,
+    IN OUT EFI_MEMORY_DESCRIPTOR *MemoryMap,
+    OUT    UINTN *MapKey,
+    OUT    UINTN *DescriptorSize,
+    OUT    UINT32 *DescriptorVersion);
+
+EFI_STATUS
+EFIAPI
+BootChimeDxePlay(VOID);
+
+EFI_STATUS
+EFIAPI
+BootChimeDxeMain(
+    IN EFI_HANDLE ImageHandle,
+    IN EFI_SYSTEM_TABLE *SystemTable);
+
 #endif
