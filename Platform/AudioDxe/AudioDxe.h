@@ -55,7 +55,8 @@
 #include <Protocol/HdaControllerInfo.h>
 
 // Driver version
-#define AUDIODXE_VERSION    0xA
+#define AUDIODXE_VERSION        0xA
+#define AUDIODXE_PKG_VERSION    1
 
 #define MS_TO_MICROSECOND(a) ((a) * 1000)
 #define MS_TO_NANOSECOND(a)  ((a) * 1000000)
