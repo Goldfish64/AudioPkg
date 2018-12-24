@@ -266,62 +266,60 @@ HdaCodecDumpMain(
     EFI_HANDLE *HdaCodecHandles;
     UINTN HdaCodecHandleCount;
     EFI_HDA_CODEC_INFO_PROTOCOL *HdaCodecInfo;
-    
+
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiHdaCodecInfoProtocolGuid, NULL, &HdaCodecHandleCount, &HdaCodecHandles);
     ASSERT_EFI_ERROR(Status);
 
-    
-    
-    for (UINTN i = 0; i < HdaCodecHandleCount; i++)
-    {
-    Status = gBS->OpenProtocol(HdaCodecHandles[i], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
-    ASSERT_EFI_ERROR(Status);
+    // Print each codec found.
+    for (UINTN i = 0; i < HdaCodecHandleCount; i++) {
+        Status = gBS->OpenProtocol(HdaCodecHandles[i], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+        ASSERT_EFI_ERROR(Status);
 
-    // Get name.
-    CHAR16 *Name;
-    Status = HdaCodecInfo->GetName(HdaCodecInfo, &Name);
-    Print(L"Codec: %s\n", Name);
+        // Get name.
+        CHAR16 *Name;
+        Status = HdaCodecInfo->GetName(HdaCodecInfo, &Name);
+        Print(L"Codec: %s\n", Name);
 
-    // Get AFG ID.
-    UINT8 AudioFuncId;
-    BOOLEAN Unsol;
-    Status = HdaCodecInfo->GetAudioFuncId(HdaCodecInfo, &AudioFuncId, &Unsol);
-    Print(L"AFG Function Id: 0x%X (unsol %u)\n", AudioFuncId, Unsol);
+        // Get AFG ID.
+        UINT8 AudioFuncId;
+        BOOLEAN Unsol;
+        Status = HdaCodecInfo->GetAudioFuncId(HdaCodecInfo, &AudioFuncId, &Unsol);
+        Print(L"AFG Function Id: 0x%X (unsol %u)\n", AudioFuncId, Unsol);
 
-    // Get vendor.
-    UINT32 VendorId;
-    Status = HdaCodecInfo->GetVendorId(HdaCodecInfo, &VendorId);
-    Print(L"Vendor ID: 0x%X\n", VendorId);
+        // Get vendor.
+        UINT32 VendorId;
+        Status = HdaCodecInfo->GetVendorId(HdaCodecInfo, &VendorId);
+        Print(L"Vendor ID: 0x%X\n", VendorId);
 
-    // Get revision.
-    UINT32 RevisionId;
-    Status = HdaCodecInfo->GetRevisionId(HdaCodecInfo, &RevisionId);
-    Print(L"Revision ID: 0x%X\n", RevisionId);
+        // Get revision.
+        UINT32 RevisionId;
+        Status = HdaCodecInfo->GetRevisionId(HdaCodecInfo, &RevisionId);
+        Print(L"Revision ID: 0x%X\n", RevisionId);
 
-    // Get supported rates/formats.
-    UINT32 Rates, Formats;
-    Status = HdaCodecInfo->GetDefaultRatesFormats(HdaCodecInfo, &Rates, &Formats);
+        // Get supported rates/formats.
+        UINT32 Rates, Formats;
+        Status = HdaCodecInfo->GetDefaultRatesFormats(HdaCodecInfo, &Rates, &Formats);
 
-    if ((Rates != 0) || (Formats != 0)) {
-        Print(L"Default PCM:\n");
-        HdaCodecDumpPrintRatesFormats(Rates, Formats);
-    } else
-        Print(L"Default PCM: N/A\n");
+        if ((Rates != 0) || (Formats != 0)) {
+            Print(L"Default PCM:\n");
+            HdaCodecDumpPrintRatesFormats(Rates, Formats);
+        } else
+            Print(L"Default PCM: N/A\n");
 
-    // Get default amp caps.
-    UINT32 AmpInCaps, AmpOutCaps;
-    Status = HdaCodecInfo->GetDefaultAmpCaps(HdaCodecInfo, &AmpInCaps, &AmpOutCaps);
-    Print(L"Default Amp-In caps: ");
-    HdaCodecDumpPrintAmpCaps(AmpInCaps);
-    Print(L"Default Amp-Out caps: ");
-    HdaCodecDumpPrintAmpCaps(AmpOutCaps);
+        // Get default amp caps.
+        UINT32 AmpInCaps, AmpOutCaps;
+        Status = HdaCodecInfo->GetDefaultAmpCaps(HdaCodecInfo, &AmpInCaps, &AmpOutCaps);
+        Print(L"Default Amp-In caps: ");
+        HdaCodecDumpPrintAmpCaps(AmpInCaps);
+        Print(L"Default Amp-Out caps: ");
+        HdaCodecDumpPrintAmpCaps(AmpOutCaps);
 
-    // Get widgets.
-    HDA_WIDGET *Widgets;
-    UINTN WidgetCount;
-    Status = HdaCodecInfo->GetWidgets(HdaCodecInfo, &Widgets, &WidgetCount);
-    HdaCodecDumpPrintWidgets(Widgets, WidgetCount);
-    Status = HdaCodecInfo->FreeWidgetsBuffer(Widgets, WidgetCount);
+        // Get widgets.
+        HDA_WIDGET *Widgets;
+        UINTN WidgetCount;
+        Status = HdaCodecInfo->GetWidgets(HdaCodecInfo, &Widgets, &WidgetCount);
+        HdaCodecDumpPrintWidgets(Widgets, WidgetCount);
+        Status = HdaCodecInfo->FreeWidgetsBuffer(Widgets, WidgetCount);
     }
     return EFI_SUCCESS;
-    }
+}
