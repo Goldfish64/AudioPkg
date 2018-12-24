@@ -266,11 +266,15 @@ HdaCodecDumpMain(
     EFI_HANDLE *HdaCodecHandles;
     UINTN HdaCodecHandleCount;
     EFI_HDA_CODEC_INFO_PROTOCOL *HdaCodecInfo;
-
+    
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiHdaCodecInfoProtocolGuid, NULL, &HdaCodecHandleCount, &HdaCodecHandles);
     ASSERT_EFI_ERROR(Status);
 
-    Status = gBS->OpenProtocol(HdaCodecHandles[0], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
+    
+    
+    for (UINTN i = 0; i < HdaCodecHandleCount; i++)
+    {
+    Status = gBS->OpenProtocol(HdaCodecHandles[i], &gEfiHdaCodecInfoProtocolGuid, (VOID**)&HdaCodecInfo, NULL, ImageHandle, EFI_OPEN_PROTOCOL_GET_PROTOCOL);
     ASSERT_EFI_ERROR(Status);
 
     // Get name.
@@ -318,7 +322,6 @@ HdaCodecDumpMain(
     Status = HdaCodecInfo->GetWidgets(HdaCodecInfo, &Widgets, &WidgetCount);
     HdaCodecDumpPrintWidgets(Widgets, WidgetCount);
     Status = HdaCodecInfo->FreeWidgetsBuffer(Widgets, WidgetCount);
-
-
+    }
     return EFI_SUCCESS;
-}
+    }
