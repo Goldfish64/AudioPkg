@@ -36,7 +36,16 @@ STATIC EFI_AUDIO_IO_PROTOCOL_BITS mSoundBits;
 STATIC UINT8 mSoundChannels;
 
 STATIC BOOLEAN mIsAppleBoot;
-STATIC BOOLEAN mPlayed;
+STATIC BOOLEAN mPlaybackComplete;
+
+VOID
+EFIAPI
+BootChimeAudioIoCallback(
+    IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
+    IN VOID *Context) {
+    DEBUG((DEBUG_INFO, "BootChimeAudioIoCallback(): start\n"));
+    *((BOOLEAN*)Context) = TRUE;
+}
 
 BOOLEAN
 EFIAPI
@@ -67,7 +76,7 @@ BootChimeIsAppleBootLoader(
     }
 
     // Check to see if path matches up with where boot.efi would be.
-    if (LastPathNode != NULL) {
+    if (LastPathNode) {
         DEBUG((DEBUG_INFO, "Path: %s\n", LastPathNode->PathName));
         PathLen = StrLen(LastPathNode->PathName);
         BootPathName = LastPathNode->PathName + PathLen - BootPathLen;
@@ -89,9 +98,15 @@ BootChimeStartImage(
     OUT CHAR16 **ExitData OPTIONAL) {
     DEBUG((DEBUG_INFO, "BootChimeStartImage(%lx): start\n", ImageHandle));
 
-    // If the image being loaded is boot.efi, we will play the boot chime later on.
-    if (!mIsAppleBoot && BootChimeIsAppleBootLoader(ImageHandle))
-        mIsAppleBoot = TRUE;
+    // Create variables.
+    EFI_STATUS Status;
+
+    // If the image being loaded is boot.efi, start playback of chime.
+    if (!mIsAppleBoot && BootChimeIsAppleBootLoader(ImageHandle)) {
+        Status = BootChimeDxePlay();
+        if (!EFI_ERROR(Status))
+            mIsAppleBoot = TRUE;
+    }
 
     // Call original StartImage.
     return mOrigStartImage(ImageHandle, ExitDataSize, ExitData);
@@ -107,12 +122,10 @@ BootChimeGetMemoryMap(
     OUT    UINT32 *DescriptorVersion) {
     DEBUG((DEBUG_INFO, "BootChimeGetMemoryMap(): start\n"));
 
-    // Check to see if we have played the chime already, and if not, if
-    // the loaded binary is the Apple boot.efi.
-    if (!mPlayed && mIsAppleBoot) {
-        // Play chime.
-        mPlayed = TRUE;
-        BootChimeDxePlay();
+    // If playback is in progress, wait.
+    if (mIsAppleBoot) {
+        while (!mPlaybackComplete)
+            CpuPause();
     }
 
     // Call original GetMemoryMap.
@@ -156,7 +169,8 @@ BootChimeDxePlay(VOID) {
     }
 
     // Start playback.
-    Status = AudioIo->StartPlayback(AudioIo, mSoundData, mSoundDataLength, 0);
+    mPlaybackComplete = FALSE;
+    Status = AudioIo->StartPlaybackAsync(AudioIo, mSoundData, mSoundDataLength, 0, BootChimeAudioIoCallback, &mPlaybackComplete);
     if (EFI_ERROR(Status)) {
         Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
         goto DONE_ERROR;
@@ -211,7 +225,6 @@ BootChimeDxeMain(
     mSoundBits = ChimeDataBits;
     mSoundChannels = ChimeDataChannels;
     mIsAppleBoot = FALSE;
-    mPlayed = FALSE;
 
     // Open Loaded Image Device Path protocol.
     Status = gBS->HandleProtocol(ImageHandle, &gEfiLoadedImageDevicePathProtocolGuid, (VOID**)&LoadedImageDevicePath);
@@ -252,7 +265,7 @@ BootChimeDxeMain(
                 DevicePath = NextDevicePathNode(DevicePath);
 
             // Compare nodes. If they don't match, move to the next handle.
-            if (CompareMem(DevicePath, ParentDeviceNode, DevicePathNodeLength(ParentDeviceNode)) != 0)
+            if (CompareMem(DevicePath, ParentDeviceNode, DevicePathNodeLength(ParentDeviceNode)))
                 continue;
         }
 
