@@ -447,8 +447,8 @@ HdaCodecAudioIoSetupPlayback(
     if (EFI_ERROR(Status))
         goto CLOSE_STREAM;
 
-    // Wait 750ms for all widgets to fully come on.
-    gBS->Stall(MS_TO_MICROSECOND(750));
+    // Wait 1s for all widgets to fully come on.
+    gBS->Stall(MS_TO_MICROSECOND(1000));
     return EFI_SUCCESS;
 
 CLOSE_STREAM:
