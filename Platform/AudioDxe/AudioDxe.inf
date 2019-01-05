@@ -43,15 +43,14 @@
     PcdLib
     UefiBootServicesTableLib
     UefiDriverEntryPoint
-    UefiFileHandleLib
     UefiLib
 
 [Protocols]
-    gEfiPciIoProtocolGuid # CONSUMES
-    gEfiHdaControllerInfoProtocolGuid # PRODUCES
-    gEfiHdaIoProtocolGuid # PRODUCES
-    gEfiHdaCodecInfoProtocolGuid # PRODUCES
-    gEfiAudioIoProtocolGuid # PRODUCES
+    gEfiPciIoProtocolGuid               # CONSUMES
+    gEfiHdaControllerInfoProtocolGuid   # PRODUCES
+    gEfiHdaIoProtocolGuid               # PRODUCES
+    gEfiHdaCodecInfoProtocolGuid        # PRODUCES
+    gEfiAudioIoProtocolGuid             # PRODUCES
 
 [Sources]
     HdaCodec/HdaCodecComponentName.h
