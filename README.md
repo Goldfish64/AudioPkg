@@ -3,6 +3,8 @@
 
 AudioPkg is a set of drivers/applications for supporting audio (currently only Intel HD audio) under UEFI.
 
+**Note: This driver is still a work in progress and may change widely before final release.**
+
 ## AudioDxe
 Main audio driver, supporting HD audio controllers and codecs. This driver exposes an instance of `EFI_AUDIO_IO_PROTOCOL` and `EFI_HDA_CODEC_INFO_PROTOCOL` for each codec for consumption by other drivers and applications in system.
 
