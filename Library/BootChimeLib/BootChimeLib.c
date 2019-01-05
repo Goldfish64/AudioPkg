@@ -53,10 +53,9 @@ BootChimeGetStoredOutput(
     EFI_STATUS Status;
 
     // Device Path.
-    CHAR16 *StoredDevicePathStr = NULL;
-    UINTN StoredDevicePathStrSize = 0;
+    EFI_DEVICE_PATH_PROTOCOL *StoredDevicePath = NULL;
+    UINTN StoredDevicePathSize = 0;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath = NULL;
-    CHAR16 *DevicePathStr = NULL;
 
     // Audio I/O.
     EFI_HANDLE *AudioIoHandles = NULL;
@@ -74,22 +73,22 @@ BootChimeGetStoredOutput(
     if (EFI_ERROR(Status))
         goto DONE;
 
-    // Get stored device path string size.
+    // Get stored device path size.
     Status = gRT->GetVariable(BOOT_CHIME_VAR_DEVICE, &gBootChimeVendorVariableGuid, NULL,
-        &StoredDevicePathStrSize, NULL);
+        &StoredDevicePathSize, NULL);
     if (EFI_ERROR(Status) && (Status != EFI_BUFFER_TOO_SMALL))
         goto DONE;
 
-    // Allocate space for device path string.
-    StoredDevicePathStr = AllocateZeroPool(StoredDevicePathStrSize);
-    if (StoredDevicePathStr == NULL) {
+    // Allocate space for device path.
+    StoredDevicePath = AllocateZeroPool(StoredDevicePathSize);
+    if (!StoredDevicePath) {
         Status = EFI_OUT_OF_RESOURCES;
         goto DONE;
     }
 
     // Get stored device path string.
     Status = gRT->GetVariable(BOOT_CHIME_VAR_DEVICE, &gBootChimeVendorVariableGuid, NULL,
-        &StoredDevicePathStrSize, StoredDevicePathStr);
+        &StoredDevicePathSize, StoredDevicePath);
     if (EFI_ERROR(Status))
         goto DONE;
 
@@ -100,25 +99,18 @@ BootChimeGetStoredOutput(
         if (EFI_ERROR(Status))
             continue;
 
-        // Convert Device Path to string for comparison.
-        DevicePathStr = ConvertDevicePathToText(DevicePath, FALSE, FALSE);
-        if (DevicePathStr == NULL)
-            continue;
-
         // Compare Device Paths. If they match, we have our Audio I/O device.
-        if (StrCmp(StoredDevicePathStr, DevicePathStr) == 0) {
+        if (!CompareMem(StoredDevicePath, DevicePath, StoredDevicePathSize)) {
             // Open Audio I/O protocol.
             Status = gBS->HandleProtocol(AudioIoHandles[h], &gEfiAudioIoProtocolGuid, (VOID**)&AudioIoProto);
             if (EFI_ERROR(Status))
                 goto DONE;
             break;
         }
-        FreePool(DevicePathStr);
-        DevicePathStr = NULL;
     }
 
     // If the Audio I/O variable is still null, we couldn't find it.
-    if (AudioIoProto == NULL) {
+    if (!AudioIoProto) {
         Status = EFI_NOT_FOUND;
         goto DONE;
     }
@@ -144,12 +136,8 @@ BootChimeGetStoredOutput(
     Status = EFI_SUCCESS;
 
 DONE:
-    if (StoredDevicePathStr != NULL)
-        FreePool(StoredDevicePathStr);
-    if (AudioIoHandles != NULL)
+    if (AudioIoHandles)
         FreePool(AudioIoHandles);
-    if (DevicePathStr != NULL)
-        FreePool(DevicePathStr);
     return Status;
 }
 
@@ -217,13 +205,13 @@ FOUND_OUTPUT:
     // Output was found.
     *AudioIo = AudioIoProto;
     *Index = OutputPortIndex;
-    *Volume = EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME;
+    *Volume = BOOT_CHIME_DEFAULT_VOLUME;
     Status = EFI_SUCCESS;
 
 DONE:
-    if (AudioIoHandles != NULL)
+    if (AudioIoHandles)
         FreePool(AudioIoHandles);
-    if (OutputPorts != NULL)
+    if (OutputPorts)
         FreePool(OutputPorts);
     return Status;
 }

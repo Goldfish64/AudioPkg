@@ -228,7 +228,6 @@ BootChimeCfgMain(
     UINTN DevicesCount = 0;
     UINTN DeviceIndex = 0;
     UINT8 DeviceVolume = 0;
-    CHAR16 *DevicePathText = NULL;
 
     // Get command line arguments.
     Status = ShellCommandLineParse(ParamList, &Package, &ProblemParam, TRUE);
@@ -279,16 +278,9 @@ BootChimeCfgMain(
         }
         DeviceIndex = SelectArgValue - 1;
 
-        // Get device path text.
-        DevicePathText = ConvertDevicePathToText(Devices[DeviceIndex].DevicePath, FALSE, FALSE);
-        if (DevicePathText == NULL) {
-            ShellPrintEx(-1, -1, L"Error: The device path couldn't be retrieved.\n");
-            goto DONE;
-        }
-
         // Set device path variable. Add one to length to account for null terminator.
         Status = gRT->SetVariable(BOOT_CHIME_VAR_DEVICE, &gBootChimeVendorVariableGuid, BOOT_CHIME_VAR_ATTRIBUTES,
-            (StrLen(DevicePathText) + 1) * sizeof(CHAR16), DevicePathText);
+            GetDevicePathSize(Devices[DeviceIndex].DevicePath), Devices[DeviceIndex].DevicePath);
         if (EFI_ERROR(Status))
             goto DONE;
 
@@ -339,11 +331,8 @@ BootChimeCfgMain(
     return EFI_SUCCESS;
 
 DONE:
-    if (DevicePathText != NULL)
-        FreePool(DevicePathText);
     if (Devices != NULL)
         FreePool(Devices);
-
     ShellCommandLineFreeVarList(Package);
 
     // Show error.

@@ -31,6 +31,8 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Protocol/AudioIo.h>
 
+#define BOOT_CHIME_DEFAULT_VOLUME   75
+
 // BootChime vendor variable GUID.
 #define BOOT_CHIME_VENDOR_VARIABLE_GUID { \
     0x89D4F995, 0x67E3, 0x4895, { 0x8F, 0x18, 0x45, 0x4B, 0x65, 0x1D, 0x92, 0x15 } \
