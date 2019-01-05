@@ -26,7 +26,7 @@
 
 // Original Boot Services functions.
 STATIC EFI_IMAGE_START mOrigStartImage;
-STATIC EFI_GET_MEMORY_MAP mOrigGetMemoryMap;
+STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
 
 // Audio file data.
 STATIC UINT8 *mSoundData;
@@ -114,22 +114,20 @@ BootChimeStartImage(
 
 EFI_STATUS
 EFIAPI
-BootChimeGetMemoryMap(
-    IN OUT UINTN *MemoryMapSize,
-    IN OUT EFI_MEMORY_DESCRIPTOR *MemoryMap,
-    OUT    UINTN *MapKey,
-    OUT    UINTN *DescriptorSize,
-    OUT    UINT32 *DescriptorVersion) {
-    DEBUG((DEBUG_INFO, "BootChimeGetMemoryMap(): start\n"));
+BootChimeExitBootServices(
+    IN EFI_HANDLE ImageHandle,
+    IN UINTN MapKey) {
+    DEBUG((DEBUG_INFO, "BootChimeExitBootServices(): start\n"));
 
     // If playback is in progress, wait.
     if (mIsAppleBoot) {
         while (!mPlaybackComplete)
             CpuPause();
+        mIsAppleBoot = FALSE;
     }
 
-    // Call original GetMemoryMap.
-    return mOrigGetMemoryMap(MemoryMapSize, MemoryMap, MapKey, DescriptorSize, DescriptorVersion);
+    // Call original ExitBootServices.
+    return mOrigExitBootServices(ImageHandle, MapKey);
 }
 
 EFI_STATUS
@@ -434,8 +432,8 @@ DONE:
     // Replace Boot Services functions.
     mOrigStartImage = gBS->StartImage;
     gBS->StartImage = BootChimeStartImage;
-    mOrigGetMemoryMap = gBS->GetMemoryMap;
-    gBS->GetMemoryMap = BootChimeGetMemoryMap;
+    mOrigExitBootServices = gBS->ExitBootServices;
+    gBS->ExitBootServices = BootChimeExitBootServices;
 
     // Recalculate CRC and revert TPL.
     gBS->Hdr.CRC32 = 0;

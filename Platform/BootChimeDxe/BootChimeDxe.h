@@ -65,12 +65,9 @@ BootChimeStartImage(
 
 EFI_STATUS
 EFIAPI
-BootChimeGetMemoryMap(
-    IN OUT UINTN *MemoryMapSize,
-    IN OUT EFI_MEMORY_DESCRIPTOR *MemoryMap,
-    OUT    UINTN *MapKey,
-    OUT    UINTN *DescriptorSize,
-    OUT    UINT32 *DescriptorVersion);
+BootChimeExitBootServices(
+    IN EFI_HANDLE ImageHandle,
+    IN UINTN MapKey);
 
 EFI_STATUS
 EFIAPI
