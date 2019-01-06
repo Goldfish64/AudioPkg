@@ -141,19 +141,31 @@ BootChimeDxePlay(VOID) {
     UINTN OutputIndex;
     UINT8 OutputVolume;
 
-    // Get stored audio settings.
-    Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex, &OutputVolume);
+    // Get stored audio output.
+    Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex);
     if (EFI_ERROR(Status)) {
         if (Status == EFI_NOT_FOUND) {
-            Print(L"BootChimeDxe: A saved playback device couldn't be found, using default device.\n");
-            Print(L"BootChimeDxe: Please run BootChimeCfg if the selected device is wrong.\n");
-            Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex, &OutputVolume);
+            Print(L"BootChimeDxe: Using default device. Please run BootChimeCfg if the selected device is wrong.\n");
+            Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex);
             if (EFI_ERROR(Status)) {
                 Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
                 goto DONE_ERROR;
             }
         } else {
-            Print(L"BootChimeDxe: An error occurred fetching the stored settings. Please run BootChimeCfg.\n");
+            Print(L"BootChimeDxe: An error occurred fetching the stored output. Please run BootChimeCfg.\n");
+            goto DONE_ERROR;
+        }
+    }
+
+    // Get stored audio volume.
+    Status = BootChimeGetStoredVolume(&OutputVolume);
+    if (EFI_ERROR(Status)) {
+        if (Status == EFI_NOT_FOUND) {
+            Print(L"BootChimeDxe: Using default volume. Please run BootChimeCfg if the volume is too high.\n");
+            OutputVolume = BOOT_CHIME_DEFAULT_VOLUME;
+            Status = EFI_SUCCESS;
+        } else {
+            Print(L"BootChimeDxe: An error occurred fetching the stored volume. Please run BootChimeCfg.\n");
             goto DONE_ERROR;
         }
     }

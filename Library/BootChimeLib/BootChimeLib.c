@@ -47,8 +47,8 @@ EFI_STATUS
 EFIAPI
 BootChimeGetStoredOutput(
     OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
-    OUT UINTN *Index,
-    OUT UINT8 *Volume) {
+    OUT UINTN *Index) {
+
     // Create variables.
     EFI_STATUS Status;
 
@@ -65,8 +65,10 @@ BootChimeGetStoredOutput(
     // Output.
     UINTN OutputPortIndex;
     UINTN OutputPortIndexSize = sizeof(OutputPortIndex);
-    UINT8 OutputVolume;
-    UINTN OutputVolumeSize = sizeof(OutputVolume);
+
+    // Check if parameters are valid.
+    if (!AudioIo || !Index)
+        return EFI_INVALID_PARAMETER;
 
     // Get Audio I/O protocols.
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
@@ -121,18 +123,9 @@ BootChimeGetStoredOutput(
     if (EFI_ERROR(Status))
         goto DONE;
 
-    // Get stored volume. If this fails, just use the max.
-    Status = gRT->GetVariable(BOOT_CHIME_VAR_VOLUME, &gBootChimeVendorVariableGuid, NULL,
-        &OutputVolumeSize, &OutputVolume);
-    if (EFI_ERROR(Status)) {
-        OutputVolume = EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME;
-        Status = EFI_SUCCESS;
-    }
-
     // Success.
     *AudioIo = AudioIoProto;
     *Index = OutputPortIndex;
-    *Volume = OutputVolume;
     Status = EFI_SUCCESS;
 
 DONE:
@@ -143,10 +136,37 @@ DONE:
 
 EFI_STATUS
 EFIAPI
+BootChimeGetStoredVolume(
+    OUT UINT8 *Volume) {
+
+    // Create variables.
+    EFI_STATUS Status;
+    UINT8 OutputVolume;
+    UINTN OutputVolumeSize = sizeof(OutputVolume);
+
+    // Check if parameters are valid.
+    if (!Volume)
+        return EFI_INVALID_PARAMETER;
+
+    // Get stored volume.
+    Status = gRT->GetVariable(BOOT_CHIME_VAR_VOLUME, &gBootChimeVendorVariableGuid, NULL,
+        &OutputVolumeSize, &OutputVolume);
+    if (EFI_ERROR(Status))
+        goto DONE;
+
+    // Success.
+    *Volume = OutputVolume;
+    Status = EFI_SUCCESS;
+
+DONE:
+    return Status;
+}
+
+EFI_STATUS
+EFIAPI
 BootChimeGetDefaultOutput(
     OUT EFI_AUDIO_IO_PROTOCOL **AudioIo,
-    OUT UINTN *Index,
-    OUT UINT8 *Volume) {
+    OUT UINTN *Index) {
     // Create variables.
     EFI_STATUS Status;
 
@@ -159,6 +179,10 @@ BootChimeGetDefaultOutput(
     EFI_AUDIO_IO_PROTOCOL_PORT *OutputPorts = NULL;
     UINTN OutputPortsCount = 0;
     UINTN OutputPortIndex;
+
+    // Check if parameters are valid.
+    if (!AudioIo || !Index)
+        return EFI_INVALID_PARAMETER;
 
     // Get Audio I/O protocols.
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiAudioIoProtocolGuid, NULL, &AudioIoHandleCount, &AudioIoHandles);
@@ -205,7 +229,6 @@ FOUND_OUTPUT:
     // Output was found.
     *AudioIo = AudioIoProto;
     *Index = OutputPortIndex;
-    *Volume = BOOT_CHIME_DEFAULT_VOLUME;
     Status = EFI_SUCCESS;
 
 DONE:

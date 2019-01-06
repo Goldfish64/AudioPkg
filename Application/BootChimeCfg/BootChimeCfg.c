@@ -163,14 +163,26 @@ TestOutput(VOID) {
     UINTN OutputIndex;
     UINT8 OutputVolume;
 
-    // Get stored settings.
-    Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex, &OutputVolume);
+    // Get stored output.
+    Status = BootChimeGetStoredOutput(&AudioIo, &OutputIndex);
     if (EFI_ERROR(Status)) {
         if (Status == EFI_NOT_FOUND) {
-            ShellPrintEx(-1, -1, L"Couldn't find stored settings, using default output.\n");
-            Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex, &OutputVolume);
+            ShellPrintEx(-1, -1, L"Couldn't find stored output, using default output.\n");
+            Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex);
             if (EFI_ERROR(Status))
                 return Status;
+        } else {
+            return Status;
+        }
+    }
+
+    // Get stored volume.
+    Status = BootChimeGetStoredVolume(&OutputVolume);
+    if (EFI_ERROR(Status)) {
+        if (Status == EFI_NOT_FOUND) {
+            ShellPrintEx(-1, -1, L"Couldn't find stored volume, using default volume.\n");
+            OutputVolume = BOOT_CHIME_DEFAULT_VOLUME;
+            Status = EFI_SUCCESS;
         } else {
             return Status;
         }
