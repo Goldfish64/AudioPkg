@@ -31,7 +31,7 @@
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Protocol/AudioIo.h>
 
-#define BOOT_CHIME_DEFAULT_VOLUME   75
+#define BOOT_CHIME_DEFAULT_VOLUME   EFI_AUDIO_IO_PROTOCOL_MAX_VOLUME
 
 // BootChime vendor variable GUID.
 #define BOOT_CHIME_VENDOR_VARIABLE_GUID { \
