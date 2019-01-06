@@ -810,11 +810,13 @@ HdaCodecDisableWidgetPath(
         }
 
         // If there is more than one connection, change to another.
-        if (HdaWidget->ConnectionCount > 1) {
-            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONN_SELECT_CONTROL,
-                (HdaWidget->UpstreamIndex + 1) % HdaWidget->ConnectionCount), &Response);
-            if (EFI_ERROR(Status))
-                return Status;
+        if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {
+            if (HdaWidget->ConnectionCount > 1) {
+                Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONN_SELECT_CONTROL,
+                    (HdaWidget->UpstreamIndex + 1) % HdaWidget->ConnectionCount), &Response);
+                if (EFI_ERROR(Status))
+                    return Status;
+            }
         }
 
         // Move to upstream widget.
