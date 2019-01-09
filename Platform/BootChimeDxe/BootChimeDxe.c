@@ -148,7 +148,10 @@ BootChimeDxePlay(VOID) {
             Print(L"BootChimeDxe: Using default device. Please run BootChimeCfg if the selected device is wrong.\n");
             Status = BootChimeGetDefaultOutput(&AudioIo, &OutputIndex);
             if (EFI_ERROR(Status)) {
-                Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
+                if (Status == EFI_NOT_FOUND)
+                    Print(L"BootChimeDxe: No audio outputs were found. Ensure AudioDxe is loaded.\n");
+                else
+                    Print(L"BootChimeDxe: An error occurred getting the default device. Please run BootChimeCfg.\n");
                 goto DONE_ERROR;
             }
         } else {

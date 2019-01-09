@@ -268,7 +268,8 @@ HdaCodecDumpMain(
     EFI_HDA_CODEC_INFO_PROTOCOL *HdaCodecInfo;
 
     Status = gBS->LocateHandleBuffer(ByProtocol, &gEfiHdaCodecInfoProtocolGuid, NULL, &HdaCodecHandleCount, &HdaCodecHandles);
-    ASSERT_EFI_ERROR(Status);
+    if (EFI_ERROR(Status))
+        goto DONE_ERROR;
 
     // Print each codec found.
     for (UINTN i = 0; i < HdaCodecHandleCount; i++) {
@@ -322,4 +323,11 @@ HdaCodecDumpMain(
         Status = HdaCodecInfo->FreeWidgetsBuffer(Widgets, WidgetCount);
     }
     return EFI_SUCCESS;
+
+DONE_ERROR:
+    if (Status == EFI_NOT_FOUND)
+        Print(L"No audio devices were found. Ensure AudioDxe is loaded.\n");
+    else
+        Print(L"The command failed with: %r\n", Status);
+    return Status;
 }

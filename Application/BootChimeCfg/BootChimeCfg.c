@@ -348,7 +348,12 @@ DONE:
     ShellCommandLineFreeVarList(Package);
 
     // Show error.
-    if (EFI_ERROR(Status))
-        ShellPrintEx(-1, -1, L"The command failed with error: %r\n", Status);
+    if (EFI_ERROR(Status)) {
+        if (Status == EFI_NOT_FOUND)
+            ShellPrintEx(-1, -1, L"No audio outputs were found. Ensure AudioDxe is loaded.\n", Status);
+        else 
+            ShellPrintEx(-1, -1, L"The command failed with error: %r\n", Status);
+    }
+        
     return Status;
 }
