@@ -41,7 +41,6 @@
     PcdLib
     UefiApplicationEntryPoint
     UefiBootServicesTableLib
-    UefiFileHandleLib
     UefiLib
 
 [Protocols]
