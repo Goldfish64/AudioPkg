@@ -3,7 +3,7 @@
  * 
  * Description: BootChimeDxe configuration application.
  *
- * Copyright (c) 2018 John Davis
+ * Copyright (c) 2018-2019 John Davis
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,34 +31,91 @@
 #include <Uefi.h>
 #include <Library/BaseLib.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/BootChimeLib.h>
 #include <Library/DebugLib.h>
+#include <Library/DevicePathLib.h>
 #include <Library/MemoryAllocationLib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Library/UefiRuntimeServicesTableLib.h>
 #include <Library/UefiLib.h>
-#include <Library/BootChimeLib.h>
-
-#include <Guid/FileInfo.h>
 
 // Consumed protocols.
 #include <Protocol/AudioIo.h>
 #include <Protocol/DevicePath.h>
-#include <Protocol/DevicePathUtilities.h>
-#include <Library/DevicePathLib.h>
 
-#define BCFG_NAME       (L"BOOTCHIMECFG.EFI")
-#define BCFG_ARG_HELP   (L"-?")
-#define BCFG_ARG_LIST   (L"-l")
-#define BCFG_ARG_SELECT (L"-s")
-#define BCFG_ARG_VOLUME (L"-v")
-#define BCFG_ARG_TEST   (L"-t")
-#define BCFG_ARG_CLEAR  (L"-x")
+#define PROMPT_ANY_KEY  L"Press any key to continue..."
+#define BCFG_ARG_LIST   L'L'
+#define BCFG_ARG_SELECT L'S'
+#define BCFG_ARG_VOLUME L'V'
+#define BCFG_ARG_TEST   L'T'
+#define BCFG_ARG_CLEAR  L'X'
+#define BCFG_ARG_QUIT   L'Q'
 
+#define MAX_CHARS       12
+
+// Boot chime output device.
 typedef struct {
     EFI_AUDIO_IO_PROTOCOL *AudioIo;
     EFI_DEVICE_PATH_PROTOCOL *DevicePath;
     EFI_AUDIO_IO_PROTOCOL_PORT OutputPort;
     UINTN OutputPortIndex;
 } BOOT_CHIME_DEVICE;
+
+//
+// Functions.
+//
+VOID
+EFIAPI
+FlushKeystrokes(
+    EFI_SIMPLE_TEXT_INPUT_PROTOCOL *SimpleTextIn);
+
+EFI_STATUS
+EFIAPI
+WaitForKey(
+    IN  EFI_SIMPLE_TEXT_INPUT_PROTOCOL *SimpleTextIn,
+    OUT CHAR16 *KeyValue);
+
+EFI_STATUS
+EFIAPI
+GetOutputDevices(
+    OUT BOOT_CHIME_DEVICE **Devices,
+    OUT UINTN *DevicesCount);
+
+EFI_STATUS
+EFIAPI
+PrintDevices(
+    IN EFI_SIMPLE_TEXT_INPUT_PROTOCOL *SimpleTextIn,
+    IN BOOT_CHIME_DEVICE *Devices,
+    IN UINTN DevicesCount);
+
+EFI_STATUS
+EFIAPI
+SelectDevice(
+    IN EFI_SIMPLE_TEXT_INPUT_PROTOCOL *SimpleTextIn,
+    IN BOOT_CHIME_DEVICE *Devices,
+    IN UINTN DevicesCount);
+
+EFI_STATUS
+EFIAPI
+SelectVolume(
+    IN EFI_SIMPLE_TEXT_INPUT_PROTOCOL *SimpleTextIn);
+
+EFI_STATUS
+EFIAPI
+TestOutput(VOID);
+
+EFI_STATUS
+EFIAPI
+ClearVars(VOID);
+
+VOID
+EFIAPI
+DisplayMenu(VOID);
+
+EFI_STATUS
+EFIAPI
+BootChimeCfgMain(
+    IN EFI_HANDLE ImageHandle,
+    IN EFI_SYSTEM_TABLE *SystemTable);
 
 #endif
