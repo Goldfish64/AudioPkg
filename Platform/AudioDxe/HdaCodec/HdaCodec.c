@@ -816,6 +816,12 @@ HdaCodecDisableWidgetPath(
                     (HdaWidget->UpstreamIndex + 1) % HdaWidget->ConnectionCount), &Response);
                 if (EFI_ERROR(Status))
                     return Status;
+            } else {
+                // Disable output amp if there is only a single connection.
+                Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
+                    HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, FALSE, FALSE)), &Response);
+                if (EFI_ERROR(Status))
+                    return Status;
             }
         }
 
@@ -872,6 +878,24 @@ HdaCodecEnableWidgetPath(
                         return Status;
                 }
             }
+        }
+
+        // If this is a digital widget, enable digital output.
+        if (HdaWidget->Capabilities & HDA_PARAMETER_WIDGET_CAPS_DIGITAL) {
+            // Enable digital output.
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_DIGITAL_CONV_CONTROL1,
+                HDA_DIGITAL_CONV_CONTROL_DIGEN), &Response);
+            if (EFI_ERROR(Status))
+                return Status;
+
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_ASP_MAPPING,
+                0x00), &Response);
+            if (EFI_ERROR(Status))
+                return Status;
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_ASP_MAPPING,
+                0x11), &Response);
+            if (EFI_ERROR(Status))
+                return Status;
         }
 
         // If there is an output amp, unmute.
