@@ -809,20 +809,12 @@ HdaCodecDisableWidgetPath(
                 return Status;
         }
 
-        // If there is more than one connection, change to another.
+        // If widget is a pin complex, disable output.
         if (HdaWidget->Type == HDA_WIDGET_TYPE_PIN_COMPLEX) {
-            if (HdaWidget->ConnectionCount > 1) {
-                Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_CONN_SELECT_CONTROL,
-                    (HdaWidget->UpstreamIndex + 1) % HdaWidget->ConnectionCount), &Response);
-                if (EFI_ERROR(Status))
-                    return Status;
-            } else {
-                // Disable output amp if there is only a single connection.
-                Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
-                    HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, FALSE, FALSE)), &Response);
-                if (EFI_ERROR(Status))
-                    return Status;
-            }
+            Status = HdaIo->SendCommand(HdaIo, HdaWidget->NodeId, HDA_CODEC_VERB(HDA_VERB_SET_PIN_WIDGET_CONTROL,
+                HDA_VERB_SET_PIN_WIDGET_CONTROL_PAYLOAD(0, FALSE, FALSE, FALSE, FALSE)), &Response);
+            if (EFI_ERROR(Status))
+                return Status;
         }
 
         // Move to upstream widget.
