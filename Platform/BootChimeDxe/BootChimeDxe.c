@@ -26,7 +26,7 @@
 
 // Original Boot Services functions.
 STATIC EFI_IMAGE_START mOrigStartImage;
-STATIC EFI_EXIT_BOOT_SERVICES mOrigExitBootServices;
+STATIC EFI_GET_MEMORY_MAP mOrigGetMemoryMap;
 
 // Audio file data.
 STATIC UINT8 *mSoundData;
@@ -36,16 +36,6 @@ STATIC EFI_AUDIO_IO_PROTOCOL_BITS mSoundBits;
 STATIC UINT8 mSoundChannels;
 
 STATIC BOOLEAN mIsAppleBoot;
-STATIC BOOLEAN mPlaybackComplete;
-
-VOID
-EFIAPI
-BootChimeAudioIoCallback(
-    IN EFI_AUDIO_IO_PROTOCOL *AudioIo,
-    IN VOID *Context) {
-    DEBUG((DEBUG_INFO, "BootChimeAudioIoCallback(): start\n"));
-    *((BOOLEAN*)Context) = TRUE;
-}
 
 BOOLEAN
 EFIAPI
@@ -98,15 +88,9 @@ BootChimeStartImage(
     OUT CHAR16 **ExitData OPTIONAL) {
     DEBUG((DEBUG_INFO, "BootChimeStartImage(%lx): start\n", ImageHandle));
 
-    // Create variables.
-    EFI_STATUS Status;
-
     // If the image being loaded is boot.efi, start playback of chime.
-    if (!mIsAppleBoot && BootChimeIsAppleBootLoader(ImageHandle)) {
-        Status = BootChimeDxePlay();
-        if (!EFI_ERROR(Status))
-            mIsAppleBoot = TRUE;
-    }
+    if (!mIsAppleBoot && BootChimeIsAppleBootLoader(ImageHandle))
+        mIsAppleBoot = TRUE;
 
     // Call original StartImage.
     return mOrigStartImage(ImageHandle, ExitDataSize, ExitData);
@@ -114,20 +98,22 @@ BootChimeStartImage(
 
 EFI_STATUS
 EFIAPI
-BootChimeExitBootServices(
-    IN EFI_HANDLE ImageHandle,
-    IN UINTN MapKey) {
-    DEBUG((DEBUG_INFO, "BootChimeExitBootServices(): start\n"));
+BootChimeGetMemoryMap(
+    IN OUT UINTN *MemoryMapSize,
+    IN OUT EFI_MEMORY_DESCRIPTOR *MemoryMap,
+    OUT UINTN *MapKey,
+    OUT UINTN *DescriptorSize,
+    OUT UINT32 *DescriptorVersion) {
+    DEBUG((DEBUG_INFO, "BootChimeGetMemoryMap(): start\n"));
 
     // If playback is in progress, wait.
     if (mIsAppleBoot) {
-        while (!mPlaybackComplete)
-            CpuPause();
         mIsAppleBoot = FALSE;
+        BootChimeDxePlay();
     }
 
-    // Call original ExitBootServices.
-    return mOrigExitBootServices(ImageHandle, MapKey);
+    // Call original GetMemoryMap.
+    return mOrigGetMemoryMap(MemoryMapSize, MemoryMap, MapKey, DescriptorSize, DescriptorVersion);
 }
 
 EFI_STATUS
@@ -182,8 +168,7 @@ BootChimeDxePlay(VOID) {
     }
 
     // Start playback.
-    mPlaybackComplete = FALSE;
-    Status = AudioIo->StartPlaybackAsync(AudioIo, mSoundData, mSoundDataLength, 0, BootChimeAudioIoCallback, &mPlaybackComplete);
+    Status = AudioIo->StartPlayback(AudioIo, mSoundData, mSoundDataLength, 0);
     if (EFI_ERROR(Status)) {
         Print(L"BootChimeDxe: Error starting playback: %r\n", Status);
         goto DONE_ERROR;
@@ -447,8 +432,8 @@ DONE:
     // Replace Boot Services functions.
     mOrigStartImage = gBS->StartImage;
     gBS->StartImage = BootChimeStartImage;
-    mOrigExitBootServices = gBS->ExitBootServices;
-    gBS->ExitBootServices = BootChimeExitBootServices;
+    mOrigGetMemoryMap = gBS->GetMemoryMap;
+    gBS->GetMemoryMap = BootChimeGetMemoryMap;
 
     // Recalculate CRC and revert TPL.
     gBS->Hdr.CRC32 = 0;
