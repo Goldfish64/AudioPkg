@@ -87,7 +87,7 @@ EFIAPI
 HdaCodecDumpPrintAmpCaps(
     IN UINT32 AmpCaps) {
     if (AmpCaps) {
-        Print(L"ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2, mute=%u\n",
+        Print(L"ofs=0x%2X, nsteps=0x%2X, stepsize=0x%2X, mute=%u\n",
             HDA_PARAMETER_AMP_CAPS_OFFSET(AmpCaps), HDA_PARAMETER_AMP_CAPS_NUM_STEPS(AmpCaps),
             HDA_PARAMETER_AMP_CAPS_STEP_SIZE(AmpCaps), (AmpCaps & HDA_PARAMETER_AMP_CAPS_MUTE) != 0);
     } else
