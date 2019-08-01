@@ -231,7 +231,7 @@ SelectDevice(
 
     // Prompt for device number.
     CurrentCharCount = 0;
-    Print(L"Enter the device number (0-%lu): ", DevicesCount);
+    Print(L"Enter the device number (1-%lu): ", DevicesCount);
     while (TRUE) {
         // Wait for key.
         Status = WaitForKey(SimpleTextIn, &KeyValue);
