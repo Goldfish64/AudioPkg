@@ -22,9 +22,6 @@ Application for configuring the output device and output volume used by [BootChi
 ## HdaCodecDump
 Application that aims to produce dump printouts of HD audio codecs in the system, similar to ALSA's dumps under `/proc/asound`. Still a work in progress.
 
-## AudioDemo
-Test application used during development. Nothing useful here.
-
 ## WaveLib
 This library aims to provide simple WAVE file support.
 
