@@ -65,7 +65,6 @@
     AudioPkg/Platform/BootChimeDxe/BootChimeDxe.inf
     AudioPkg/Application/BootChimeCfg/BootChimeCfg.inf
     AudioPkg/Application/HdaCodecDump/HdaCodecDump.inf
-    AudioPkg/Application/AudioDemo/AudioDemo.inf
 
 [PcdsFixedAtBuild]
     gEfiMdePkgTokenSpaceGuid.PcdMaximumAsciiStringLength|0
