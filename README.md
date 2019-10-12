@@ -29,5 +29,5 @@ This library aims to provide simple WAVE file support.
 While this driver has been tested on various codecs and controllers, it may still be broken for others. If you encounter a bug or problem with this driver, please use the issues feature in Github.
 
 ## Known issues
-* HDMI or other digitial outputs don't work.
+* HDMI or other digital outputs don't work.
 * Some stuttering on NVIDIA HDA controllers.
